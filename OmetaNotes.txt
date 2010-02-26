@@ -1,0 +1,33 @@
+A string match swallows whitespace around it. 
+Example:
+
+	"if" "(" Code ")"
+	
+Matches all of
+	
+	if ( <Code> )
+	if( <Code> )
+	if(<Code>)
+	if         (   <Code>    )
+	
+But 
+
+	"if (" Code ")"
+	
+Matches only the first, and not the second or third of
+	
+	if (...... // <-- OK	
+	if(....... // <-- FAIL
+	if  (..... // <-- FAIL
+	
+This does not go for non-terminal pattern matches
+
+	"if" "(" Code Attributes ")"
+
+Does not match
+	
+	if ( <Code> <Attributes> ) // <-- FAIL
+
+You will need 
+
+	"if" "(" <Code> spaces ")"
