@@ -6,7 +6,7 @@ var ometaCode = fs.readFileSync('./parsers/fun.ometa') + "\n"
 try {
 	ometa(ometaCode)
 	
-	var code = fs.readFileSync('./sample_input/test2.xml');
+	var code = fs.readFileSync(process.argv[2]);
 	
 	var tree = FunParser.matchAll(code, "Fun");
 	sys.puts(tree)

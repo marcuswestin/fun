@@ -1,3 +1,0 @@
-make init
-make compile-calc SOURCE=./calc/test.calc
-cat output.js
