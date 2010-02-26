@@ -16,7 +16,8 @@ ometa-js:
 
 require.js:
 	git clone git://github.com/marcuswestin/require.js.git
-	mv require.js/ lib/
+	mv require.js/require.js lib/
+	rm -rf require.js
 
 
 # Editable lib dependencies
