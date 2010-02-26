@@ -1,20 +1,23 @@
 
 
 if (session.user.isLoggedIn)
-	render <div> "Welcome ", session.user.name </div>
+	<div> "Welcome ", session.user.name </div>
 else
-	render <div> "You are not logged in" </div>
+	<div> "You are not logged in" </div>
+
+
 
 
 =========>>>
+
+
 
 
 (function(domHook, session){ // session is an argument because it was seen as a root level variable in the execution block
 	var lastEvaluation, user, userView
 	
 	function ifTrue() {
-		domHook.innerHTML = "<div>Welcome {{name}}</div>"
-		userView = user.applyToDom(domHook)
+		userView = fin.getView("<div>Welcome (( name ))</div>", user)
 	}
 	
 	function ifFalse() {
@@ -32,7 +35,7 @@ else
 		}
 	}
 	
-	function updateUser() {
+	function updateUser(newUser) {
 		user.removeDependency(evaluate)
 		user = session.getProp('user')
 		user.addDependency('isLoggedIn', evaluate)
