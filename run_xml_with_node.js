@@ -6,9 +6,9 @@ var ometaCode = fs.readFileSync('./parsers/xml.ometa') + "\n"
 try {
 	ometa(ometaCode)
 	
-	var calcSource = fs.readFileSync('./sample_input/test2.xml');
+	var code = fs.readFileSync('./sample_input/test2.xml');
 	
-	var tree = XMLParser.matchAll(calcSource, "xml");
+	var tree = XMLParser.matchAll(code, "xml");
 	sys.puts(tree)
 	
 } catch(e) {
