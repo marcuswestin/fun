@@ -1,1 +1,1 @@
-<parent test=test asd=asd><node>HELLO</node></parent>
+<parent test="test" asd="asd"><node>HELLO</node></parent>

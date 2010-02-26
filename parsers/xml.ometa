@@ -1,12 +1,12 @@
 ometa XMLParser <: Parser {
-	xml			= xmlOpen:o xml:x xmlClose:c								-> ['xml', o, x, c]
-				| xmlOpen:o xmlContent:content xmlClose:c					-> ['xml', o, content, c],
+	xml			= xmlOpen:o xml:x xmlClose:c					-> ['xml', o, x, c]
+				| xmlOpen:o xmlContent:content xmlClose:c		-> ['xml', o, content, c],
 
-	xmlOpen		= '<' letterOrDigit+:tagName _ xmlAttr*:attrs '>'		-> ['xmlOpen', tagName.join(''), attrs],
+	xmlOpen		= "<" az09+:tagName _ xmlAttr*:attrs ">"		-> ['xmlOpen', tagName.join(''), attrs],
 	
-	xmlClose	= '<' '/' letterOrDigit+:tagName '>'						-> ['xmlOpen', tagName.join('')],
+	xmlClose	= "</" az09+:tagName '>'						-> ['xmlOpen', tagName.join('')],
 
-	xmlContent	= letterOrDigit+:content									-> ['xmlContent', content.join('')],
+	xmlContent	= az09+:content									-> ['xmlContent', content.join('')],
 	
-	xmlAttr		= letterOrDigit+:attrName '=' letterOrDigit+:attrVal _	-> ['xmlAttr', attrName.join(''), attrVal.join('')]
+	xmlAttr		= az09+:name "<" '"' az09+:val '"' _			-> ['xmlAttr', name.join(''), val.join('')]
 }
