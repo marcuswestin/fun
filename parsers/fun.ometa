@@ -7,7 +7,7 @@ ometa XMLParser <: Parser {
 	
 	XMLClose	= "</" az09+:tagName '>'						-> ['XMLClose', tagName.join('')],
 
-	XMLContent	= az09+:content									-> ['XMLContent', content.join('')],
+	XMLContent	= (az09|space)+:content									-> ['XMLContent', content.join('')],
 	
 	XMLAttr		= az09+:name "=" '"' az09+:val '"' _			-> ['XMLAttr', name.join(''), val.join('')]
 }
