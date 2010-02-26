@@ -1,5 +1,1 @@
-if (funStmnt) {
-	for (funVar over funProp) { 
-		funStmnt
-	}
-}
+for (funVar over funProp) { funStmnt }
