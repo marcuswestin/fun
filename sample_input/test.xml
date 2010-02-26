@@ -1,0 +1,3 @@
+<node>
+	<child attr="value"> content </child>
+</node>

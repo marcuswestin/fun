@@ -1,0 +1,29 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<script type="text/javascript" src="./lib/require.js"></script>
+		<script type="text/javascript">
+			require('ometa-js/ometa-node');
+			
+			
+			try {
+				var ometaCode = require.get('./parsers/xml.ometa') + "\n"
+				ometa(ometaCode)
+
+				var calcSource = require.get('./sample_input/test2.xml');
+				var tree = XMLParser.matchAll(calcSource, "xml");
+				console.log(tree)
+
+			} catch(e) {
+				var errorMsg = "Error: " + e;
+				if (e.errorPos) { 
+					errorMsg += " at pos " + e.errorPos + " >>>" + ometaCode.substr(e.errorPos, 30) 
+				}
+				setTimeout(function(){ alert(errorMsg) }, 10)
+			}
+			
+		</script>
+		
+	</body>
+</html>
