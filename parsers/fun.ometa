@@ -1,11 +1,11 @@
 ometa XMLParser <: Parser {
-	XML			= XMLOpen:o XML:x XMLClose:c					-> ['XML', o, x, c]
-				| XMLOpen:o XMLContent:content XMLClose:c		-> ['XML', o, content, c]
-				| XML:xml1 _ XML:xml2							-> ['XML', xml1, xml2],
+	XML			= XMLOpen:o XMLClose:c							-> ['XML', o, c]
+				| XMLOpen:o XML:x XMLClose:c					-> ['XML', o, x, c]
+				| XMLOpen:o XMLContent:content XMLClose:c		-> ['XML', o, content, c],
 	
 	XMLOpen		= "<" az09+:tagName _ XMLAttr*:attrs ">"		-> ['XMLOpen', tagName.join(''), attrs],
 	
-	XMLClose	= "</" az09+:tagName '>'						-> ['XMLOpen', tagName.join('')],
+	XMLClose	= "</" az09+:tagName '>'						-> ['XMLClose', tagName.join('')],
 
 	XMLContent	= az09+:content									-> ['XMLContent', content.join('')],
 	
@@ -14,16 +14,16 @@ ometa XMLParser <: Parser {
 
 
 ometa FunParser <: XMLParser {
-	Fun			= FunIf:ifBlock Fun:funCode								-> ['IfBlock', ifBlock, funCode]
-				| FunFor:forBlock Fun:funCode							-> ['ForBlock', forBlock, funCode]
+	Fun			= FunIf:ifBlock Fun:funCode								-> [ifBlock, funCode]
+				| FunFor:forBlock Fun:funCode							-> [forBlock, funCode]
 				| XML:xml												-> xml
 				| FunStmnt:funStmnt										-> funStmnt
-				| ""													-> 'Empty',
+				| spaces												-> "spaces",
 	
 	FunIf		= "if" "(" FunStmnt:condCode ")" "{" Fun:funCode "}"	-> ['IfBlock', condCode, funCode],
 	
 	FunFor		= "for" "(" FunVar:varName "over" FunProp:propName ")" 
-						"{" Fun:funCode "}"								-> ['ForBlock', varName, propName],
+						"{" Fun:funCode "}"								-> ['ForBlock', varName, propName, funCode],
 	
 	FunStmnt	= "funStmnt"											-> ['FunStmnt_NOT_IMPLEMENTED'],
 	
