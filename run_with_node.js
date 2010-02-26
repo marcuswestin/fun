@@ -18,6 +18,7 @@ try {
 		errorMsg += " at pos " + e.errorPos + " >>>" + ometaCode.substr(e.errorPos, 30) 
 	}
 	sys.puts(errorMsg)
+	throw e
 }
 
 // var output = CalcCompiler.match(tree, "xml");

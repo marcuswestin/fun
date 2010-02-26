@@ -14,11 +14,20 @@ ometa XMLParser <: Parser {
 
 
 ometa FunParser <: XMLParser {
-	Fun			= IfBlock:ifBlock Fun:funCode					-> ['IfBlock', ifBlock, funCode]
-				| ForBlock:forBlock Fun:funCode					-> ['ForBlock', forBlock, funCode]
-				| XML:xml										-> ['XML', xml],
+	Fun			= FunIf:ifBlock Fun:funCode								-> ['IfBlock', ifBlock, funCode]
+				| FunFor:forBlock Fun:funCode							-> ['ForBlock', forBlock, funCode]
+				| XML:xml												-> xml
+				| FunStmnt:funStmnt										-> funStmnt
+				| ""													-> 'Empty',
 	
-	IfBlock		= "NOTIMPLEMENTED"								-> ['IfBlock'],
+	FunIf		= "if" "(" FunStmnt:condCode ")" "{" Fun:funCode "}"	-> ['IfBlock', condCode, funCode],
 	
-	ForBlock		= "NOTIMPLEMENTED"							-> ['ForBlock']
+	FunFor		= "for" "(" FunVar:varName "over" FunProp:propName ")" 
+						"{" Fun:funCode "}"								-> ['ForBlock', varName, propName],
+	
+	FunStmnt	= "funStmnt"											-> ['FunStmnt_NOT_IMPLEMENTED'],
+	
+	FunVar		= "funVar"												-> ['FunVar_NOT_IMPLEMENTED'],
+	
+	FunProp = "funProp"													-> ['FunProp_NOT_IMPLEMENTED']
 }
