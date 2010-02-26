@@ -2,7 +2,7 @@ ometa XMLParser <: Parser {
 	XML			= XMLOpen:o XML:x XMLClose:c					-> ['XML', o, x, c]
 				| XMLOpen:o XMLContent:content XMLClose:c		-> ['XML', o, content, c]
 				| XML:xml1 _ XML:xml2							-> ['XML', xml1, xml2],
-
+	
 	XMLOpen		= "<" az09+:tagName _ XMLAttr*:attrs ">"		-> ['XMLOpen', tagName.join(''), attrs],
 	
 	XMLClose	= "</" az09+:tagName '>'						-> ['XMLOpen', tagName.join('')],
