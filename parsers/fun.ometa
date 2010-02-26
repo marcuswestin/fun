@@ -8,5 +8,5 @@ ometa XMLParser <: Parser {
 
 	xmlContent	= az09+:content									-> ['xmlContent', content.join('')],
 	
-	xmlAttr		= az09+:name "<" '"' az09+:val '"' _			-> ['xmlAttr', name.join(''), val.join('')]
+	xmlAttr		= az09+:name "=" '"' az09+:val '"' _			-> ['xmlAttr', name.join(''), val.join('')]
 }
