@@ -2,13 +2,13 @@ require('./lib/ometa-js/ometa-node');
 var fs = require('fs')
 var sys = require('sys')
 
-var ometaCode = fs.readFileSync('./parsers/xml.ometa') + "\n"
+var ometaCode = fs.readFileSync('./parsers/fun.ometa') + "\n"
 try {
 	ometa(ometaCode)
 	
 	var code = fs.readFileSync('./sample_input/test2.xml');
 	
-	var tree = XMLParser.matchAll(code, "xml");
+	var tree = FunParser.matchAll(code, "Fun");
 	sys.puts(tree)
 	
 } catch(e) {

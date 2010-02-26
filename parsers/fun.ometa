@@ -1,12 +1,24 @@
 ometa XMLParser <: Parser {
-	xml			= xmlOpen:o xml:x xmlClose:c					-> ['xml', o, x, c]
-				| xmlOpen:o xmlContent:content xmlClose:c		-> ['xml', o, content, c],
+	XML			= XMLOpen:o XML:x XMLClose:c					-> ['XML', o, x, c]
+				| XMLOpen:o XMLContent:content XMLClose:c		-> ['XML', o, content, c]
+				| XML:xml1 _ XML:xml2							-> ['XML', xml1, xml2],
 
-	xmlOpen		= "<" az09+:tagName _ xmlAttr*:attrs ">"		-> ['xmlOpen', tagName.join(''), attrs],
+	XMLOpen		= "<" az09+:tagName _ XMLAttr*:attrs ">"		-> ['XMLOpen', tagName.join(''), attrs],
 	
-	xmlClose	= "</" az09+:tagName '>'						-> ['xmlOpen', tagName.join('')],
+	XMLClose	= "</" az09+:tagName '>'						-> ['XMLOpen', tagName.join('')],
 
-	xmlContent	= az09+:content									-> ['xmlContent', content.join('')],
+	XMLContent	= az09+:content									-> ['XMLContent', content.join('')],
 	
-	xmlAttr		= az09+:name "=" '"' az09+:val '"' _			-> ['xmlAttr', name.join(''), val.join('')]
+	XMLAttr		= az09+:name "=" '"' az09+:val '"' _			-> ['XMLAttr', name.join(''), val.join('')]
+}
+
+
+ometa FunParser <: XMLParser {
+	Fun			= IfBlock:ifBlock Fun:funCode					-> ['IfBlock', ifBlock, funCode]
+				| ForBlock:forBlock Fun:funCode					-> ['ForBlock', forBlock, funCode]
+				| XML:xml										-> ['XML', xml],
+	
+	IfBlock		= "NOTIMPLEMENTED"								-> ['IfBlock'],
+	
+	ForBlock		= "NOTIMPLEMENTED"							-> ['ForBlock']
 }
