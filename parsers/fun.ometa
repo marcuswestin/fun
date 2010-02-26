@@ -16,17 +16,17 @@ ometa XMLParser <: Parser {
 ometa FunParser <: XMLParser {
 	Fun			= FunIf:ifBlock Fun:funCode								-> [ifBlock, funCode]
 				| FunFor:forBlock Fun:funCode							-> [forBlock, funCode]
-				| XML:xml												-> xml
-				| FunStmnt:funStmnt										-> funStmnt
-				| spaces												-> "spaces",
+				| FunStmnt:funStmnt	Fun:funCode							-> [funStmnt, funCode]
+				| anything												-> "",
 	
 	FunIf		= "if" "(" FunStmnt:condCode ")" "{" Fun:funCode "}"	-> ['IfBlock', condCode, funCode],
 	
 	FunFor		= "for" "(" FunVar:varName "over" FunProp:propName ")" 
 						"{" Fun:funCode "}"								-> ['ForBlock', varName, propName, funCode],
 	
-	FunStmnt	= "funStmnt"											-> ['FunStmnt_NOT_IMPLEMENTED'],
-	
+	FunStmnt	= "funStmnt"											-> ['FunStmnt_NOT_IMPLEMENTED']
+				| XML:xml 												-> xml,
+				
 	FunVar		= "funVar"												-> ['FunVar_NOT_IMPLEMENTED'],
 	
 	FunProp = "funProp"													-> ['FunProp_NOT_IMPLEMENTED']
