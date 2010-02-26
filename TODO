@@ -1,3 +1,5 @@
 Move examples into test cases
 
 Make run_xml_with_node take arguments for what to run instead of hardcoding it
+
+Clean up this freaking directory mess
