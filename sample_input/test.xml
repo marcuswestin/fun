@@ -1,1 +1,6 @@
-<node><child attr="value"></child></node>
+<TEST attr="val" asd="asdqwe"/>
+<parent2>
+	<child2 test="woot">CONTENT</child2>
+</parent2>
+
+

@@ -11,6 +11,9 @@ try {
 	var tree = FunParser.matchAll(code, "Fun");
 	sys.puts(tree)
 	
+	var translated = XMLTranslator.matchAll(tree, "XML")
+	sys.puts(translated)
+	
 } catch(e) {
 	error = true
 	var errorMsg = "Error: " + e;
