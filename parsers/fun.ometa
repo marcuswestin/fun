@@ -1,12 +1,19 @@
 ometa XMLParser <: Parser {
-	XML			= XMLOpen:o XMLClose:c							-> ['XML', o, c]
-				| XMLOpen:o XML:x XMLClose:c					-> ['XML', o, x, c]
+	XML			= XMLSingle:oc									-> ['XML', oc[0], oc[1]]
+				| XMLOpen:o XMLClose:c							-> ['XML', o, c]
+				| XMLOpen:o XML:xml XMLClose:c					-> ['XML', o, xml, c]
 				| XMLOpen:o XMLContent:content XMLClose:c		-> ['XML', o, content, c],
 	
-	XMLOpen		= "<" az09+:tagName _ XMLAttr*:attrs ">"		-> ['XMLOpen', tagName.join(''), attrs],
+	XMLOpen		= "<" az09+:tagName ">"							-> ['XMLOpen', tagName.join('')]
+				| "<" az09+:tagName _ XMLAttr*:attrs ">"		-> ['XMLOpenAttrs', tagName.join(''), attrs],
+				
+	XMLClose	= "</" az09+:tagName ">"						-> ['XMLClose', tagName.join('')],
 	
-	XMLClose	= "</" az09+:tagName '>'						-> ['XMLClose', tagName.join('')],
-
+	XMLSingle	= "<" az09+:tagName "/>"						-> [['XMLOpen', tagName.join('')
+																	],['XMLClose', tagName.join('')]]
+				| "<" az09+:tagName _ XMLAttr*:attrs "/>"		-> [['XMLOpenAttrs', tagName.join(''), attrs
+																	],['XMLClose', tagName.join('')]],
+				
 	XMLContent	= (az09|space)+:content							-> ['XMLContent', content.join('')],
 	
 	XMLAttr		= az09+:name "=" '"' az09+:val '"' _			-> ['XMLAttr', name.join(''), val.join('')]
@@ -30,4 +37,10 @@ ometa FunParser <: XMLParser {
 	FunVar		= "funVar"												-> ['FunVar_NOT_IMPLEMENTED'],
 	
 	FunProp = "funProp"													-> ['FunProp_NOT_IMPLEMENTED']
+}
+
+ometa XMLTranslator {
+	XML		= ['XMLContent' :content]		-> content
+			| ['XML' :open :close]			-> ('<' + open[1] + '></' + close[1] +'>')
+			| ['XML' :open XML:xml :close]	-> ('<' + open[1] +'>' + xml + '</' + close[1] + '>')
 }
