@@ -24,7 +24,7 @@ ometa FunParser <: XMLParser {
 	Fun			= FunIf:ifBlock Fun:funCode								-> [ifBlock, funCode]
 				| FunFor:forBlock Fun:funCode							-> [forBlock, funCode]
 				| FunStmnt:funStmnt	Fun:funCode							-> [funStmnt, funCode]
-				| anything												-> "",
+				| ""													-> [],
 	
 	FunIf		= "if" "(" FunStmnt:condCode ")" "{" Fun:funCode "}"	-> ['IfBlock', condCode, funCode],
 	
