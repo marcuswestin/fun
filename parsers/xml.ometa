@@ -1,0 +1,46 @@
+ometa XMLParser <: Parser {
+	// XMLTop matches an XML document with no other content
+	XMLTop		= XML:xml _ end									-> ['XMLBegin', xml, 'XMLEnd'],
+	
+	// XML matches any number of adjacent XML nodes
+	XML			= XMLNode*:nodes								-> nodes,
+	
+	// XMLNode matches a single XML node and its descendants
+	XMLNode		= _ XMLSingle:oc								-> [oc[0], oc[1]]
+				| _ XMLOpen:o XMLClose:c						-> [o, c]
+				| _ XMLOpen:o XML:xml XMLClose:c				-> [o, xml, c]
+				| _ XMLOpen:o XMLContent:content XMLClose:c		-> [o, content, c],
+	
+	// XMLOpen matches an XML open tag
+	XMLOpen		= "<" az09+:tagName _ XMLAttr*:attrs ">"		-> ['XMLOpen', tagName.join(''), attrs],
+	
+	// XMLClose matches an XML close tag
+	XMLClose	= "</" az09+:tagName ">"						-> ['XMLClose', tagName.join('')],
+	
+	// XMLSingle matches an XML node tag, e.g. <node />
+	XMLSingle	= "<" az09+:tagName _ XMLAttr*:attrs "/>"		-> [['XMLOpen', tagName.join(''), attrs
+																	],['XMLClose', tagName.join('')]],
+	// XMLContent matches content of an XML node
+	XMLContent	= (az09|space)+:content							-> ['XMLContent', content.join('')],
+	
+	// XMLAttr matches XML attributes, e.g. key="val"
+	XMLAttr		= az09+:name "=" '"' az09+:val '"' _			-> ['XMLAttr', name.join(''), val.join('')]
+}
+
+ometa XMLTranslator <: Parser {
+	XMLTop		= 'XMLBegin' [XML:xml] 'XMLEnd'					-> xml,
+	
+	XML			= XMLNode*:nodes								-> nodes.join(''),
+
+	XMLNode		= ['XMLContent' :content]						-> content
+				| [XMLOpen:open XMLClose:close]					-> (open + close)
+				| [XMLOpen:open XML:xml XMLClose:close]			-> (open + xml + close),
+			
+	XMLOpen		= ['XMLOpen' :name XMLAttrs:attrs]				-> ('<' + name + attrs + '>'),
+	
+	XMLAttrs	= [XMLAttr*:attrs] 								-> attrs.join(''),
+	
+	XMLAttr		= ['XMLAttr' :name :val]						-> (' ' + name + '="' + val + '"'),
+				
+	XMLClose	= ['XMLClose' :name]							-> ('</' + name + '>')
+}

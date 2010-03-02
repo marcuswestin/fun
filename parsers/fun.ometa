@@ -1,51 +1,38 @@
-ometa XMLParser <: Parser {
-	XML			= XMLSingle:oc									-> ['XML', oc[0], oc[1]]
-				| XMLOpen:o XMLClose:c							-> ['XML', o, c]
-				| XMLOpen:o XML:xml XMLClose:c					-> ['XML', o, xml, c]
-				| XMLOpen:o XMLContent:content XMLClose:c		-> ['XML', o, content, c],
-	
-	XMLOpen		= "<" az09+:tagName _ XMLAttr*:attrs ">"		-> ['XMLOpen', tagName.join(''), attrs],
-				
-	XMLClose	= "</" az09+:tagName ">"						-> ['XMLClose', tagName.join('')],
-	
-	XMLSingle	= "<" az09+:tagName _ XMLAttr*:attrs "/>"		-> [['XMLOpen', tagName.join(''), attrs
-																	],['XMLClose', tagName.join('')]],
-				
-	XMLContent	= (az09|space)+:content							-> ['XMLContent', content.join('')],
-	
-	XMLAttr		= az09+:name "=" '"' az09+:val '"' _			-> ['XMLAttr', name.join(''), val.join('')]
-}
-
-
 ometa FunParser <: XMLParser {
-	Fun			= FunIf:ifBlock Fun:funCode								-> [ifBlock, funCode]
+	FunTop		= _ Fun:code _ end											-> ['FunBegin', code, 'FunEnd'],
+	
+	Fun			= FunStmnt*:stmnts										-> stmnts,
+	
+	
+	FunIf:ifBlock Fun:funCode											-> [ifBlock, funCode]
 				| FunFor:forBlock Fun:funCode							-> [forBlock, funCode]
 				| FunStmnt:funStmnt	Fun:funCode							-> [funStmnt, funCode]
-				| ""													-> [],
+				| ""													-> 'FunEmpty',
 	
-	FunIf		= "if" "(" FunStmnt:condCode ")" "{" Fun:funCode "}"	-> ['IfBlock', condCode, funCode],
+	FunIf		= "if" "(" FunCond:condCode ")" "{" Fun:blockCode "}"	-> ['FunIfBlock', condCode, blockCode],
 	
 	FunFor		= "for" "(" FunVar:varName "over" FunProp:propName ")" 
-						"{" Fun:funCode "}"								-> ['ForBlock', varName, propName, funCode],
+						"{" Fun:funCode "}"								-> ['FunForBlock', varName, propName, funCode],
 	
-	FunStmnt	= "funStmnt"											-> ['FunStmnt_NOT_IMPLEMENTED']
-				| XML:xml 												-> xml,
+	FunCond		= FunVal:val											-> ['FunCondBool', val]
+				| FunVal:val1 "==" FunVal:val2							-> ['FunCondEq', val1, val2]
+				| FunVal:val1 "!=" FunVal:val2							-> ['FunCondNeq', val1, val2],
 				
-	FunVar		= "funVar"												-> ['FunVar_NOT_IMPLEMENTED'],
+	FunStmnt	= "funStmnt"											-> ['FunStmnt']
+				| XML:xml 												-> xml,
 	
-	FunProp = "funProp"													-> ['FunProp_NOT_IMPLEMENTED']
+	FunVal		= FunVal:val1 "," FunVal:val2							-> ['FunVal', val1.concat(val2)]
+				| FunProp:prop											-> [prop]
+				| FunString:str											-> [str],
+				
+	FunVar		= "funVar"												-> ['FunVar'],
+	
+	FunProp		= az09:first	Az09dot*:rest							-> ['FunProp', first + rest.join('')],
+	Az09dot		= az09:a -> a | '.':d -> d,
+	
+	FunString	= token(") string:str token(")							-> ['FunString', str]
 }
 
-ometa XMLTranslator <: Parser {
-	XML			= ['XMLContent' :content]						-> content
-				| ['XML' XMLOpen:open XMLClose:close]			-> (open + close)
-				| ['XML' XMLOpen:open XML:xml XMLClose:close]	-> (open + xml + close),
-			
-	XMLOpen		= ['XMLOpen' :name XMLAttrs:attrs]				-> ('<' + name + attrs + '>'),
-	
-	XMLAttrs	= [XMLAttr*:attrs] 								-> attrs.join(''),
-	
-	XMLAttr		= ['XMLAttr' :name :val]						-> (' ' + name + '="' + val + '"'),
-				
-	XMLClose	= ['XMLClose' :name]							-> ('</' + name + '>')
+ometa FunTranslator <: XMLTranslator {
+	Fun			= XML:xml										-> xml
 }

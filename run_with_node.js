@@ -2,27 +2,30 @@ require('./lib/ometa-js/ometa-node');
 var fs = require('fs')
 var sys = require('sys')
 
-var ometaCode = fs.readFileSync('./parsers/fun.ometa') + "\n"
-try {
-	ometa(ometaCode)
-	
-	var code = fs.readFileSync(process.argv[2]);
-	
-	var tree = FunParser.matchAll(code, "Fun");
-	sys.puts(tree)
-	
-	var translated = XMLTranslator.matchAll(tree, "XML")
-	sys.puts(translated)
-	
-} catch(e) {
-	error = true
-	var errorMsg = "Error: " + e;
-	if (e.errorPos) { 
-		errorMsg += " at pos " + e.errorPos + " >>>" + ometaCode.substr(e.errorPos, 30) 
+function parseOmetaCode(parser) {
+	var parserCode = fs.readFileSync('./parsers/' + parser + '.ometa') + "\n"
+	try {
+		ometa(parserCode)
+	} catch(e) {
+		var errorMsg = "Error: " + e
+		if (e.errorPos) {
+			errorMsg += " at pos " + e.errorPos + " >>>" + parserCode.substr(e.errorPos, 30) 
+		}
+		sys.puts(errorMsg)
+		throw e
 	}
-	sys.puts(errorMsg)
-	throw e
 }
 
-// var output = CalcCompiler.match(tree, "xml");
-// fs.writeFileSync("./output.js", output + "\n");
+parseOmetaCode('xml')
+parseOmetaCode('fun2')
+
+var code = fs.readFileSync(process.argv[2])
+
+var tree = FunParser.matchAll(code, "FunTop")
+sys.puts(tree)
+
+sys.puts("\nNow lets translate...\n")
+
+var translated = FunTranslator.matchAll(tree, "FunTop")
+sys.puts(translated)
+
