@@ -7,9 +7,9 @@ ometa FunParser <: XMLParser {
 				| FunFor:forBlock										-> forBlock
 				| FunValue:value										-> value,
 	
-	FunIf		= "if" "(" FunCond:cond ")" "{" FunCode:ifCode "}"		-> ['FunIf', cond, ifCode]
-				| "if" "(" FunCond:cond ")" "{" FunCode:ifCode "}"
-					"else" "{" FunCode:elseCode "}"						-> ['FunIfElse', cond, ifCode, elseCode],
+	FunIf		= "if" "(" FunCond:cond ")" "{" FunCode:ifCode "}"
+					"else" "{" FunCode:elseCode "}"						-> ['FunIfElse', cond, ifCode, elseCode]
+				| "if" "(" FunCond:cond ")" "{" FunCode:ifCode "}"		-> ['FunIf', cond, ifCode],
 	
 	FunCond		= FunValue:val1 "==" FunValue:val2						-> ['FunCondEq', val1, val2]
 				| FunValue:val											-> ['FunCondBool', val],
