@@ -1,38 +1,50 @@
 ometa FunParser <: XMLParser {
-	FunTop		= _ Fun:code _ end											-> ['FunBegin', code, 'FunEnd'],
+	FunTop		= FunCode:code _ end									-> ['FunBegin', code, 'FunEnd'],
 	
-	Fun			= FunStmnt*:stmnts										-> stmnts,
+	FunCode		= FunStmnt*:stmnts										-> stmnts,
 	
+	FunStmnt	= FunIf:ifBlock											-> ifBlock
+				| FunFor:forBlock										-> forBlock
+				| FunValue:value										-> value,
 	
-	FunIf:ifBlock Fun:funCode											-> [ifBlock, funCode]
-				| FunFor:forBlock Fun:funCode							-> [forBlock, funCode]
-				| FunStmnt:funStmnt	Fun:funCode							-> [funStmnt, funCode]
-				| ""													-> 'FunEmpty',
+	FunIf		= "if" "(" FunCond:cond ")" "{" FunCode:ifCode "}"		-> ['FunIf', cond, ifCode]
+				| "if" "(" FunCond:cond ")" "{" FunCode:ifCode "}"
+					"else" "{" FunCode:elseCode "}"						-> ['FunIfElse', cond, ifCode, elseCode],
 	
-	FunIf		= "if" "(" FunCond:condCode ")" "{" Fun:blockCode "}"	-> ['FunIfBlock', condCode, blockCode],
+	FunCond		= FunValue:val1 "==" FunValue:val2						-> ['FunCondEq', val1, val2]
+				| FunValue:val											-> ['FunCondBool', val],
+
+	FunFor		= "for" "(" string:varName "over" FunProp:prop ")"
+					"{" FunCode:forCode "}"								-> ['FunFor', varName, prop, forCode],
 	
-	FunFor		= "for" "(" FunVar:varName "over" FunProp:propName ")" 
-						"{" Fun:funCode "}"								-> ['FunForBlock', varName, propName, funCode],
+	// matches a list of properties and string, seperated by ","
+	// e.g. "Welcome ", user.name ". How are you?"
+	// TODO this recursion could be one better
+	FunValue	= FunString:str "," FunValue:more						-> [str].concat(more)
+				| FunProp:prop "," FunValue:more						-> [prop].concat(more)
+				| FunString:str											-> [str]
+				| _ FunProp:prop _										-> [prop]
+				| XMLNode:xmlNode										-> xmlNode,
 	
-	FunCond		= FunVal:val											-> ['FunCondBool', val]
-				| FunVal:val1 "==" FunVal:val2							-> ['FunCondEq', val1, val2]
-				| FunVal:val1 "!=" FunVal:val2							-> ['FunCondNeq', val1, val2],
-				
-	FunStmnt	= "funStmnt"											-> ['FunStmnt']
-				| XML:xml 												-> xml,
+	FunString	= token('"') az09*:letters token('"')					-> ['FunString', letters.join('')],
 	
-	FunVal		= FunVal:val1 "," FunVal:val2							-> ['FunVal', val1.concat(val2)]
-				| FunProp:prop											-> [prop]
-				| FunString:str											-> [str],
-				
-	FunVar		= "funVar"												-> ['FunVar'],
+	FunProp		= az09+:propName										-> ['FunProp', propName.join('')]
 	
-	FunProp		= az09:first	Az09dot*:rest							-> ['FunProp', first + rest.join('')],
-	Az09dot		= az09:a -> a | '.':d -> d,
-	
-	FunString	= token(") string:str token(")							-> ['FunString', str]
+	// XMLContent	// Override, can include FunProp (FunValue?)
+	// XMLAttr		// Override, attribute value can be FunProp (FunValue?)
 }
 
 ometa FunTranslator <: XMLTranslator {
-	Fun			= XML:xml										-> xml
+	FunTop		= 'FunBegin' [FunStmnt*:stmnts] 'FunEnd'				-> stmnts.join("\n"),
+	
+	FunStmnt	= ['FunIf' :cond :ifCode]								-> 'FunIf'
+				| ['FunIfElse' :cond :ifCode :elseCode]					-> 'FunIfElse'
+				| ['FunFor' :varName :prop :forCode]					-> 'FunFor'
+				| [FunValues:values]									-> ('FunValues: ' + values),
+	
+	FunValues	= FunValue:val1 FunValue:val2							-> (val1 + val2)
+				| FunValue:val											-> val,
+	
+	FunValue	= ['FunProp' :propName]									-> ('FunProp:' + propName)
+				| ['FunString' :str]									-> ('FunString:' + str)
 }

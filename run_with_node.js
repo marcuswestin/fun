@@ -17,7 +17,7 @@ function parseOmetaCode(parser) {
 }
 
 parseOmetaCode('xml')
-parseOmetaCode('fun2')
+parseOmetaCode('fun')
 
 var code = fs.readFileSync(process.argv[2])
 
