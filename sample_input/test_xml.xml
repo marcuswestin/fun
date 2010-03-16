@@ -1,0 +1,7 @@
+<Parent attr="val" asd="asd">
+		<FirstChild/>
+		<SecondChild/>
+		<childWithText fun="yes">
+			This is a text node
+		</childWithText>
+</Parent>
