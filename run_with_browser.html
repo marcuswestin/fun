@@ -4,23 +4,44 @@
 	<body>
 		<script type="text/javascript" src="./lib/require.js"></script>
 		<script type="text/javascript">
-			require('ometa-js/ometa-node');
-			
+		
+		require('./lib/ometa-js/ometa-node');
+		
+		function getCode(path) {
+			return require.get(path) + "\n"
+		}
+		var codeInput = 'sample_input/if_statement.fun'
+		function log(statement) {
+			console.log(statement)
+		}
+		
+		function parseOmetaCode(parser) {
+			var parserCode = getCode('./parsers/' + parser + '.ometa')
 			try {
-				var ometaCode = require.get('./parsers/xml.ometa') + "\n"
-				ometa(ometaCode)
-
-				var calcSource = require.get('./sample_input/test2.xml');
-				var tree = XMLParser.matchAll(calcSource, "xml");
-				console.log(tree)
-
+				ometa(parserCode)
 			} catch(e) {
-				var errorMsg = "Error: " + e;
-				if (e.errorPos) { 
-					errorMsg += " at pos " + e.errorPos + " >>>" + ometaCode.substr(e.errorPos, 30) 
+				var errorMsg = "Error: " + e
+				if (e.errorPos) {
+					errorMsg += " at pos " + e.errorPos + " >>>" + parserCode.substr(e.errorPos, 30) 
 				}
-				setTimeout(function(){ alert(errorMsg) }, 10)
+				log(errorMsg)
+				throw e
 			}
+		}
+
+		parseOmetaCode('xml')
+		parseOmetaCode('fun')
+
+		var code = getCode(codeInput)
+
+		var tree = FunParser.matchAll(code, "FunTop")
+
+		log("\nHere's your AST:\n")
+		log(tree)
+
+		// var translated = FunTranslator.matchAll(tree, "FunTop")
+		// sys.puts(translated)
+		// 
 			
 		</script>
 		

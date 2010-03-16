@@ -1,11 +1,10 @@
 
 
-if (session.user.isLoggedIn)
+if (session.user.isLoggedIn) {
 	<div> "Welcome ", session.user.name </div>
-else
+} else {
 	<div> "You are not logged in" </div>
-
-
+}
 
 
 =========>>>

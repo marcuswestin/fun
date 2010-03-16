@@ -1,9 +1,15 @@
 require('./lib/ometa-js/ometa-node');
-var fs = require('fs')
-var sys = require('sys')
+
+function getCode(path) {
+	return require('fs').readFileSync(path) + "\n"
+}
+var codeInput = process.argv[2]
+function log(statement) {
+	require('sys').puts(statement)
+}
 
 function parseOmetaCode(parser) {
-	var parserCode = fs.readFileSync('./parsers/' + parser + '.ometa') + "\n"
+	var parserCode = getCode('./parsers/' + parser + '.ometa')
 	try {
 		ometa(parserCode)
 	} catch(e) {
@@ -11,7 +17,7 @@ function parseOmetaCode(parser) {
 		if (e.errorPos) {
 			errorMsg += " at pos " + e.errorPos + " >>>" + parserCode.substr(e.errorPos, 30) 
 		}
-		sys.puts(errorMsg)
+		log(errorMsg)
 		throw e
 	}
 }
@@ -19,13 +25,13 @@ function parseOmetaCode(parser) {
 parseOmetaCode('xml')
 parseOmetaCode('fun')
 
-var code = fs.readFileSync(process.argv[2])
+var code = getCode(codeInput)
 
 var tree = FunParser.matchAll(code, "FunTop")
-sys.puts(tree)
 
-sys.puts("\nNow lets translate...\n")
+log("\nHere's your AST:\n")
+log(tree)
 
-var translated = FunTranslator.matchAll(tree, "FunTop")
-sys.puts(translated)
-
+// var translated = FunTranslator.matchAll(tree, "FunTop")
+// sys.puts(translated)
+// 
