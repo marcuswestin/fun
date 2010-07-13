@@ -1,7 +1,0 @@
-Move examples into test cases
-
-Make run_xml_with_node take arguments for what to run instead of hardcoding it
-
-Clean up this freaking directory mess
-
-Make XML support sibling nodes, e.g. <parent><sibling1></sibling1><sibling2></sibling2></parent>
