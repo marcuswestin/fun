@@ -1,9 +1,10 @@
 
-for (message in session.messages)
+for (message in session.messages) {
 	<div> 
 		<img src=message.user.pic />
 		message.user.name " says: " message.text
 	</div>
+}
 
 
 ===============>>>>
