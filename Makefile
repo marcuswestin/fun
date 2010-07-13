@@ -1,34 +1,18 @@
+#############
+# Utilities #
+#############
+.PHONY: deps
+deps: lib/pegjs
 
-.PHONY: require.js deps clean run compile narwhal ometa-js
-
-deps: ometa-js require.js
-
+.PHONY: clean
 clean:
 	rm -f output.js
 	rm -rf lib/*
 	touch lib/empty.txt
 
-# Dependencies
-##############
-ometa-js:
-	git clone git://github.com/marcuswestin/ometa-js.git
-	mv ometa-js lib/
-
-require.js:
-	git clone git://github.com/marcuswestin/require.js.git
-	mv require.js/require.js lib/
-	rm -rf require.js
-
-
-# Editable lib dependencies
-###########################
-edit-ometa-js:
-	git clone git@github.com:marcuswestin/ometa-js.git
-	mv ometa-js lib/
-
-
-# Utilities
-###########
-narwhal:
-	git clone git://github.com/tlrobinson/narwhal.git
-	mv narwhal lib/
+################
+# Dependencies #
+################
+lib/pegjs:
+	git clone http://github.com/dmajda/pegjs.git lib/pegjs
+	cd lib/pegjs; git checkout 1cdce638785003619548ed26f7d7afc3033d886c

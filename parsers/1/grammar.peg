@@ -1,0 +1,45 @@
+declarations_and_values =
+ Statement*
+
+Statement
+ = _ declaration:Declaration _T
+   { return declaration; }
+ / _ value:Value _T
+   { return {type:'INLINE_VALUE', value: value}; }
+ / _ reference:Reference _T
+   { return reference; }
+
+Declaration "Declaration"
+ = 'let' _ name:Name _ '=' _ value:Value 
+   { return {type:'DECLARATION', name:name, value:value}; }
+
+Value
+ = String
+ / Number
+
+Name "Declaration_name"
+ = first:alpha rest:alphanum*
+   { return first + rest.join('') }
+
+Reference "Declaration_reference"
+ = name:Name
+   { return {type:'REFERENCE', name:name}; }
+
+String "String"
+ = '"' value:alphanumspace+ '"'
+   { return {type:'STRING', value:value.join('')}; }
+
+Number "Number"
+ = value:[0-9]+
+  { return {type:'NUMBER', value:parseInt(value)}; }
+
+/***********
+ * Utility *
+ ***********/
+_ "Whitespace" = [\n\t\f ]*
+
+_T "Terminal whitespace" = [\t\f ]* [\n]
+
+alpha "Alpha character" = [a-zA-Z]
+alphanum "Alpha numeric character" = [a-zA-Z0-9]
+alphanumspace = [a-zA-Z0-9 ]
