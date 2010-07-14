@@ -1,43 +1,26 @@
-Fun parser step 1
+Fun parser step 2
 =================
+ * Created Local keyword and Local.mouseX and Local.mouseY
+ * Referencing Local.mouseX and Local.mouseY references the mouse coordinates in real time
 
 Grammar
 -------
-The grammar consists of a series of statements, where each 
-statement is a declaration, a value, or a reference. 
-
- * A declaration assigns an alias to a value. 
- * A value is either an integer or a string. 
- * A reference references the value of a previous declaration.
-
-EOF is not dealt with well - a script is required to end in a
-single newline or it fails to parse.
-
+    
+Added the LocalReference type, which starts with "Local." This should probably
+change to be a nested thing, e.g. Local.mouse.x and Local.mouse.y
+    
 Compiler
 --------
-The compiler takes an AST and compiles it into javascript, which
-executes in an anonymous closure.
 
-Each declaration results in a uniquely named variable local to the
-closure. References to that declaration become references to the
-uniquely named javascript variable.
-
-Each fun statement that resolves to a value acquires an element in 
-the dom (its "dom hook") and outputs code to manipulate the contents 
-of that element.
-
-The compiled javascript includes the contents of a library file lib.js.
+Added support for LocalReferences to use fin.observeLocal. Also added a call
+from document mousemove to update mouseX and mouseY using fin.setLocal
 
 Library
 -------
-A library of javascript utility functions get injected into the
-compiled javascript. This library will serve to assist the compiled
-javascript for things like references to the dom and hooking up 
-to fin.
+Added fun.on for event listeners
 
 Next steps
 ----------
-
- * Create Local keyword and Local.mouse.x/y
  * Add inline XML to grammar and compiler
+ * Allow for positioning a div according to the mouse X/Y coordinates
  * Create function declarations and invocations

@@ -22,8 +22,13 @@ Name "Declaration_name"
    { return first + rest.join('') }
 
 Reference "Declaration_reference"
- = name:Name
+ = localReference:LocalReference
+ / name:Name
    { return {type:'REFERENCE', name:name}; }
+
+LocalReference "Local_reference"
+ = "Local." name:Name
+   { return {type:'LOCAL_REFERENCE', value:name}; }
 
 String "String"
  = '"' value:alphanumspace+ '"'

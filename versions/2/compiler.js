@@ -76,9 +76,17 @@ function parseExpression(ast) {
 			return addToDom(reference.id)
 		case 'INLINE_VALUE':
 			return addToDom(parseExpression(ast.value))
+		case 'LOCAL_REFERENCE':
+			return observeLocalProperty(ast.value)
+		default:
+			return '/* UNDEFINED AST TYPE ' + ast.type + ': ' + JSON.stringify(ast) + ' */'
 	}
 }
 
 function addToDom(val) {
 	return ";(function(){ var hook=fun.getDomHook(); hook.innerHTML=" + val + "; })()"
+}
+
+function observeLocalProperty(property) {
+	return ";(function(){ var hook=fun.getDomHook(); fin.observeLocal('" + property + "', function(op, val){ hook.innerHTML = val }) })()"
 }
