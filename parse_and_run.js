@@ -21,13 +21,13 @@ void(function(){
 
 if (opts.verbose.toLowerCase() == 'false') { opts.verbose = false }
 
-var compiler = require('./parsers/' + opts.grammar + '/compiler'),
-	grammarPath = './parsers/' + opts.grammar + '/grammar.peg'
+var compiler = require('./versions/' + opts.grammar + '/compiler'),
+	grammarPath = './versions/' + opts.grammar + '/grammar.peg'
 
 /*********
  * Parse *
  *********/
-var result = util.parseWithGrammar('./parsers/' + opts.grammar + '/samples/' + opts.code, grammarPath)
+var result = util.parseWithGrammar('./versions/' + opts.grammar + '/samples/' + opts.code, grammarPath)
 if (result.error) {
 	sys.puts("Error: " + result.error)
 } else if (opts.verbose) {
