@@ -10,7 +10,7 @@ var sys = require('sys'),
  * Parse commandline options *
  *****************************/
 var args = process.argv.slice(2),
-	opts = { grammar: 1, code: 'name_and_age.fun', verbose: true }
+	opts = { grammar: 1, code: 'name_and_age.fun', verbose: "true" }
 
 void(function(){
 	for (var i=0, arg; arg = args[i]; i++) {
