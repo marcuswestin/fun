@@ -14,10 +14,24 @@ function boxComment(msg) {
 }
 
 compiler.compile = function(ast) {
+	var libraryPath = __dirname + '/lib.js',
+		libraryCode, 
+		codeOutput
+
+	try { libraryCode = fs.readFileSync(libraryPath) }
+	catch(e) {
+		return { error: "Could not read library file", path: libraryPath, e: e }
+	}
+
+	try { codeOutput = compile(ast) }
+	catch(e) {
+		return { error: "Could not compile", e: e, ast: ast }
+	}
+	
 	return "(function(){\n"
 		+ boxComment("Fun compiled at " + new Date().getTime())
-		+ "\n\n" + boxComment("lib.js") + fs.readFileSync(__dirname + '/lib.js')
-		+ "\n\n" + boxComment("compiled output") + compile(ast)
+		+ "\n\n" + boxComment("lib.js") + libraryCode
+		+ "\n\n" + boxComment("compiled output") + codeOutput
 		+ "\n})();"
 }
 
@@ -45,7 +59,7 @@ function parseExpression(ast) {
 			return ast.value
 		case 'DECLARATION':
 			if (referenceTable[ast.name]) {
-				throw { type: 'Repeat Declaration', name: ast.name }
+				throw { error: 'Repeat Declaration', name: ast.name }
 			}
 			var id = unique(ast.name),
 				reference = ast.value
@@ -54,7 +68,7 @@ function parseExpression(ast) {
 			return ['var', id, '=', compile(reference)].join(' ')
 		case 'REFERENCE':
 			if (!referenceTable[ast.name]) {
-				throw { type: 'Undeclared Reference', name: ast.name }
+				throw { error: 'Undeclared Reference', name: ast.name }
 			}
 			var name = ast.name,
 				reference = referenceTable[ast.name]

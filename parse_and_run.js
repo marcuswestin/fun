@@ -29,16 +29,17 @@ var compiler = require('./versions/' + opts.grammar + '/compiler'),
  *********/
 var result = util.parseWithGrammar('./versions/' + opts.grammar + '/samples/' + opts.code, grammarPath)
 if (result.error) {
-	sys.puts("Error: " + result.error)
+	sys.puts("Fun parse error", JSON.stringify(result))
 } else if (opts.verbose) {
-	sys.puts("AST:", util.prettyPrint(result.ast))
+	sys.puts("AST: <pre>", util.prettyPrint(result.ast), "</pre>")
 }
 
 /***********
  * Compile *
  ***********/
-var output = compiler.compile(result.ast)
-if (opts.verbose) {
-	sys.puts("Output:")
+var compileResult = compiler.compile(result.ast)
+if (compileResult.error) {
+	sys.puts(JSON.stringify(compileResult))
+} else {
+	sys.puts("<body><script src=\"lib/fin/fin.js\"></script><script>" + compileResult + "</script></body>")
 }
-sys.puts("<body><script>" + output + "</script></body>")
