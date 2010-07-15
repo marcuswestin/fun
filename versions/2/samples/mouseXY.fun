@@ -1,4 +1,4 @@
-let demo = "Mouse demo using Local.mouseX and Local.mouseY"
+let demo = "Mouse demo using LocalmouseX and LocalmouseY"
 
 demo
 
