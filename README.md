@@ -5,7 +5,16 @@ A declarative & realtime UI programming language
 Getting started
 ---------------
 Grab dependencies
+	
 	make
+
+If you don't have redis or node installed, fin can help you with that:
+
+	cd lib/fin
+	sudo make install-node
+
+	cd lib/fin
+	sudo make install-redis
 
 Run some fun code
 -----------------
