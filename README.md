@@ -4,10 +4,11 @@ A declarative & realtime UI programming language
 
 Getting started
 ---------------
-	make deps
+Grab dependencies
+	make
 
-Compile some fun codez
-----------------------
+Run some fun code
+-----------------
 with your terminal:
     node parse_and_run.js 1 parsers/1/samples/name_and_age.fun
 
