@@ -79,7 +79,7 @@ function parseExpression(ast) {
 		case 'LOCAL_REFERENCE':
 			return observeLocalProperty(ast.value)
 		default:
-			return '/* UNDEFINED AST TYPE ' + ast.type + ': ' + JSON.stringify(ast) + ' */'
+			return "'UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast) + "'";
 	}
 }
 
