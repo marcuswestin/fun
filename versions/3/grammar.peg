@@ -31,7 +31,7 @@ LocalReference "Local_reference"
    { return {type:'LOCAL_REFERENCE', value:name}; }
 
 String "String"
- = '"' value:[a-zA-Z0-9. ]+ '"'
+ = '"' value:[a-zA-Z0-9.: ]+ '"'
    { return {type:'STRING', value:value.join('')}; }
 
 Number "Number"
