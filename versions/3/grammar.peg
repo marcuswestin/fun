@@ -43,7 +43,11 @@ Number "Number"
  ***********/
 _ "Whitespace" = [\n\t\f ]*
 
-_T "Terminal whitespace" = [\t\f ]* [\n]
+_T "Terminal whitespace"
+ = [\t\f\n ]* EOF
+ / [\t\f ]* [\n]
+
+EOF = !.
 
 alpha "Alpha character" = [a-zA-Z]
 alphanum "Alpha numeric character" = [a-zA-Z0-9]
