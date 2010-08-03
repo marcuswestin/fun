@@ -1,13 +1,18 @@
-all: lib/pegjs lib/fin
+all: workspace lib/pegjs lib/fin
 
 ################
 # Dependencies #
 ################
 .PHONY: clean
 clean:
-	rm -f output.js
+	rm -rf workspace
 	rm -rf lib/*
 	touch lib/empty.txt
+
+workspace:
+	git clone http://github.com/marcuswestin/pegjs-website.git lib/pegjs-website
+	mv lib/pegjs-website/workspace workspace
+	rm -rf lib/pegjs-website
 
 lib/pegjs:
 	git clone http://github.com/dmajda/pegjs.git lib/pegjs
