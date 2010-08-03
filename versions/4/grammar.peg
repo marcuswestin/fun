@@ -1,0 +1,91 @@
+declarations_and_values =
+ Statement*
+
+Statement
+ = _ declaration:Declaration _T
+   { return declaration; }
+ / _ value:Value _T
+   { return {type:'INLINE_VALUE', value: value}; }
+ / _ reference:Reference _T
+   { return reference; }
+
+Declaration "Declaration"
+ = 'let' _ name:Name _ '=' _ value:Value 
+   { return {type:'DECLARATION', name:name, value:value}; }
+
+Value
+ = String
+ / Number
+ / XML
+
+Name "Declaration_name"
+ = first:alpha rest:alphanum*
+   { return first + rest.join('') }
+
+Reference "Declaration_reference"
+ = localReference:LocalReference
+ / name:Name
+   { return {type:'REFERENCE', name:name}; }
+
+LocalReference "Local_reference"
+ = "Local." name:Name
+   { return {type:'LOCAL_REFERENCE', value:name}; }
+
+String "String"
+ = '"' value:[a-zA-Z0-9.: ]+ '"'
+   { return {type:'STRING', value:value.join('')}; }
+
+Number "Number"
+ = value:[0-9]+
+  { return {type:'NUMBER', value:parseInt(value)}; }
+
+/*******
+ * XML *
+ *******/
+XML "XML node"
+ = _ tag:XMLSelfClosing
+   { return {type:'XML_NODE', name:tag.name, attributes:tag.attributes, content: null}; }
+
+ / _ openTag:XMLOpen _ closeTag:XMLClose
+   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content: null}; } // TODO Enforce balanced tags
+
+ / _ openTag:XMLOpen xml:XML closeTag:XMLClose
+   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content: xml}; } // TODO Enforce balanced tags
+
+ / _ openTag:XMLOpen content:XMLContent closeTag:XMLClose
+   { return {type:'XML_NODE', name:openTag.name, attributes:opneTag.attributes, content: content}; } // TODO Enforce balanced tags
+
+XMLOpen	"XML open tag"
+ = '<' _ tagName:Name _ attributes:XMLAttribute* '>'
+   { return {name:tagName, attributes:attributes}; }
+
+XMLClose "XML close tag"
+ = '</' tagName:Name '>'
+   { return {name:tagName}; }
+
+XMLSelfClosing "Self closing XML tag"
+ = '<' tagName:Name _ attributes:XMLAttribute* '/>'
+   { return {name:tagName, attributes:attributes}; }
+
+// XMLContent matches content of an XML node
+XMLContent "XML node content"
+ = content:[a-zA-Z0-9.: ]
+   { return {type: 'XML_CONTENT', content: content}; }
+
+XMLAttribute "XML node attribute"
+ = name:Name "=" value:String _
+   { return {type: 'XML_ATTRIBUTES', name:name, value:value}; }
+
+/***********
+ * Utility *
+ ***********/
+_ "Whitespace" = [\n\t\f ]*
+
+_T "Terminal whitespace"
+ = [\t\f\n ]* EOF
+ / [\t\f ]* [\n]
+
+EOF = !.
+
+alpha "Alpha character" = [a-zA-Z]
+alphanum "Alpha numeric character" = [a-zA-Z0-9]
