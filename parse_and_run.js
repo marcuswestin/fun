@@ -10,7 +10,7 @@ var sys = require('sys'),
  * Parse commandline options *
  *****************************/
 var args = process.argv.slice(2),
-	opts = { grammar: 3, code: 'mouseXY.fun', verbose: "true" }
+	opts = { code: 'mouseXY.fun', verbose: "true" }
 
 void(function(){
 	for (var i=0, arg; arg = args[i]; i++) {
@@ -21,13 +21,13 @@ void(function(){
 
 if (opts.verbose.toLowerCase() == 'false') { opts.verbose = false }
 
-var compiler = require('./versions/' + opts.grammar + '/compiler'),
-	grammarPath = './versions/' + opts.grammar + '/grammar.peg'
+var compiler = require('./language/compiler'),
+	grammarPath = './language/grammar.peg'
 
 /*********
  * Parse *
  *********/
-var result = util.parseWithGrammar('./versions/' + opts.grammar + '/samples/' + opts.code, grammarPath)
+var result = util.parseWithGrammar('./' + opts.code, grammarPath)
 if (result.error) {
 	sys.puts("Fun parse error", JSON.stringify(result))
 } else if (opts.verbose) {

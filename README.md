@@ -1,6 +1,6 @@
 fun
 ===
-A declarative & realtime UI programming language
+A declarative webapp programming language with global realtime synchronization of state
 
 Getting started
 ---------------
@@ -19,7 +19,7 @@ If you don't have redis or node installed, fin can help you with that:
 Run some fun code
 -----------------
 with your terminal:
-    node parse_and_run.js 1 parsers/1/samples/name_and_age.fun
+    node parse_and_run.js code=fun_code/mouseXY.fun
 
 or your browser:
-    http://localhost/fun/parse_and_run.php
+    http://localhost/fun/parse_and_run.php?code=mouseXY.fun

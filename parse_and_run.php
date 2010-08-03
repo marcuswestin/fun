@@ -1,6 +1,6 @@
 <?php
     $grammar = isset($_GET['grammar']) ? "grammar=" . $_GET['grammar'] : '';
-    $code = isset($_GET['code']) ? "code=" . $_GET['code'] : '';
+    $code = isset($_GET['code']) ? "code=fun_code/" . $_GET['code'] : '';
     $verbose = isset($_GET['verbose']) ? "verbose=true" : "verbose=false";
     
 	$output = array();
