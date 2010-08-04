@@ -1,4 +1,5 @@
 var fs = require('fs'),
+	util = require('./compile_util'),
 	compiler = exports,
 	uniqueId = 0,
 	referenceTable = {}
@@ -37,21 +38,17 @@ compiler.compile = function(ast) {
 
 function compile(ast) {
 	if (ast instanceof Array) {
-		return parseExpressions(ast)
+		var result = []
+		for (var i=0; i<ast.length; i++) {
+			result.push(compile(ast[i]) + "\n")
+		}
+		return result.join("")
 	} else if (typeof ast == 'object') {
-		return parseExpression(ast)
+		return _parseExpression(ast) + "\n"
 	}
 }
 
-function parseExpressions(ast) {
-	var result = ''
-	for (var i=0; i<ast.length; i++) {
-		result += compile(ast[i]) + ";\n"
-	}
-	return result
-}
-
-function parseExpression(ast) {
+function _parseExpression(ast) {
 	switch (ast.type) {
 		case 'STRING':
 			return '"' + ast.value + '"'
@@ -73,20 +70,48 @@ function parseExpression(ast) {
 			var name = ast.name,
 				reference = referenceTable[ast.name]
 			
-			return addToDom(reference.id)
+			return getInlineValueCode(reference.id)
 		case 'INLINE_VALUE':
-			return addToDom(parseExpression(ast.value))
+			return getInlineValueCode(_parseExpression(ast.value))
 		case 'LOCAL_REFERENCE':
-			return observeLocalProperty(ast.value)
+			return getLocalReferenceCode(ast.value)
+		case 'IF_ELSE':
+			return getIfElseCode(ast.condition, ast.ifTrue, ast.ifFalse)
 		default:
 			return "'UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast) + "'";
 	}
 }
 
-function addToDom(val) {
-	return ";(function(){ var hook=fun.getDomHook(); hook.innerHTML=" + val + "; })()"
+function getInlineValueCode(val) {
+	return new util.CodeGenerator()
+		.closureStart()
+			.assign('hook', 'fun.getDomHook()')
+			.assign('hook.innerHTML', val)
+		.closureEnd()
 }
 
-function observeLocalProperty(property) {
-	return ";(function(){ var hook=fun.getDomHook(); fin.observeLocal('" + property + "', function(op, val){ hook.innerHTML = val }) })()"
+function getLocalReferenceCode(property) {
+	return new util.CodeGenerator()
+		.closureStart()
+			.assign('hook', 'fun.getDomHook()')
+			.code('fin.observeLocal('+util.quote(property)+', function(mut,val){ hook.innerHTML=val })')
+		.closureEnd()
 }
+
+function getIfElseCode(cond, trueAST, elseAST) {
+	var compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')'
+	return new util.CodeGenerator()
+		.closureStart('ifPath', 'elsePath')
+			.assign('blocker', 'fun.getCallbackBlock(evaluate)')
+			.observe(cond.left, 'blocker.addBlock()')
+			.observe(cond.right, 'blocker.addBlock()')
+			.assign('lastTime', undefined)
+			.funcStart('evaluate')
+				.assign('thisTime', compareCode)
+				.returnIfEqual('thisTime', 'lastTime')
+				.assign('lastTime', 'thisTime')
+				.ifElse('thisTime', 'ifPath()', 'elsePath()')
+			.funcEnd()
+		.closureEnd('function(){'+compile(trueAST)+'}', 'function(){'+compile(elseAST)+'}')
+}
+

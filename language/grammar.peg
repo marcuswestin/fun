@@ -1,13 +1,33 @@
-declarations_and_values =
+Fun =
  Statement*
 
 Statement
  = _ declaration:Declaration _T
    { return declaration; }
+ / _ ifElse:IfElse _T
+   { return ifElse }
  / _ value:Value _T
    { return {type:'INLINE_VALUE', value: value}; }
  / _ reference:Reference _T
    { return reference; }
+
+/************************
+ * If/Else & Conditions *
+ ************************/
+IfElse
+ = 'if' _ '(' _ cond:Condition _ ')' _ '{' ifTrue:Fun '}' _ 'else' _ '{' ifFalse:Fun '}' _T
+   { return {type:'IF_ELSE', condition:cond, ifTrue:ifTrue, ifFalse:ifFalse}; }
+
+Condition
+ = left:Reference _ comparison:Comparison _ right:Reference
+   { return {type:'CONDITION', left:left, right:right, comparison:comparison }; }
+
+Comparison
+ = '>'
+ / '>='
+ / '<'
+ / '<='
+ / '=='
 
 Declaration "Declaration"
  = 'let' _ name:Name _ '=' _ value:Value 
@@ -23,7 +43,9 @@ Name "Declaration_name"
    { return first + rest.join('') }
 
 Reference "Declaration_reference"
- = "Local." name:Name
+ = String
+ / Number
+ / "Local." name:Name
    { return {type:'LOCAL_REFERENCE', value:name}; }
  / name:Name
    { return {type:'REFERENCE', name:name}; }

@@ -16,6 +16,8 @@
 		}
 	}
 	
+	fun.getCallbackBlock = blockCallback
+	
 	fun.on(document, 'mousemove', function(e) {
 		fin.setLocal('mouseX', e.clientX)
 		fin.setLocal('mouseY', e.clientY)
