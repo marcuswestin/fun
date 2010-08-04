@@ -8,7 +8,7 @@
 	fun.getDOMHook = function(parentHookID, hookID) {
 		if (hooks[hookID]) { return hooks[hookID] }
 		var parent = hooks[parentHookID]
-		return hooks[hookID] = parent.appendChild(doc.createElement('div'))
+		return hooks[hookID] = parent.appendChild(doc.createElement('span'))
 	}
 	
 	fun.setDOMHook = function(hookID, domNode) {
