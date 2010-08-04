@@ -34,7 +34,7 @@ String "String"
 
 Number "Number"
  = value:[0-9]+
-  { return {type:'NUMBER', value:parseInt(value)}; }
+  { return {type:'NUMBER', value:parseInt(value.join(''))}; }
 
 /*******
  * XML *
