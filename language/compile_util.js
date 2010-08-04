@@ -35,14 +35,16 @@ exports.CodeGenerator = Class(function() {
 		return this._add(';(function(' + join(arguments, ',') + '){', 1);
 	}
 	this.closureEnd = function() {
-		return this._add('})(' + join(arguments, ',') + ');', -1)
+		this._indent.length -= 1
+		return this._add('})(' + join(arguments, ',') + ');')
 	}
 
-	this.funcStart = function(name) { return this._add('function ' + name + '(){', 1) }
-	this.funcEnd = function() {
+	this.functionStart = function(name) { return this._add('function ' + name + '(){', 1) }
+	this.functionEnd = function() {
 		this._indent.length -= 1
 		return this._add('}')
 	}
+	this.callFunction = function(name) { return this._add(name + '()') }
 	
 	this.assign = function(name, value) {
 		this._add((this._variables[name] || name.match(/[\[\.]/) ? '' : 'var ') + name + ' = ' + value)
