@@ -15,7 +15,7 @@ if (100 < Local.mouseY) {
 }
 
 if (Local.mouseY > Local.mouseX) {
-	"mouse.y is greater than mouse.x"
+	"mouse.y > mouse.x"
 } else {
-	"mouse.y is less than mouse.x"
+	"mouse.y <= mouse.x"
 }
