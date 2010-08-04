@@ -14,17 +14,27 @@ function boxComment(msg) {
 		+ ' *' + arr.join('*') + "**/\n"
 }
 
+function getHookID() { return unique('dom') }
+
+function getHookCode(parentHook, hookID) {
+	hookID = hookID || getHookID()
+	return 'fun.getDOMHook('+util.quote(parentHook)+', '+util.quote(hookID)+')'
+}
+
 compiler.compile = function(ast) {
 	var libraryPath = __dirname + '/lib.js',
 		libraryCode, 
 		codeOutput
-
+	
 	try { libraryCode = fs.readFileSync(libraryPath) }
 	catch(e) {
 		return { error: "Could not read library file", path: libraryPath, e: e }
 	}
-
-	try { codeOutput = compile(ast) }
+	
+	var domRootHookID = getHookID()
+	
+	
+	try { codeOutput = compile(domRootHookID, ast) }
 	catch(e) {
 		return { error: "Could not compile", e: e, ast: ast }
 	}
@@ -32,26 +42,27 @@ compiler.compile = function(ast) {
 	return "(function(){\n"
 		+ boxComment("Fun compiled at " + new Date().getTime())
 		+ "\n\n" + boxComment("lib.js") + libraryCode
+		+ "\n\n" + 'fun.setDOMHook('+util.quote(domRootHookID)+', document.body)'
 		+ "\n\n" + boxComment("compiled output") + codeOutput
 		+ "\n})();"
 }
 
-function compile(ast) {
+function compile(hookID, ast) {
 	if (ast instanceof Array) {
 		var result = []
 		for (var i=0; i<ast.length; i++) {
-			result.push(compile(ast[i]) + "\n")
+			result.push(compile(hookID, ast[i]) + "\n")
 		}
 		return result.join("")
 	} else if (typeof ast == 'object') {
-		return _parseExpression(ast) + "\n"
+		return _parseExpression(hookID, ast) + "\n"
 	}
 }
 
-function _parseExpression(ast) {
+function _parseExpression(hookID, ast) {
 	switch (ast.type) {
 		case 'STRING':
-			return '"' + ast.value + '"'
+			return util.quote(ast.value)
 		case 'NUMBER':
 			return ast.value
 		case 'DECLARATION':
@@ -62,7 +73,7 @@ function _parseExpression(ast) {
 				reference = ast.value
 			
 			referenceTable[ast.name] = { id: id, reference: reference }
-			return ['var', id, '=', compile(reference)].join(' ')
+			return 'var '+id+' = '+compile(hookID, reference)
 		case 'REFERENCE':
 			if (!referenceTable[ast.name]) {
 				throw { error: 'Undeclared Reference', name: ast.name }
@@ -70,48 +81,63 @@ function _parseExpression(ast) {
 			var name = ast.name,
 				reference = referenceTable[ast.name]
 			
-			return getInlineValueCode(reference.id)
+			return getInlineValueCode(hookID, reference.id)
 		case 'INLINE_VALUE':
-			return getInlineValueCode(_parseExpression(ast.value))
+			return getInlineValueCode(hookID, _parseExpression(hookID, ast.value))
 		case 'LOCAL_REFERENCE':
-			return getLocalReferenceCode(ast.value)
+			return getLocalReferenceCode(hookID, ast.value)
 		case 'IF_ELSE':
-			return getIfElseCode(ast.condition, ast.ifTrue, ast.ifFalse)
+			return getIfElseCode(hookID, ast.condition, ast.ifTrue, ast.ifFalse)
 		default:
-			return "'UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast) + "'";
+			return util.quote("UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast));
 	}
 }
 
-function getInlineValueCode(val) {
+function getInlineValueCode(parentHook, val) {
 	return new util.CodeGenerator()
 		.closureStart()
-			.assign('hook', 'fun.getDomHook()')
+			.assign('hook', getHookCode(parentHook))
 			.assign('hook.innerHTML', val)
 		.closureEnd()
 }
 
-function getLocalReferenceCode(property) {
+function getLocalReferenceCode(parentHook, property) {
 	return new util.CodeGenerator()
 		.closureStart()
-			.assign('hook', 'fun.getDomHook()')
+			.assign('hook', getHookCode(parentHook))
 			.code('fin.observeLocal('+util.quote(property)+', function(mut,val){ hook.innerHTML=val })')
 		.closureEnd()
 }
 
-function getIfElseCode(cond, trueAST, elseAST) {
-	var compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')'
+function getIfElseCode(parentHook, cond, trueAST, elseAST) {
+	var compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')',
+		ifHookID = getHookID(),
+		elseHookID = getHookID(),
+		ifHookCode = getHookCode(parentHook, ifHookID),
+		elseHookCode = getHookCode(parentHook, elseHookID)
+	
 	return new util.CodeGenerator()
 		.closureStart('ifPath', 'elsePath')
+			.code(ifHookCode) // force creation of the dom hooks for proper ordering
+			.code(elseHookCode)
 			.assign('blocker', 'fun.getCallbackBlock(evaluate)')
 			.observe(cond.left, 'blocker.addBlock()')
 			.observe(cond.right, 'blocker.addBlock()')
 			.assign('lastTime', undefined)
-			.funcStart('evaluate')
+			.functionStart('togglePath')
+				.assign(ifHookCode+'.style.display', '(lastTime ? "block" : "none")')
+				.assign(elseHookCode+'.style.display', '(lastTime ? "none" : "block")')
+				.ifElse('lastTime', 'ifPath()', 'elsePath()')
+			.functionEnd()
+			.functionStart('evaluate')
 				.assign('thisTime', compareCode)
 				.returnIfEqual('thisTime', 'lastTime')
 				.assign('lastTime', 'thisTime')
-				.ifElse('thisTime', 'ifPath()', 'elsePath()')
-			.funcEnd()
-		.closureEnd('function(){'+compile(trueAST)+'}', 'function(){'+compile(elseAST)+'}')
+				.callFunction('togglePath')
+			.functionEnd()
+		.closureEnd(
+			'\nfunction ifPath(){'+compile(ifHookID, trueAST)+'}', 
+			'\nfunction elsePath(){'+compile(elseHookID, elseAST)+'}'
+		)
 }
 

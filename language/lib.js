@@ -2,12 +2,19 @@
 	jsio('from shared.javascript import blockCallback')
 	
 	var fun = window.fun = {},
-		doc = document
+		doc = document,
+		hooks = window.hooks = {}
 	
-	fun.getDomHook = function() {
-		return doc.body.appendChild(doc.createElement('div'))
+	fun.getDOMHook = function(parentHookID, hookID) {
+		if (hooks[hookID]) { return hooks[hookID] }
+		var parent = hooks[parentHookID]
+		return hooks[hookID] = parent.appendChild(doc.createElement('div'))
 	}
-
+	
+	fun.setDOMHook = function(hookID, domNode) {
+		hooks[hookID] = domNode
+	}
+	
 	fun.on = function(element, eventName, handler) {
 		if (element.addEventListener) {
 			element.addEventListener(eventName, handler, false)
