@@ -23,13 +23,10 @@ Name "Declaration_name"
    { return first + rest.join('') }
 
 Reference "Declaration_reference"
- = localReference:LocalReference
- / name:Name
-   { return {type:'REFERENCE', name:name}; }
-
-LocalReference "Local_reference"
  = "Local." name:Name
    { return {type:'LOCAL_REFERENCE', value:name}; }
+ / name:Name
+   { return {type:'REFERENCE', name:name}; }
 
 String "String"
  = '"' value:[a-zA-Z0-9.: ]+ '"'
