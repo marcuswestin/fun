@@ -51,7 +51,7 @@ Reference "Declaration_reference"
    { return {type:'REFERENCE', name:name}; }
 
 String "String"
- = '"' value:[a-zA-Z0-9.: ]+ '"'
+ = '"' value:[a-zA-Z0-9.:<>= ]+ '"'
    { return {type:'STRING', value:value.join('')}; }
 
 Number "Number"
