@@ -1,6 +1,14 @@
 TODO
 ====
 
+Add the Session state
+---------------------
+The Session object has access to the user
+    <div>
+        "Welcome" Session.user.name
+        <img src=Session.user.smallPictureURL>
+    </div>
+
 Allow Objects as attribute values
 ---------------------------------
 	<div style={ left: Local.MouseX + 'px' } />
