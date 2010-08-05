@@ -15,7 +15,7 @@ Statement
  * If/Else & Conditions *
  ************************/
 IfElse
- = 'if' _ '(' _ cond:Condition _ ')' _ '{' ifTrue:Fun '}' _ 'else' _ '{' ifFalse:Fun '}' _T
+ = 'if' _ '(' _ cond:Condition _ ')' _ '{' ifTrue:Fun '}' _ 'else' _ '{' ifFalse:Fun '}'
    { return {type:'IF_ELSE', condition:cond, ifTrue:ifTrue, ifFalse:ifFalse}; }
 
 Condition
@@ -93,11 +93,11 @@ XMLAttribute "XML node attribute"
 /***********
  * Utility *
  ***********/
-_ "Whitespace" = [\n\t\f ]*
+_ "Whitespace" = [\t\f\n ]*
 
-_T "Terminal whitespace"
+_T "Possibly terminal whitespace"
  = [\t\f\n ]* EOF
- / [\t\f ]* [\n]
+ / _
 
 EOF = !.
 
