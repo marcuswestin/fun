@@ -53,6 +53,8 @@ Reference "Declaration_reference"
 String "String"
  = '"' value:[^"\n]+ '"'
    { return {type:'STRING', value:value.join('')}; }
+ / "'" value:[^'\n]+ "'"
+   { return {type:'STRING', value:value.join('')}; }
 
 Number "Number"
  = value:[0-9]+
