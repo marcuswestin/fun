@@ -23,10 +23,10 @@ Condition
    { return {type:'CONDITION', left:left, right:right, comparison:comparison }; }
 
 Comparison
- = '>'
- / '>='
- / '<'
+ = '>='
+ / '>'
  / '<='
+ / '<'
  / '=='
 
 Declaration "Declaration"
