@@ -110,11 +110,11 @@ function getLocalReferenceCode(parentHook, property) {
 }
 
 function getIfElseCode(parentHook, cond, trueAST, elseAST) {
-	var compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')',
-		ifHookID = getHookID(),
+	var ifHookID = getHookID(),
 		elseHookID = getHookID(),
 		ifHookCode = getHookCode(parentHook, ifHookID),
-		elseHookCode = getHookCode(parentHook, elseHookID)
+		elseHookCode = getHookCode(parentHook, elseHookID),
+		compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')'
 	
 	return new util.CodeGenerator()
 		.closureStart('ifPath', 'elsePath')
