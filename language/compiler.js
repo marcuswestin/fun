@@ -120,7 +120,7 @@ function getIfElseCode(parentHook, cond, trueAST, elseAST) {
 		.closureStart('ifPath', 'elsePath')
 			.code(ifHookCode) // force creation of the dom hooks for proper ordering
 			.code(elseHookCode)
-			.assign('blocker', 'fun.getCallbackBlock(evaluate)')
+			.assign('blocker', 'fun.getCallbackBlock(evaluate, {fireOnce: false})')
 			.observe(cond.left, 'blocker.addBlock()')
 			.observe(cond.right, 'blocker.addBlock()')
 			.assign('lastTime', undefined)
