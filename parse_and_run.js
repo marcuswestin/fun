@@ -27,11 +27,26 @@ var compiler = require('./language/compiler'),
 /*********
  * Parse *
  *********/
-var result = util.parseWithGrammar('./' + opts.code, grammarPath)
+var code = fs.readFileSync('./' + opts.code),
+	result = util.parseWithGrammar(code, grammarPath)
 if (result.error) {
 	sys.puts("Fun parse error", JSON.stringify(result))
 } else if (opts.verbose) {
-	sys.puts("AST: <pre>", util.prettyPrint(result.ast), "</pre>")
+	var styleArr = [],
+		styles = { position:'fixed', top:'5px', right:'5px', width:'500px', 
+				height:'95%', border:'1px solid #333', overflow:'auto', padding: '2px' }
+		
+	
+	for (var key in styles) { styleArr.push(key+':'+styles[key]) }
+	
+	var output =
+		'<div style="'+styleArr.join('; ')+'">'
+			+ "<b>Fun</b><pre>" + code + "</pre>"
+			+ "<br/><br/>"
+			+ "<b>AST</b> <pre>" + util.prettyPrint(result.ast) + "</pre>"
+		+ '</div>'
+	
+	sys.puts(output)
 }
 
 /***********

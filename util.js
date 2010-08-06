@@ -18,9 +18,8 @@ util.errorMsg = function(type, e) {
 	return type + ' error: ' + msg
 }
 
-util.parseWithGrammar = function(codePath, grammarPath) {
-	var code = fs.readFileSync(codePath),
-		grammar = fs.readFileSync(grammarPath),
+util.parseWithGrammar = function(code, grammarPath) {
+	var grammar = fs.readFileSync(grammarPath),
 		parser,
 		ast
 	
