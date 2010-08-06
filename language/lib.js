@@ -1,5 +1,5 @@
 (function() {
-	jsio('from shared.javascript import blockCallback')
+	jsio('from shared.javascript import bind, blockCallback')
 	
 	var fun = window.fun = {},
 		doc = document,
@@ -23,10 +23,24 @@
 		}
 	}
 	
+	fun.set = function(id, propName, callback) {
+		if (id == 'LOCAL') { fin.setLocal(propName, callback) }
+		else if (id == 'GLOBAL') { fin.connect(bind(fin, 'setGlobal', propName, callback)) }
+		else { fin.connect(bind(fin, 'set', id, propName, callback)) }
+	}
+	
+	fun.observe = function(id, propName, callback) {
+		if (id == 'LOCAL') { fin.observeLocal(propName, callback) }
+		else if (id == 'GLOBAL') { fin.connect(bind(fin, 'observeGlobal', propName, callback)) }
+		else { fin.connect(bind(fin, 'observe', id, propName, callback)) }
+	}
+	
 	fun.getCallbackBlock = blockCallback
 	
 	fun.on(document, 'mousemove', function(e) {
-		fin.setLocal('mouseX', e.clientX)
-		fin.setLocal('mouseY', e.clientY)
+		fun.set('LOCAL', 'mouseX', e.clientX)
+		fun.set('LOCAL', 'mouseY', e.clientY)
 	})
+	fun.set('LOCAL', 'mouseX', 0)
+	fun.set('LOCAL', 'mouseY', 0)
 })();

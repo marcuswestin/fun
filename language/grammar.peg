@@ -47,6 +47,8 @@ Reference "Declaration_reference"
  / Number
  / "Local." name:Name
    { return {type:'LOCAL_REFERENCE', value:name}; }
+ / "Global." name:Name
+   { return {type:'GLOBAL_REFERENCE', value:name}; }
  / name:Name
    { return {type:'REFERENCE', name:name}; }
 

@@ -12,6 +12,8 @@ exports.getFinCached = function(reference) {
 	
 	if (type == 'LOCAL_REFERENCE') {
 		return 'fin.getLocalCachedMutation('+quote(name)+').value'
+	} else if (type == 'LOCAL_REFERENCE') {
+		return 'fin.getGlobalCachedMutation('+quote(name)+').value'
 	} else if (type == 'NUMBER') {
 		return reference.value
 	} else {
@@ -27,7 +29,7 @@ exports.CodeGenerator = Class(function() {
 		this._variables = {}
 	}
 	
-	this.code = function(code) { return this._add(code) }
+	this.code = function(code) { return this._add(join(arguments)) }
 	
 	this.log = function() { return this._add('console.log('+join(arguments)+')') }
 	
@@ -44,7 +46,10 @@ exports.CodeGenerator = Class(function() {
 		this._indent.length -= 1
 		return this._add('}')
 	}
-	this.callFunction = function(name) { return this._add(name + '()') }
+	this.callFunction = function(name) {
+		var args = Array.prototype.slice.call(arguments, 1)
+		return this._add(name + '(' + args.join(', ') + ')')
+	}
 	
 	this.assign = function(name, value) {
 		this._add((this._variables[name] || name.match(/[\[\.]/) ? '' : 'var ') + name + ' = ' + value)
@@ -71,6 +76,8 @@ exports.CodeGenerator = Class(function() {
 		
 		if (type == 'LOCAL_REFERENCE') {
 			return this._add('fin.observeLocal('+quote(name)+', '+callbackCode+')')
+		} else if (type == 'GLOBAL_REFERENCE') {
+			return this._add('fin.observeGlobal('+quote(name)+', '+callbackCode+')')
 		} else if (type == 'NUMBER') {
 			return this
 		} else {

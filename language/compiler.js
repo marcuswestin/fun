@@ -85,7 +85,9 @@ function _parseExpression(hookID, ast) {
 		case 'INLINE_VALUE':
 			return getInlineValueCode(hookID, _parseExpression(hookID, ast.value))
 		case 'LOCAL_REFERENCE':
-			return getLocalReferenceCode(hookID, ast.value)
+			return getReferenceCode('LOCAL', hookID, ast.value)
+		case 'GLOBAL_REFERENCE':
+			return getReferenceCode('GLOBAL', hookID, ast.value)
 		case 'IF_ELSE':
 			return getIfElseCode(hookID, ast.condition, ast.ifTrue, ast.ifFalse)
 		default:
@@ -101,11 +103,11 @@ function getInlineValueCode(parentHook, val) {
 		.closureEnd()
 }
 
-function getLocalReferenceCode(parentHook, property) {
+function getReferenceCode(id, parentHook, property) {
 	return new util.CodeGenerator()
 		.closureStart()
 			.assign('hook', getHookCode(parentHook))
-			.code('fin.observeLocal('+util.quote(property)+', function(mut,val){ hook.innerHTML=val })')
+			.callFunction('fun.observe', util.quote(id), util.quote(property), 'function(mut,val){ hook.innerHTML=val }')
 		.closureEnd()
 }
 
