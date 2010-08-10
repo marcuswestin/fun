@@ -17,7 +17,7 @@ Statement
 /************************
  * If/Else & Conditions *
  ************************/
-IfElse
+IfElse "If/Else statement"
  = 'if' _ '(' _ cond:Condition _ ')' _ '{' ifTrue:Fun '}' _ 'else' _ '{' ifFalse:Fun '}'
    { return {type:'IF_ELSE', condition:cond, ifTrue:ifTrue, ifFalse:ifFalse}; }
 
