@@ -1,15 +1,17 @@
 <h1 test="asd">"Damn"
 	<div style="color:red;">"Bamn"</div></h1>
 
-if (Local.mouseX > 150) {
-	<ol>
+<ol>
+if (Local.mouseY > 150) {
 		<li>"ASD"</li>
 		<li>"QWE"</li>
 		<li>"ZXC"</li>
-	</ol>
 } else {
-	"QWE"
+		<li>"ZXC"</li>
+		<li>"QWE"</li>
+		<li>"ASD"</li>
 }
+</ol>
 
 <div>"Local.mouseX: " Local.mouseX </div>
 <div>"Local.mouseY: " Local.mouseY </div>
