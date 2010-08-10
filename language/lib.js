@@ -5,10 +5,14 @@
 		doc = document,
 		hooks = window.hooks = {}
 	
-	fun.getDOMHook = function(parentHookID, hookID) {
+	fun.getDOMHook = function(parentHookID, hookID, tag, attrs) {
 		if (hooks[hookID]) { return hooks[hookID] }
 		var parent = hooks[parentHookID]
-		return hooks[hookID] = parent.appendChild(doc.createElement('span'))
+		var hook = hooks[hookID] = parent.appendChild(doc.createElement(tag||'span'))
+		for (var key in attrs) {
+			hook.setAttribute(key, attrs[key])
+		}
+		return hook;
 	}
 	
 	fun.setDOMHook = function(hookID, domNode) {

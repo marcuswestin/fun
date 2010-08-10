@@ -16,9 +16,16 @@ function boxComment(msg) {
 
 function getHookID() { return unique('dom') }
 
-function getHookCode(parentHook, hookID) {
+function getHookCode(parentHook, hookID, tagName, attrs) {
 	hookID = hookID || getHookID()
-	return 'fun.getDOMHook('+util.quote(parentHook)+', '+util.quote(hookID)+')'
+	attrs = attrs || []
+	var attrKVPs = {}
+	
+	return 'fun.getDOMHook('
+		+ util.quote(parentHook) + ', '
+		+ util.quote(hookID) + ', '
+		+ util.quote(tagName||'span') + ', '
+		+ JSON.stringify(attrs) + ')'
 }
 
 compiler.compile = function(ast) {
@@ -90,9 +97,25 @@ function _parseExpression(hookID, ast) {
 			return getReferenceCode('GLOBAL', hookID, ast.value)
 		case 'IF_ELSE':
 			return getIfElseCode(hookID, ast.condition, ast.ifTrue, ast.ifFalse)
+		case 'XML_NODE':
+			return getXMLCode(hookID, ast.name, ast.attributes, ast.content)
 		default:
 			return util.quote("UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast));
 	}
+}
+
+function getXMLCode(parentHook, tagName, attrList, content) {
+	var newHookID = getHookID(),
+		attrs = {};
+	
+	for (var i=0, attr; attr = attrList[i]; i++) {
+		var valueNode = attr.value // e.g. STRING, NUMBER
+		attrs[attr.name] = valueNode.value
+	}
+	
+	return new util.CodeGenerator()
+		.code(getHookCode(parentHook, newHookID, tagName, attrs))
+		.toString() + compile(newHookID, content)
 }
 
 function getInlineValueCode(parentHook, val) {

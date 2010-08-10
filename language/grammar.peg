@@ -2,7 +2,8 @@ Fun =
  Statement*
 
 Statement
- = _ declaration:Declaration _T
+ = XML _T
+ / _ declaration:Declaration _T
    { return declaration; }
  / _ ifElse:IfElse _T
    { return ifElse }
@@ -30,13 +31,29 @@ Comparison
  / '=='
 
 Declaration "Declaration"
- = 'let' _ name:Name _ '=' _ value:Value 
+ = 'let' _ name:Name _ '=' _ value:ReferenceDeclaration 
    { return {type:'DECLARATION', name:name, value:value}; }
 
 Value
  = String
  / Number
- / XML
+
+ReferenceDeclaration
+ = Template
+ / String
+ / Number
+
+Template
+ = 'template' _ '(' _ args:ArgumentList _ ')' _ '{' code:Fun '}'
+   { return {type:'TEMPLATE_DEFINITION', args: args, code: code}; }
+
+ArgumentList
+ = name:Name _ ',' _ args:ArgumentList
+   { return [name].concat(args) }
+ / name:Name
+   { return [name] }
+ / _
+   { return [] }
 
 Name "Declaration_name"
  = first:alpha rest:alphanum*
@@ -65,18 +82,11 @@ Number "Number"
 /*******
  * XML *
  *******/
-XML "XML node"
+XML
  = _ tag:XMLSelfClosing
-   { return {type:'XML_NODE', name:tag.name, attributes:tag.attributes, content: null}; }
-
- / _ openTag:XMLOpen _ closeTag:XMLClose
-   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content: null}; } // TODO Enforce balanced tags
-
- / _ openTag:XMLOpen xml:XML closeTag:XMLClose
-   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content: xml}; } // TODO Enforce balanced tags
-
+   { return {type:'XML_NODE', name:tag.name, attributes:tag.attributes, content:[]}; }
  / _ openTag:XMLOpen _ content:Fun _ closeTag:XMLClose
-   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content: content}; } // TODO Enforce balanced tags
+   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content:content}; }
 
 XMLOpen	"XML open tag"
  = '<' _ tagName:Name _ attributes:XMLAttribute* '>'
