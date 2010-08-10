@@ -11,6 +11,8 @@ Statement
    { return {type:'INLINE_VALUE', value: value}; }
  / _ reference:Reference _T
    { return reference; }
+ / _ '//' [^\n]*
+   { return [] }
 
 /************************
  * If/Else & Conditions *
