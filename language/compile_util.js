@@ -12,7 +12,7 @@ exports.getFinCached = function(reference) {
 	
 	if (type == 'LOCAL_REFERENCE') {
 		return 'fin.getLocalCachedMutation('+quote(name)+').value'
-	} else if (type == 'LOCAL_REFERENCE') {
+	} else if (type == 'GLOBAL_REFERENCE') {
 		return 'fin.getGlobalCachedMutation('+quote(name)+').value'
 	} else if (type == 'NUMBER') {
 		return reference.value
