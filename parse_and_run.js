@@ -4,7 +4,8 @@
 var sys = require('sys'),
 	fs = require('fs'),
 	child_process = require('child_process'),
-	util = require('./util')
+	util = require('./util'),
+	syntaxHighlighter = require('./syntaxHighlighter')
 
 /*****************************
  * Parse commandline options *
@@ -32,18 +33,15 @@ var code = fs.readFileSync('./' + opts.code),
 if (result.error) {
 	sys.puts("Fun parse error", JSON.stringify(result))
 } else if (opts.verbose) {
-	var styleArr = [],
-		styles = { position:'fixed', top:'5px', right:'5px', width:'500px', 
-				height:'95%', border:'1px solid #333', overflow:'auto', padding: '2px' }
-		
+	var displayCode = code
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
 	
-	for (var key in styles) { styleArr.push(key+':'+styles[key]) }
-	
-	var output =
-		'<div style="'+styleArr.join('; ')+'">'
-			+ "<b>Fun</b><pre>" + code + "</pre>"
+	var output = '<link href="syntaxHighlighter.css" type="text/css" rel="stylesheet" />'
+		+ '<div id="verbose-output">'
+			+ "<b>Fun</b><pre><code>" + syntaxHighlighter.highlightCode(displayCode) + "</code></pre>"
 			+ "<br/><br/>"
-			+ "<b>AST</b> <pre>" + util.prettyPrint(result.ast) + "</pre>"
+			+ "<b>AST</b><pre>" + util.prettyPrint(result.ast) + "</pre>"
 		+ '</div>'
 	
 	sys.puts(output)
