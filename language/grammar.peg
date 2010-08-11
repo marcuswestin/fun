@@ -7,12 +7,15 @@ Statement
    { return declaration; }
  / _ ifElse:IfElse _T
    { return ifElse }
- / _ value:Value _T
+ / _ value:InlineValue _T
    { return {type:'INLINE_VALUE', value: value}; }
  / _ reference:Reference _T
    { return reference; }
- / _ '//' [^\n]*
+ / Comment
    { return [] }
+
+Comment "Comment"
+ = _ '//' [^\n]*
 
 /************************
  * If/Else & Conditions *
@@ -36,7 +39,7 @@ Declaration "Declaration"
  = 'let' _ name:Name _ '=' _ value:ReferenceDeclaration 
    { return {type:'DECLARATION', name:name, value:value}; }
 
-Value
+InlineValue "Inline value"
  = String
  / Number
 
@@ -57,11 +60,11 @@ ArgumentList
  / _
    { return [] }
 
-Name "Declaration_name"
+Name "Declaration name"
  = first:alpha rest:alphanum*
    { return first + rest.join('') }
 
-Reference "Declaration_reference"
+Reference "Declaration reference"
  = String
  / Number
  / "Local." name:Name
@@ -84,7 +87,7 @@ Number "Number"
 /*******
  * XML *
  *******/
-XML
+XML "XML"
  = _ tag:XMLSelfClosing
    { return {type:'XML_NODE', name:tag.name, attributes:tag.attributes, content:[]}; }
  / _ openTag:XMLOpen _ content:Fun _ closeTag:XMLClose
