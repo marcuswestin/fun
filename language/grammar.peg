@@ -106,8 +106,8 @@ XMLSelfClosing "Self closing XML tag"
    { return {name:tagName, attributes:attributes}; }
 
 XMLAttribute "XML node attribute"
- = name:Name "=" value:String _
-   { return {type: 'XML_ATTRIBUTES', name:name, value:value}; }
+ = name:Name "=" value:Reference _
+   { return {type: 'XML_ATTRIBUTE', name:name, value:value}; }
 
 /***********
  * Utility *
@@ -120,5 +120,5 @@ _T "Possibly terminal whitespace"
 
 EOF = !.
 
-alpha "Alpha character" = [a-zA-Z]
-alphanum "Alpha numeric character" = [a-zA-Z0-9]
+alpha "Alpha character" = [a-zA-Z_]
+alphanum "Alpha numeric character" = [a-zA-Z0-9_]

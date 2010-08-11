@@ -3,7 +3,7 @@
 	
 	var fun = window.fun = {},
 		doc = document,
-		hooks = window.hooks = {}
+		hooks = fun.hooks = {}
 	
 	fun.getDOMHook = function(parentHookID, hookID, tag, attrs) {
 		if (hooks[hookID]) { return hooks[hookID] }
@@ -12,7 +12,13 @@
 		for (var key in attrs) {
 			hook.setAttribute(key, attrs[key])
 		}
-		return hook;
+		return hook
+	}
+	
+	fun.hook = function(hookID) { return hooks[hookID] }
+	
+	fun.value = function(hookID, value) {
+		hooks[hookID].value = value
 	}
 	
 	fun.setDOMHook = function(hookID, domNode) {
@@ -28,15 +34,41 @@
 	}
 	
 	fun.set = function(id, propName, callback) {
-		if (id == 'LOCAL') { fin.setLocal(propName, callback) }
-		else if (id == 'GLOBAL') { fin.connect(bind(fin, 'setGlobal', propName, callback)) }
-		else { fin.connect(bind(fin, 'set', id, propName, callback)) }
+		switch(id) {
+			case 'LOCAL':
+			case 'LOCAL_REFERENCE':
+				fin.setLocal(propName, callback)
+				break
+			case 'GLOBAL':
+			case 'GLOBAL_REFERENCE':
+				fin.connect(bind(fin, 'setGlobal', propName, callback))
+				break
+			default:
+				fin.connect(bind(fin, 'set', id, propName, callback))
+		}
 	}
 	
 	fun.observe = function(id, propName, callback) {
-		if (id == 'LOCAL') { fin.observeLocal(propName, callback) }
-		else if (id == 'GLOBAL') { fin.connect(bind(fin, 'observeGlobal', propName, callback)) }
-		else { fin.connect(bind(fin, 'observe', id, propName, callback)) }
+		switch(id) {
+			case 'LOCAL':
+			case 'LOCAL_REFERENCE':
+				fin.observeLocal(propName, callback)
+				break
+			case 'GLOBAL':
+			case 'GLOBAL_REFERENCE':
+				fin.connect(bind(fin, 'observeGlobal', propName, callback))
+				break
+			default:
+				fin.connect(bind(fin, 'observe', id, propName, callback))
+		}
+	}
+	
+	fun.reflectInput = function(hook, id, prop) {
+		var input = hooks[hook]
+		fun.observe(id, prop, function(mutation, value){ input.value = value })
+		input.onkeypress = function() { setTimeout(function() {
+			fun.set(id, prop, input.value)
+		}, 0)}
 	}
 	
 	fun.getCallbackBlock = blockCallback

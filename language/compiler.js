@@ -22,9 +22,9 @@ function getHookCode(parentHook, hookID, tagName, attrs) {
 	var attrKVPs = {}
 	
 	return 'fun.getDOMHook('
-		+ util.quote(parentHook) + ', '
-		+ util.quote(hookID) + ', '
-		+ util.quote(tagName||'span') + ', '
+		+ util.q(parentHook) + ', '
+		+ util.q(hookID) + ', '
+		+ util.q(tagName||'span') + ', '
 		+ JSON.stringify(attrs) + ')'
 }
 
@@ -49,7 +49,7 @@ compiler.compile = function(ast) {
 	return "(function(){\n"
 		+ boxComment("Fun compiled at " + new Date().getTime())
 		+ "\n\n" + boxComment("lib.js") + libraryCode
-		+ "\n\n" + 'fun.setDOMHook('+util.quote(domRootHookID)+', document.body)'
+		+ "\n\n" + 'fun.setDOMHook('+util.q(domRootHookID)+', document.body)'
 		+ "\n\n" + boxComment("compiled output") + codeOutput
 		+ "\n})();"
 }
@@ -69,7 +69,7 @@ function compile(hookID, ast) {
 function _parseExpression(hookID, ast) {
 	switch (ast.type) {
 		case 'STRING':
-			return util.quote(ast.value)
+			return util.q(ast.value)
 		case 'NUMBER':
 			return ast.value
 		case 'DECLARATION':
@@ -92,30 +92,36 @@ function _parseExpression(hookID, ast) {
 		case 'INLINE_VALUE':
 			return getInlineValueCode(hookID, _parseExpression(hookID, ast.value))
 		case 'LOCAL_REFERENCE':
-			return getReferenceCode('LOCAL', hookID, ast.value)
 		case 'GLOBAL_REFERENCE':
-			return getReferenceCode('GLOBAL', hookID, ast.value)
+			return getReferenceCode(ast.type, hookID, ast.value)
 		case 'IF_ELSE':
 			return getIfElseCode(hookID, ast.condition, ast.ifTrue, ast.ifFalse)
 		case 'XML_NODE':
 			return getXMLCode(hookID, ast.name, ast.attributes, ast.content)
 		default:
-			return util.quote("UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast));
+			return util.q("UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast));
 	}
 }
 
 function getXMLCode(parentHook, tagName, attrList, content) {
-	var newHookID = getHookID(),
-		attrs = {};
+	var hook = getHookID(),
+		result = new util.CodeGenerator(),
+		attrs = {}
+	
+	result.code(getHookCode(parentHook, hook, tagName, attrs))
 	
 	for (var i=0, attr; attr = attrList[i]; i++) {
-		var valueNode = attr.value // e.g. STRING, NUMBER
-		attrs[attr.name] = valueNode.value
+		var valueAST = attr.value // e.g. STRING, NUMBER
+		switch(attr.name) {
+			case 'data':
+				if (tagName == 'input') { result.reflectInput(hook, valueAST) }
+				break
+			default:
+				attrs[attr.name] = valueAST.value
+		}
 	}
 	
-	return new util.CodeGenerator()
-		.code(getHookCode(parentHook, newHookID, tagName, attrs))
-		.toString() + compile(newHookID, content)
+	return result + compile(hook, content)
 }
 
 function getInlineValueCode(parentHook, val) {
@@ -130,7 +136,7 @@ function getReferenceCode(id, parentHook, property) {
 	return new util.CodeGenerator()
 		.closureStart()
 			.assign('hook', getHookCode(parentHook))
-			.callFunction('fun.observe', util.quote(id), util.quote(property), 'function(mut,val){ hook.innerHTML=val }')
+			.callFunction('fun.observe', util.q(id), util.q(property), 'function(mut,val){ hook.innerHTML=val }')
 		.closureEnd()
 }
 

@@ -1,5 +1,5 @@
-var quote = exports.quote = function(str) {
-	return '"' + str.replace(/"/g, '\\"') + '"'
+var q = exports.q = function(obj) {
+	return JSON.stringify(obj)
 }
 
 var join = exports.join = function(args, glue) {
@@ -11,9 +11,9 @@ exports.getFinCached = function(reference) {
 		name = reference.value
 	
 	if (type == 'LOCAL_REFERENCE') {
-		return 'fin.getLocalCachedMutation('+quote(name)+').value'
+		return 'fin.getLocalCachedMutation('+q(name)+').value'
 	} else if (type == 'GLOBAL_REFERENCE') {
-		return 'fin.getGlobalCachedMutation('+quote(name)+').value'
+		return 'fin.getGlobalCachedMutation('+q(name)+').value'
 	} else if (type == 'NUMBER') {
 		return reference.value
 	} else {
@@ -31,7 +31,9 @@ exports.CodeGenerator = Class(function() {
 	
 	this.code = function(code) { return this._add(join(arguments)) }
 	
-	this.log = function() { return this._add('console.log('+join(arguments)+')') }
+	this.log = function() {
+		var args = Array.prototype.slice.call(arguments, 0)
+		return this._add('console.log('+join(args.map(JSON.stringify),',')+')') }
 	
 	this.closureStart = function() {
 		return this._add(';(function(' + join(arguments, ',') + '){', 1);
@@ -74,15 +76,19 @@ exports.CodeGenerator = Class(function() {
 		var type = reference.type,
 			name = reference.value
 		
-		if (type == 'LOCAL_REFERENCE') {
-			return this._add('fun.observe("LOCAL", '+quote(name)+', '+callbackCode+')')
-		} else if (type == 'GLOBAL_REFERENCE') {
-			return this._add('fun.observe("GLOBAL", '+quote(name)+', '+callbackCode+')')
-		} else if (type == 'NUMBER') {
-			return this
-		} else {
-			throw { error: 'Unknown reference type for CodeGenerator#observe', reference: reference, callbackCode: callbackCode }
+		switch(type) {
+			case 'LOCAL_REFERENCE':
+			case 'GLOBAL_REFERENCE':
+				return this._add('fun.observe('+q(type)+', '+q(name)+', '+callbackCode+')')
+			case 'NUMBER':
+				return this
+			default:
+				throw { error: 'Unknown reference type for CodeGenerator#observe', reference: reference, callbackCode: callbackCode }
 		}
+	}
+	
+	this.reflectInput = function(hook, reference) {
+		this.callFunction('fun.reflectInput', q(hook), q(reference.type), q(reference.value))
 	}
 	
 	this.toString = function() { return this._code }
