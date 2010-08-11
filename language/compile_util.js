@@ -75,9 +75,9 @@ exports.CodeGenerator = Class(function() {
 			name = reference.value
 		
 		if (type == 'LOCAL_REFERENCE') {
-			return this._add('fin.observeLocal('+quote(name)+', '+callbackCode+')')
+			return this._add('fun.observe("LOCAL", '+quote(name)+', '+callbackCode+')')
 		} else if (type == 'GLOBAL_REFERENCE') {
-			return this._add('fin.observeGlobal('+quote(name)+', '+callbackCode+')')
+			return this._add('fun.observe("GLOBAL", '+quote(name)+', '+callbackCode+')')
 		} else if (type == 'NUMBER') {
 			return this
 		} else {
