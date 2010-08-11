@@ -33,7 +33,7 @@ exports.CodeGenerator = Class(function() {
 	
 	this.log = function() {
 		var args = Array.prototype.slice.call(arguments, 0)
-		return this._add('console.log('+join(args.map(JSON.stringify),',')+')') }
+		return this._add('window.console&&console.log('+join(args.map(JSON.stringify),',')+')') }
 	
 	this.closureStart = function() {
 		return this._add(';(function(' + join(arguments, ',') + '){', 1);
