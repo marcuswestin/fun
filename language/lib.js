@@ -3,7 +3,8 @@
 	
 	var fun = window.fun = {},
 		doc = document,
-		hooks = fun.hooks = {}
+		hooks = fun.hooks = {},
+		hookCallbacks = {}
 	
 	fun.getDOMHook = function(parentHookID, hookID, tag, attrs) {
 		if (hooks[hookID]) { return hooks[hookID] }
@@ -11,6 +12,11 @@
 		var hook = hooks[hookID] = parent.appendChild(doc.createElement(tag||'span'))
 		for (var key in attrs) {
 			hook.setAttribute(key, attrs[key])
+		}
+		var callbacks = hookCallbacks[hookID]
+		if (callbacks) {
+			for (var i=0, callback; callback = callbacks[i]; i++) { callback(hook) }
+			delete hookCallbacks[hookID]
 		}
 		return hook
 	}
@@ -63,12 +69,24 @@
 		}
 	}
 	
+	fun.withHook = function(hookID, callback) {
+		var hook = hooks[hookID]
+		if (hook) {
+			callback(hook)
+		} else if (hookCallbacks[hookID]) {
+			hookCallbacks[hookID].push(callback)
+		} else {
+			hookCallbacks[hookID] = [callback]
+		}
+	}
+	
 	fun.reflectInput = function(hook, id, prop) {
-		var input = hooks[hook]
-		fun.observe(id, prop, function(mutation, value){ input.value = value })
-		input.onkeypress = function() { setTimeout(function() {
-			fun.set(id, prop, input.value)
-		}, 0)}
+		fun.withHook(hook, function(input) {
+			fun.observe(id, prop, function(mutation, value){ input.value = value })
+			input.onkeypress = function() { setTimeout(function() {
+				fun.set(id, prop, input.value)
+			}, 0)}
+		})
 	}
 	
 	fun.getCallbackBlock = blockCallback

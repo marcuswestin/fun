@@ -108,18 +108,17 @@ function getXMLCode(parentHook, tagName, attrList, content) {
 		result = new util.CodeGenerator(),
 		attrs = {}
 	
-	result.code(getHookCode(parentHook, hook, tagName, attrs))
-	
 	for (var i=0, attr; attr = attrList[i]; i++) {
 		var valueAST = attr.value // e.g. STRING, NUMBER
-		switch(attr.name) {
-			case 'data':
-				if (tagName == 'input') { result.reflectInput(hook, valueAST) }
-				break
-			default:
-				attrs[attr.name] = valueAST.value
+		result.log(attr)
+		if (attr.name == 'data') {
+			if (tagName == 'input') { result.reflectInput(hook, valueAST) }
+		} else {
+			attrs[attr.name] = valueAST.value
 		}
 	}
+	
+	result.code(getHookCode(parentHook, hook, tagName, attrs))
 	
 	return result + compile(hook, content)
 }
