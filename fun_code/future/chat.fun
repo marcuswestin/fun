@@ -1,10 +1,10 @@
 <div class="compose">
-	<input data=Local.compose />
-	<button onClick=sendMessage>Send</button>
+	<input data=Local.newMessage />
+	<button clickHandler=sendMessage>Send</button>
 </div>
 
 let sendMessage = handler() {
-	Global.messages.push({ user: Session.User, text: Local.compose })
+	Global.messages.push({ user: Session.User, text: Local.newMessage })
 }
 
 <div class="messages">
