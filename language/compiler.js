@@ -1,18 +1,7 @@
 var fs = require('fs'),
 	util = require('./compile_util'),
 	compiler = exports,
-	uniqueId = 0,
 	referenceTable = {}
-
-function unique(name) { return '_u' + (uniqueId++) + (name ? '_' + name : '') }
-
-function boxComment(msg) {
-	var arr = []
-	arr.length = msg.length + 2
-	return '/*' + arr.join('*') + "**\n"
-		+ ' * ' + msg + " *\n"
-		+ ' *' + arr.join('*') + "**/\n"
-}
 
 compiler.compile = function(ast) {
 	var libraryPath = __dirname + '/lib.js',
@@ -24,8 +13,7 @@ compiler.compile = function(ast) {
 		return { error: "Could not read library file", path: libraryPath, e: e }
 	}
 	
-	var domRootHookID = _getHookID()
-	
+	var domRootHookID = util.getHookID()
 	
 	try { codeOutput = compile(domRootHookID, ast) }
 	catch(e) {
@@ -40,6 +28,14 @@ compiler.compile = function(ast) {
 		+ "\n})();"
 }
 
+function boxComment(msg) {
+	var arr = []
+	arr.length = msg.length + 2
+	return '/*' + arr.join('*') + "**\n"
+		+ ' * ' + msg + " *\n"
+		+ ' *' + arr.join('*') + "**/\n"
+}
+
 function compile(hookID, ast) {
 	if (ast instanceof Array) {
 		var result = []
@@ -48,11 +44,11 @@ function compile(hookID, ast) {
 		}
 		return result.join("")
 	} else if (typeof ast == 'object') {
-		return _parseExpression(hookID, ast) + "\n"
+		return compileFunStatement(hookID, ast) + "\n"
 	}
 }
 
-function _parseExpression(hookID, ast) {
+function compileFunStatement(hookID, ast) {
 	switch (ast.type) {
 		case 'STRING':
 			return util.q(ast.value)
@@ -62,24 +58,19 @@ function _parseExpression(hookID, ast) {
 			if (referenceTable[ast.name]) {
 				throw { error: 'Repeat Declaration', name: ast.name }
 			}
-			var id = unique(ast.name),
+			var id = util.unique(ast.name),
 				reference = ast.value
 			
 			referenceTable[ast.name] = { id: id, reference: reference }
 			return 'var '+id+' = '+compile(hookID, reference)
-		case 'REFERENCE':
-			if (!referenceTable[ast.name]) {
-				throw { error: 'Undeclared Reference', name: ast.name }
-			}
-			var name = ast.name,
-				reference = referenceTable[ast.name]
-			
-			return getInlineValueCode(hookID, reference.id)
 		case 'INLINE_VALUE':
-			return getInlineValueCode(hookID, _parseExpression(hookID, ast.value))
-		case 'LOCAL_REFERENCE':
-		case 'GLOBAL_REFERENCE':
-			return getReferenceCode(ast.type, hookID, ast.value)
+			return getInlineValueCode(hookID, compileFunStatement(hookID, ast.value))
+		case 'REFERENCE':
+			if (ast.referenceType == 'ALIAS') {
+				return getAliasCode(hookID, ast.name, reference.id)
+			} else {
+				return getReferenceCode(ast.referenceType, hookID, ast.value)
+			}
 		case 'IF_ELSE':
 			return getIfElseCode(hookID, ast.condition, ast.ifTrue, ast.ifFalse)
 		case 'XML_NODE':
@@ -90,7 +81,7 @@ function _parseExpression(hookID, ast) {
 }
 
 function getXMLCode(parentHook, tagName, attrList, content) {
-	var hook = _getHookID(),
+	var hook = util.getHookID(),
 		result = new util.CodeGenerator(),
 		attrs = {}
 	
@@ -98,37 +89,69 @@ function getXMLCode(parentHook, tagName, attrList, content) {
 		var valueAST = attr.value // e.g. STRING, NUMBER
 		if (attr.name == 'data') {
 			if (tagName == 'input') { result.reflectInput(hook, valueAST) }
+			else if (tagName == 'checkbox') { } // TODO
+		} else if (attr.name == 'style') {
+			if (valueAST.type != 'JSON') {
+				throw { error: 'Style attribute must be JSON', type: valueAST.type }
+			}
+			handleXMLStyle(hook, valueAST.content, attrs, result)
 		} else {
+			
 			attrs[attr.name] = valueAST.value
 		}
 	}
 	
-	result.code(_getHookCode(parentHook, hook, tagName, attrs))
+	result.createHook(parentHook, hook, tagName, attrs)
 	
 	return result + compile(hook, content)
+}
+
+function handleXMLStyle(hook, styles, targetAttrs, result) {
+	targetAttrs.style = ''
+	for (var styleName in styles) {
+		var styleRule = styles[styleName],
+			styleValue = styleRule.value,
+			styleType = styleRule.type
+		
+		if (styleType == 'REFERENCE') {
+			result.bindStyle(hook, styleName, styleRule)
+		} else if (styleType == 'NUMBER') {
+			targetAttrs.style += styleName+':'+styleValue+'px; '
+		} else {
+			targetAttrs.style += styleName+':'+styleValue+'; '
+		}
+	}
+}
+
+function getAliasCode(hookID, name, referenceID) {
+	if (!referenceTable[name]) {
+		throw { error: 'Undeclared Reference', name: name }
+	}
+	var reference = referenceTable[name]
+	return getInlineValueCode(hookID, referenceID)
 }
 
 function getInlineValueCode(parentHook, val) {
 	return new util.CodeGenerator()
 		.closureStart()
-			.assign('hook', _getHookCode(parentHook))
+			.assign('hook', util.getHookCode(parentHook))
 			.assign('hook.innerHTML', val)
 		.closureEnd()
 }
 
-function getReferenceCode(id, parentHook, property) {
+function getReferenceCode(refType, parentHook, property) {
 	return new util.CodeGenerator()
 		.closureStart()
-			.assign('hook', _getHookCode(parentHook))
-			.callFunction('fun.observe', util.q(id), util.q(property), 'function(mut,val){ hook.innerHTML=val }')
+			.assign('hook', util.getHookCode(parentHook))
+			.callFunction('fun.observe', util.q(refType), util.q(property), 'function(mut,val){ hook.innerHTML=val }')
 		.closureEnd()
 }
 
 function getIfElseCode(parentHook, cond, trueAST, elseAST) {
-	var ifHookID = _getHookID(),
-		elseHookID = _getHookID(),
-		ifHookCode = _getHookCode(parentHook, ifHookID),
-		elseHookCode = _getHookCode(parentHook, elseHookID),
+	var ifHookID = util.getHookID(),
+		elseHookID = util.getHookID(),
+		ifHookCode = util.getHookCode(parentHook, ifHookID),
+		elseHookCode = util.getHookCode(parentHook, elseHookID),
 		compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')'
 	
 	return new util.CodeGenerator()
@@ -154,17 +177,4 @@ function getIfElseCode(parentHook, cond, trueAST, elseAST) {
 			'\nfunction ifPath(){'+compile(ifHookID, trueAST)+'}', 
 			'\nfunction elsePath(){'+compile(elseHookID, elseAST)+'}'
 		)
-}
-
-function _getHookID() { return unique('dom') }
-function _getHookCode(parentHook, hookID, tagName, attrs) {
-	hookID = hookID || _getHookID()
-	attrs = attrs || []
-	var attrKVPs = {}
-	
-	return 'fun.getDOMHook('
-		+ util.q(parentHook) + ', '
-		+ util.q(hookID) + ', '
-		+ util.q(tagName||'span') + ', '
-		+ JSON.stringify(attrs) + ')'
 }

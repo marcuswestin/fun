@@ -47,6 +47,7 @@ ReferenceDeclaration
  = Template
  / String
  / Number
+ / JSON
 
 Template
  = 'template' _ '(' _ args:ArgumentList _ ')' _ '{' code:Fun '}'
@@ -68,11 +69,12 @@ Reference "Declaration reference"
  = String
  / Number
  / "Local." name:Name
-   { return {type:'LOCAL_REFERENCE', value:name}; }
+   { return {type:'REFERENCE', referenceType:'LOCAL', value:name}; }
  / "Global." name:Name
-   { return {type:'GLOBAL_REFERENCE', value:name}; }
+   { return {type:'REFERENCE', referenceType:'GLOBAL', value:name}; }
  / name:Name
-   { return {type:'REFERENCE', name:name}; }
+   { return {type:'REFERENCE', referenceType:'ALIAS', name:name}; }
+ / JSON
 
 String "String"
  = '"' value:[^"\n]+ '"'
@@ -82,7 +84,26 @@ String "String"
 
 Number "Number"
  = value:[0-9]+
-  { return {type:'NUMBER', value:parseInt(value.join(''))}; }
+   { return {type:'NUMBER', value:parseInt(value.join(''))}; }
+
+/********
+ * JSON *
+ ********/
+JSON "JSON"
+ = "{" _ values:JSONContent _ "}"
+   { return {type:'JSON', content:values}; }
+ / "{" _ "}"
+   { return {type:'JSON', content:null}; }
+
+JSONContent
+ = kvp:JSONPair _ "," _ json:JSONContent
+   { json[kvp.key]=kvp.value; return json; }
+ / kvp:JSONPair
+   { var json={}; json[kvp.key]=kvp.value; return json; }
+
+JSONPair
+ = key:Name _ ":" _ value:Reference
+   { return {key:key,value:value}; }
 
 /*******
  * XML *

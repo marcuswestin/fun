@@ -6,20 +6,35 @@ var join = exports.join = function(args, glue) {
 	return Array.prototype.join.call(args, glue || '')
 }
 
+var uniqueId = 0,
+	unique = exports.unique = function(name) { return '_u' + (uniqueId++) + (name ? '_' + name : '') }
+
 exports.getFinCached = function(reference) {
 	var type = reference.type,
 		name = reference.value
 	
-	if (type == 'LOCAL_REFERENCE') {
-		return 'fin.getLocalCachedMutation('+q(name)+').value'
-	} else if (type == 'GLOBAL_REFERENCE') {
-		return 'fin.getGlobalCachedMutation('+q(name)+').value'
+	if (type == 'REFERENCE') {
+		return 'fun.getCachedMutation('+q(reference.referenceType)+','+q(name)+')'
 	} else if (type == 'NUMBER') {
-		return reference.value
+		return name
 	} else {
 		throw { error: 'Unknown reference type for getFinCached', reference: reference }
 	}
 }
+
+exports.getHookID = function() { return unique('dom') }
+exports.getHookCode = function(parentHook, hookID, tagName, attrs) {
+	hookID = hookID || exports.getHookID()
+	attrs = attrs || []
+	var attrKVPs = {}
+	
+	return 'fun.getDOMHook('
+		+ q(parentHook) + ', '
+		+ q(hookID) + ', '
+		+ q(tagName||'span') + ', '
+		+ JSON.stringify(attrs) + ')'
+}
+
 
 exports.CodeGenerator = Class(function() {
 	
@@ -75,11 +90,10 @@ exports.CodeGenerator = Class(function() {
 	this.observe = function(reference, callbackCode) {
 		var type = reference.type,
 			name = reference.value
-		
+
 		switch(type) {
-			case 'LOCAL_REFERENCE':
-			case 'GLOBAL_REFERENCE':
-				return this._add('fun.observe('+q(type)+', '+q(name)+', '+callbackCode+')')
+			case 'REFERENCE':
+				return this._add('fun.observe('+q(reference.referenceType)+', '+q(name)+', '+callbackCode+')')
 			case 'NUMBER':
 				return this
 			default:
@@ -87,8 +101,16 @@ exports.CodeGenerator = Class(function() {
 		}
 	}
 	
+	this.createHook = function(parentHook, hookID, tagName, attrs) {
+		return this._add(exports.getHookCode(parentHook, hookID, tagName, attrs))
+	}
+	
 	this.reflectInput = function(hook, reference) {
-		this.callFunction('fun.reflectInput', q(hook), q(reference.type), q(reference.value))
+		return this.callFunction('fun.reflectInput', q(hook), q(reference.type), q(reference.value))
+	}
+	
+	this.bindStyle = function(hook, cssKey, reference) {
+		return this.observe(reference, 'fun.getStyleHandler('+q(hook)+','+q(cssKey)+')')
 	}
 	
 	this.toString = function() { return this._code }

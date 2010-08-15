@@ -42,11 +42,9 @@
 	fun.set = function(id, propName, callback) {
 		switch(id) {
 			case 'LOCAL':
-			case 'LOCAL_REFERENCE':
 				fin.setLocal(propName, callback)
 				break
 			case 'GLOBAL':
-			case 'GLOBAL_REFERENCE':
 				fin.connect(bind(fin, 'setGlobal', propName, callback))
 				break
 			default:
@@ -57,15 +55,21 @@
 	fun.observe = function(id, propName, callback) {
 		switch(id) {
 			case 'LOCAL':
-			case 'LOCAL_REFERENCE':
 				fin.observeLocal(propName, callback)
 				break
 			case 'GLOBAL':
-			case 'GLOBAL_REFERENCE':
 				fin.connect(bind(fin, 'observeGlobal', propName, callback))
 				break
 			default:
 				fin.connect(bind(fin, 'observe', id, propName, callback))
+		}
+	}
+	
+	fun.getCachedMutation = function(type, prop) {
+		if (type == 'LOCAL') {
+			return fin.getLocalCachedMutation(prop)
+		} else if (type == 'GLOBAL') {
+			return fin.getGlobalCachedMutation(prop)
 		}
 	}
 	
@@ -87,6 +91,13 @@
 				fun.set(id, prop, input.value)
 			}, 0)}
 		})
+	}
+	
+	fun.getStyleHandler = function(hook, styleProp) {
+		return function(mutation, value) {
+			if (!hooks[hook]) { return }
+			hooks[hook].style[styleProp] = (typeof value == 'number' ? value + 'px' : value);
+		}
 	}
 	
 	fun.getCallbackBlock = blockCallback
