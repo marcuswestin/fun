@@ -62,7 +62,7 @@ function compileFunStatement(hookID, ast) {
 				reference = ast.value
 			
 			referenceTable[ast.name] = { id: id, reference: reference }
-			return 'var '+id+' = '+compile(hookID, reference)
+			return ''
 		case 'INLINE_VALUE':
 			return getInlineValueCode(hookID, compileFunStatement(hookID, ast.value))
 		case 'REFERENCE':
