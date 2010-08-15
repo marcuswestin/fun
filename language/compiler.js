@@ -80,13 +80,21 @@ function compileFunStatement(hookID, ast) {
 	}
 }
 
+function getRefered(value) {
+	if (value.type == 'REFERENCE' && value.referenceType == 'ALIAS') {
+		return referenceTable[value.name].reference
+	} else {
+		return value
+	}
+}
+
 function getXMLCode(parentHook, tagName, attrList, content) {
 	var hook = util.getHookID(),
 		result = new util.CodeGenerator(),
 		attrs = {}
 	
 	for (var i=0, attr; attr = attrList[i]; i++) {
-		var valueAST = attr.value // e.g. STRING, NUMBER
+		var valueAST = getRefered(attr.value) // e.g. STRING, NUMBER
 		if (attr.name == 'data') {
 			if (tagName == 'input') { result.reflectInput(hook, valueAST) }
 			else if (tagName == 'checkbox') { } // TODO
