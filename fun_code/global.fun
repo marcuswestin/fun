@@ -1,1 +1,1 @@
-"This is a test of global. Global.test is: " Global.test ", cool eh?"
+"This is a test of global. Global.x is: " Global.x ", cool eh?"
