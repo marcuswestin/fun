@@ -160,7 +160,7 @@ function getIfElseCode(parentHook, cond, trueAST, elseAST) {
 		elseHookID = util.getHookID(),
 		ifHookCode = util.getHookCode(parentHook, ifHookID),
 		elseHookCode = util.getHookCode(parentHook, elseHookID),
-		compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')'
+		compareCode = '('+util.getCachedValue(cond.left) + cond.comparison + util.getCachedValue(cond.right)+')'
 	
 	return new util.CodeGenerator()
 		.closureStart('ifPath', 'elsePath')

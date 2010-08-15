@@ -51,11 +51,11 @@
 		}
 	}
 	
-	fun.getCachedMutation = function(type, prop) {
+	fun.getCachedValue = function(type, prop) {
 		if (type == 'LOCAL') {
-			return fin.getLocalCachedMutation(prop)
+			return fin.getLocalCachedMutation(prop).value
 		} else if (type == 'GLOBAL') {
-			return fin.getGlobalCachedMutation(prop)
+			return fin.getGlobalCachedMutation(prop).value
 		}
 	}
 	

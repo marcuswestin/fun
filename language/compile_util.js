@@ -9,12 +9,12 @@ var join = exports.join = function(args, glue) {
 var uniqueId = 0,
 	unique = exports.unique = function(name) { return '_u' + (uniqueId++) + (name ? '_' + name : '') }
 
-exports.getFinCached = function(reference) {
+exports.getCachedValue = function(reference) {
 	var type = reference.type,
 		name = reference.value
 	
 	if (type == 'REFERENCE') {
-		return 'fun.getCachedMutation('+q(reference.referenceType)+','+q(name)+')'
+		return 'fun.getCachedValue('+q(reference.referenceType)+','+q(name)+')'
 	} else if (type == 'NUMBER') {
 		return name
 	} else {
