@@ -68,13 +68,13 @@ Name "Declaration name"
 Reference "Declaration reference"
  = String
  / Number
+ / JSON
  / "Local." name:Name
    { return {type:'REFERENCE', referenceType:'LOCAL', value:name}; }
  / "Global." name:Name
    { return {type:'REFERENCE', referenceType:'GLOBAL', value:name}; }
  / name:Name
    { return {type:'REFERENCE', referenceType:'ALIAS', name:name}; }
- / JSON
 
 String "String"
  = '"' value:[^"\n]+ '"'
