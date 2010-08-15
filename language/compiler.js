@@ -14,20 +14,6 @@ function boxComment(msg) {
 		+ ' *' + arr.join('*') + "**/\n"
 }
 
-function getHookID() { return unique('dom') }
-
-function getHookCode(parentHook, hookID, tagName, attrs) {
-	hookID = hookID || getHookID()
-	attrs = attrs || []
-	var attrKVPs = {}
-	
-	return 'fun.getDOMHook('
-		+ util.q(parentHook) + ', '
-		+ util.q(hookID) + ', '
-		+ util.q(tagName||'span') + ', '
-		+ JSON.stringify(attrs) + ')'
-}
-
 compiler.compile = function(ast) {
 	var libraryPath = __dirname + '/lib.js',
 		libraryCode, 
@@ -38,7 +24,7 @@ compiler.compile = function(ast) {
 		return { error: "Could not read library file", path: libraryPath, e: e }
 	}
 	
-	var domRootHookID = getHookID()
+	var domRootHookID = _getHookID()
 	
 	
 	try { codeOutput = compile(domRootHookID, ast) }
@@ -104,13 +90,12 @@ function _parseExpression(hookID, ast) {
 }
 
 function getXMLCode(parentHook, tagName, attrList, content) {
-	var hook = getHookID(),
+	var hook = _getHookID(),
 		result = new util.CodeGenerator(),
 		attrs = {}
 	
 	for (var i=0, attr; attr = attrList[i]; i++) {
 		var valueAST = attr.value // e.g. STRING, NUMBER
-		result.log(attr)
 		if (attr.name == 'data') {
 			if (tagName == 'input') { result.reflectInput(hook, valueAST) }
 		} else {
@@ -118,7 +103,7 @@ function getXMLCode(parentHook, tagName, attrList, content) {
 		}
 	}
 	
-	result.code(getHookCode(parentHook, hook, tagName, attrs))
+	result.code(_getHookCode(parentHook, hook, tagName, attrs))
 	
 	return result + compile(hook, content)
 }
@@ -126,7 +111,7 @@ function getXMLCode(parentHook, tagName, attrList, content) {
 function getInlineValueCode(parentHook, val) {
 	return new util.CodeGenerator()
 		.closureStart()
-			.assign('hook', getHookCode(parentHook))
+			.assign('hook', _getHookCode(parentHook))
 			.assign('hook.innerHTML', val)
 		.closureEnd()
 }
@@ -134,16 +119,16 @@ function getInlineValueCode(parentHook, val) {
 function getReferenceCode(id, parentHook, property) {
 	return new util.CodeGenerator()
 		.closureStart()
-			.assign('hook', getHookCode(parentHook))
+			.assign('hook', _getHookCode(parentHook))
 			.callFunction('fun.observe', util.q(id), util.q(property), 'function(mut,val){ hook.innerHTML=val }')
 		.closureEnd()
 }
 
 function getIfElseCode(parentHook, cond, trueAST, elseAST) {
-	var ifHookID = getHookID(),
-		elseHookID = getHookID(),
-		ifHookCode = getHookCode(parentHook, ifHookID),
-		elseHookCode = getHookCode(parentHook, elseHookID),
+	var ifHookID = _getHookID(),
+		elseHookID = _getHookID(),
+		ifHookCode = _getHookCode(parentHook, ifHookID),
+		elseHookCode = _getHookCode(parentHook, elseHookID),
 		compareCode = '('+util.getFinCached(cond.left) + cond.comparison + util.getFinCached(cond.right)+')'
 	
 	return new util.CodeGenerator()
@@ -171,3 +156,15 @@ function getIfElseCode(parentHook, cond, trueAST, elseAST) {
 		)
 }
 
+function _getHookID() { return unique('dom') }
+function _getHookCode(parentHook, hookID, tagName, attrs) {
+	hookID = hookID || _getHookID()
+	attrs = attrs || []
+	var attrKVPs = {}
+	
+	return 'fun.getDOMHook('
+		+ util.q(parentHook) + ', '
+		+ util.q(hookID) + ', '
+		+ util.q(tagName||'span') + ', '
+		+ JSON.stringify(attrs) + ')'
+}
