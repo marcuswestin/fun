@@ -31,37 +31,23 @@
 		hooks[hookID] = domNode
 	}
 	
-	fun.on = function(element, eventName, handler) {
-		if (element.addEventListener) {
-			element.addEventListener(eventName, handler, false)
-		} else if (element.attachEvent){
-			element.attachEvent("on"+eventName, handler)
-		}
-	}
-	
 	fun.set = function(id, propName, callback) {
-		switch(id) {
-			case 'LOCAL':
-				fin.setLocal(propName, callback)
-				break
-			case 'GLOBAL':
-				fin.connect(bind(fin, 'setGlobal', propName, callback))
-				break
-			default:
-				fin.connect(bind(fin, 'set', id, propName, callback))
+		if (id == 'LOCAL') {
+			fin.setLocal(propName, callback)
+		} else if (id == 'GLOBAL') {
+			fin.connect(bind(fin, 'setGlobal', propName, callback))
+		} else {
+			fin.connect(bind(fin, 'set', id, propName, callback))
 		}
 	}
 	
 	fun.observe = function(id, propName, callback) {
-		switch(id) {
-			case 'LOCAL':
-				fin.observeLocal(propName, callback)
-				break
-			case 'GLOBAL':
-				fin.connect(bind(fin, 'observeGlobal', propName, callback))
-				break
-			default:
-				fin.connect(bind(fin, 'observe', id, propName, callback))
+		if (id == 'LOCAL') {
+			fin.observeLocal(propName, callback)
+		} else if (id == 'GLOBAL') {
+			fin.connect(bind(fin, 'observeGlobal', propName, callback))
+		} else {
+			fin.connect(bind(fin, 'observe', id, propName, callback))
 		}
 	}
 	
@@ -97,6 +83,14 @@
 		return function(mutation, value) {
 			if (!hooks[hook]) { return }
 			hooks[hook].style[styleProp] = (typeof value == 'number' ? value + 'px' : value);
+		}
+	}
+	
+	fun.on = function(element, eventName, handler) {
+		if (element.addEventListener) {
+			element.addEventListener(eventName, handler, false)
+		} else if (element.attachEvent){
+			element.attachEvent("on"+eventName, handler)
 		}
 	}
 	
