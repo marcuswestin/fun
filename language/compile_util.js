@@ -106,7 +106,7 @@ exports.CodeGenerator = Class(function() {
 	}
 	
 	this.reflectInput = function(hook, reference) {
-		return this.callFunction('fun.reflectInput', q(hook), q(reference.type), q(reference.value))
+		return this.callFunction('fun.reflectInput', q(hook), q(reference.referenceType), q(reference.value))
 	}
 	
 	this.bindStyle = function(hook, cssKey, reference) {
