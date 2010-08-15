@@ -9,7 +9,7 @@
 let draggableStyle = {
 	position: 'absolute',
 	top: Local.mouseY,
-	left:Local.mouseX,
+	left: Local.mouseX,
 	width: 50,
 	height: 50,
 	background: 'blue'
