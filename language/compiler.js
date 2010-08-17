@@ -94,24 +94,28 @@ function getXMLCode(parentHook, tagName, attrList, content) {
 		attrs = {}
 	
 	for (var i=0, attr; attr = attrList[i]; i++) {
-		var valueAST = getRefered(attr.value) // e.g. STRING, NUMBER
+		var value = getRefered(attr.value) // e.g. STRING, NUMBER
 		if (attr.name == 'data') {
-			if (tagName == 'input') { result.reflectInput(hook, valueAST) }
+			if (tagName == 'input') { result.reflectInput(hook, value) }
 			else if (tagName == 'checkbox') { } // TODO
 		} else if (attr.name == 'style') {
-			if (valueAST.type != 'JSON') {
-				throw { error: 'Style attribute must be JSON', type: valueAST.type }
-			}
-			handleXMLStyle(hook, valueAST.content, attrs, result)
+			if (value.type != 'JSON') { throw {error: 'Style attribute must be JSON', type: value.type} }
+			handleXMLStyle(hook, value.content, attrs, result)
+		} else if (attr.name == 'clickHandler') {
+			if (value.type != 'HANDLER') { throw {error: 'Handler attribute must be a HANDLER', type: value} }
+			handleXMLOnClick(hook, value.args, value.code, result)
 		} else {
-			
-			attrs[attr.name] = valueAST.value
+			attrs[attr.name] = value.value
 		}
 	}
 	
 	result.createHook(parentHook, hook, tagName, attrs)
 	
 	return result + compile(hook, content)
+}
+
+function handleXMLOnClick(hook, args, code, result) {
+	result.log(hook, args, code)
 }
 
 function handleXMLStyle(hook, styles, targetAttrs, result) {

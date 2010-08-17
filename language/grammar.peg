@@ -14,6 +14,14 @@ Statement
  / Comment
    { return [] }
 
+MutationStatement
+ = 'set' _ target:Reference _ '=' _ value:MutationValue
+   { return {type:'MUTATION', target:target, value:value}; }
+
+MutationValue
+ = Reference
+ / InlineValue
+
 Comment "Comment"
  = _ '//' [^\n]*
 
@@ -44,14 +52,14 @@ InlineValue "Inline value"
  / Number
 
 ReferenceDeclaration
- = Template
+ = Handler
  / String
  / Number
  / JSON
 
-Template
- = 'template' _ '(' _ args:ArgumentList _ ')' _ '{' code:Fun '}'
-   { return {type:'TEMPLATE_DEFINITION', args: args, code: code}; }
+Handler "Handler"
+ = 'handler' _ '(' _ args:ArgumentList _ ')' _ '{' _ code:FunMutations _ '}'
+   { return {type:'HANDLER', args: args, code: code}; }
 
 ArgumentList
  = name:Name _ ',' _ args:ArgumentList
