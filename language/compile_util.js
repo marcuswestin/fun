@@ -15,6 +15,8 @@ exports.getCachedValue = function(reference) {
 	
 	if (type == 'REFERENCE') {
 		return 'fun.getCachedValue('+q(reference.referenceType)+','+q(name)+')'
+	} else if (type == 'STRING') {
+		return q(name)
 	} else if (type == 'NUMBER') {
 		return name
 	} else {
@@ -67,6 +69,9 @@ exports.CodeGenerator = Class(function() {
 		var args = Array.prototype.slice.call(arguments, 1)
 		return this._add(name + '(' + args.join(', ') + ')')
 	}
+	
+	this.withHookStart = function(hook) { return this.code('fun.withHook(', q(hook), ', function(hook) {\n') }
+	this.withHookEnd = function() { return this.code('})') }
 	
 	this.assign = function(name, value) {
 		this._add((this._variables[name] || name.match(/[\[\.]/) ? '' : 'var ') + name + ' = ' + value)

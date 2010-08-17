@@ -114,8 +114,24 @@ function getXMLCode(parentHook, tagName, attrList, content) {
 	return result + compile(hook, content)
 }
 
-function handleXMLOnClick(hook, args, code, result) {
-	result.log(hook, args, code)
+function handleXMLOnClick(hook, args, mutationStatements, result) {
+	var mutations = new util.CodeGenerator()
+	for (var i=0, statement; statement = mutationStatements[i]; i++) {
+		var target = statement.target,
+			source = statement.source
+		if (statement.type != 'MUTATION') { throw { error:'Handler code should be mutation statements', code:code } }
+		if (target.type != 'REFERENCE' || target.referenceType == 'ALIAS') {
+			throw { error:'Target in mutation should be a local or a global data object', target: target }
+		}
+		mutations.mutate(target, getRefered(source))
+	}
+	
+	result
+		.withHookStart(hook)
+			.code('hook.onclick=function(){')
+				.code(mutations)
+			.code('}')
+		.withHookEnd()
 }
 
 function handleXMLStyle(hook, styles, targetAttrs, result) {

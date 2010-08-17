@@ -19,8 +19,8 @@ Statement
    { return [] }
 
 MutationStatement
- = 'set' _ target:Reference _ '=' _ value:MutationValue
-   { return {type:'MUTATION', target:target, value:value}; }
+ = 'set' _ target:Reference _ '=' _ source:MutationValue _T
+   { return {type:'MUTATION', target:target, source:source}; }
 
 MutationValue
  = Reference

@@ -1,9 +1,13 @@
+let test = 'test'
+
 let handleClick1 = handler() {
-	set Local.handlerTest = 1
+	set Global.x = 1
+	set Local.handlerTest = test
 }
 
 let handleClick2 = handler() {
-	set Local.handlerTest = 2
+	set Global.x = 100
+	set Local.handlerTest = 'foo'
 }
 
 "Local.handlerTest=" Local.handlerTest
