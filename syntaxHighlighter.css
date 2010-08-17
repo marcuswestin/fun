@@ -10,7 +10,6 @@
 }
 
 #verbose-output pre { background-color: #002f58; color: #fff; }
-#verbose-output code .string { color: #3ad900; }
 #verbose-output code .keyword { color: #ffee7d; }
 #verbose-output code .operator { color: #f29d20; }
 #verbose-output code .xml { color: #d27d00; }
@@ -18,3 +17,5 @@
 #verbose-output code .type { color: #f8d700; }
 #verbose-output code .global { color: #f8d700; }
 #verbose-output code .attr { color: #eb8f86; }
+#verbose-output code .string { color: #3ad900; }
+#verbose-output code .string * { color: #3ad900; }
