@@ -1,6 +1,9 @@
 Fun =
  Statement*
 
+FunMutations =
+ MutationStatement*
+
 Statement
  = XML _T
  / _ declaration:Declaration _T
