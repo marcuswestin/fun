@@ -39,7 +39,7 @@ exports.getHookCode = function(parentHook, hookID, tagName, attrs) {
 exports.CodeGenerator = Class(function() {
 	
 	this.init = function() {
-		this._code = ''
+		this._code = []
 		this._indent = ['']
 		this._variables = {}
 	}
@@ -113,10 +113,14 @@ exports.CodeGenerator = Class(function() {
 		return this.observe(reference, 'fun.getStyleHandler('+q(hook)+','+q(cssKey)+')')
 	}
 	
-	this.toString = function() { return this._code }
+	this.mutate = function(target, source) {
+		return this.callFunction('fun.set', q(target.referenceType), q(target.value), exports.getCachedValue(source))
+	}
+	
+	this.toString = function() { return this._code.join("\n") }
 	
 	this._add = function(code, deltaIndent) {
-		this._code += this._indent.join("\t") + code + "\n"
+		this._code.push(this._indent.join("\t") + code)
 		if (deltaIndent) { this._indent.length += deltaIndent }
 		return this
 	}
