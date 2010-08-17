@@ -5,7 +5,8 @@ FunMutations =
  MutationStatement*
 
 Statement
- = XML _T
+ = _ xml:XML _T
+   { return xml; }
  / _ declaration:Declaration _T
    { return declaration; }
  / _ ifElse:IfElse _T
