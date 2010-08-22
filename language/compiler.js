@@ -8,7 +8,7 @@ compiler.compile = function(ast) {
 		libraryCode, 
 		codeOutput
 	
-	try { libraryCode = fs.readFileSync(libraryPath) }
+	try { libraryCode = fs.readFileSync(libraryPath).toString() }
 	catch(e) {
 		return { error: "Could not read library file", path: libraryPath, e: e }
 	}

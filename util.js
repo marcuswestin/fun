@@ -4,8 +4,8 @@ var fs = require('fs'),
 	util = exports
 
 util.generateParser = function(path) {
-	var grammar = fs.readFileSync(path)
-	var parser = PEG.buildParser(grammar)
+	var grammar = fs.readFileSync(path).toString(),
+		parser = PEG.buildParser(grammar)
 	
 	return parser
 }
@@ -19,7 +19,7 @@ util.errorMsg = function(type, e) {
 }
 
 util.parseWithGrammar = function(code, grammarPath) {
-	var grammar = fs.readFileSync(grammarPath),
+	var grammar = fs.readFileSync(grammarPath).toString(),
 		parser,
 		ast
 	

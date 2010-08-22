@@ -28,7 +28,7 @@ var compiler = require('./language/compiler'),
 /*********
  * Parse *
  *********/
-var code = fs.readFileSync('./' + opts.code),
+var code = fs.readFileSync('./' + opts.code).toString(),
 	result = util.parseWithGrammar(code, grammarPath)
 if (result.error) {
 	sys.puts("Fun parse error", JSON.stringify(result))
