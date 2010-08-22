@@ -15,7 +15,7 @@ util.errorMsg = function(type, e) {
 		? ("Line " + e.line + ", column " + e.column + ": " + e.message)
 		: e.message;
 	
-	return type + ' error: ' + msg
+	return 'util.errorMsg: ' + type + ' error: ' + msg
 }
 
 util.parseWithGrammar = function(code, grammarPath) {
