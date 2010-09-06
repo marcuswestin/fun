@@ -118,6 +118,10 @@ exports.CodeGenerator = Class(function() {
 		return this.observe(reference, 'fun.getStyleHandler('+q(hook)+','+q(cssKey)+')')
 	}
 	
+	this.bindAttribute = function(hook, attrName, reference) {
+		return this.observe(reference, 'fun.getAttributeHandler('+q(hook)+','+q(attrName)+')')
+	}
+	
 	this.mutate = function(target, source) {
 		return this.callFunction('fun.set', q(target.referenceType), q(target.value), exports.getCachedValue(source))
 	}

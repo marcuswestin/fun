@@ -85,6 +85,13 @@
 			hooks[hook].style[styleProp] = (typeof value == 'number' ? value + 'px' : value);
 		}
 	}
+
+	fun.getAttributeHandler = function(hook, attrName) {
+		return function(mutation, value) {
+			if (!hooks[hook]) { return }
+			hooks[hook][attrName] = value;
+		}
+	}
 	
 	fun.on = function(element, eventName, handler) {
 		if (element.addEventListener) {

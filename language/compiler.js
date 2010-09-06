@@ -104,6 +104,8 @@ function getXMLCode(parentHook, tagName, attrList, content) {
 		} else if (attr.name == 'clickHandler') {
 			if (value.type != 'HANDLER') { throw {error: 'Handler attribute must be a HANDLER', type: value} }
 			handleXMLOnClick(hook, value.args, value.code, result)
+		} else if (attr.value.type == 'REFERENCE') {
+			result.bindAttribute(hook, attr.name, attr.value)
 		} else {
 			attrs[attr.name] = value.value
 		}
