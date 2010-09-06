@@ -1,25 +1,6 @@
 TODO
 ====
 
-Start compiling XML into HTML nodes
------------------------------------
-We are currently parsing XML correctly, but the compiler does not know how to handle it yet
-
-Add the Session state
----------------------
-The Session object has access to the user
-    <div>
-        "Welcome" Session.user.name
-        <img src=Session.user.smallPictureURL>
-    </div>
-
-Allow Objects as attribute values
----------------------------------
-	<div style={ left: Local.MouseX + 'px' } />
-or
-	let style = { left: Local.MouseX + 'px' }
-	<div style=style />
-
 Create loops
 ------------
 	<div class="fruits">
