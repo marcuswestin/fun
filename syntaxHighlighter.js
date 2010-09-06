@@ -1,6 +1,7 @@
 exports.highlightLine = function(line) {
 	return line
 		.replace(/"([^"]*)"/g, function(m) { return '<span class="string">'+m+'</span>'})
+		.replace(/'([^']*)'/g, function(m) { return '<span class="string">'+m+'</span>'})
 		.replace(/(let|for|in|if|else) /g, function(m) { return '<span class="keyword">'+m+'</span>'})
 		.replace(/(handler) ?/g, function(m) { return '<span class="type">'+m+'</span>'})
 		.replace(/(Session|Local|Global)/g, function(m) { return '<span class="global">'+m+'</span>'})
