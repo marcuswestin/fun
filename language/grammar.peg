@@ -1,13 +1,13 @@
-Fun =
- Statement*
+/**********************
+ * Top level Fun code *
+ **********************/
+FunCode =
+ FunStatement*
 
-FunMutations =
- MutationStatement*
-
-Statement
+FunStatement
  = _ xml:XML _T
    { return xml; }
- / _ declaration:Declaration _T
+ / _ declaration:DeclarationStatement _T
    { return declaration; }
  / _ ifElse:IfElse _T
    { return ifElse }
@@ -18,75 +18,32 @@ Statement
  / Comment
    { return [] }
 
-MutationStatement
- = 'set' _ target:Reference _ '=' _ source:MutationValue _T
-   { return {type:'MUTATION', target:target, source:source}; }
-
-MutationValue
- = Reference
- / InlineValue
-
 Comment "Comment"
  = _ '//' [^\n]*
 
-/************************
- * If/Else & Conditions *
- ************************/
-IfElse "If/Else statement"
- = 'if' _ '(' _ cond:Condition _ ')' _ '{' ifTrue:Fun '}' _ 'else' _ '{' ifFalse:Fun '}'
-   { return {type:'IF_ELSE', condition:cond, ifTrue:ifTrue, ifFalse:ifFalse}; }
 
-Condition
- = left:Reference _ comparison:Comparison _ right:Reference
-   { return {type:'CONDITION', left:left, right:right, comparison:comparison }; }
 
-Comparison
- = '>='
- / '>'
- / '<='
- / '<'
- / '=='
+/***********
+ * Utility *
+ ***********/
+Name "Name" = first:alpha rest:alphanum*
+    { return first + rest.join('') }
 
-Declaration "Declaration"
- = 'let' _ name:Name _ '=' _ value:ReferenceDeclaration 
-   { return {type:'DECLARATION', name:name, value:value}; }
+alpha "Alpha character" = [a-zA-Z_]
+alphanum "Alpha numeric character" = [a-zA-Z0-9_]
 
+_ "Whitespace" = [\t\f\n ]*
+_T "Possibly terminal whitespace" = [\t\f\n ]* EOF / _
+EOF = !.
+
+
+
+/***************************************
+ * Values, declarations and references *
+ ***************************************/
 InlineValue "Inline value"
  = String
  / Number
-
-ReferenceDeclaration
- = Handler
- / String
- / Number
- / JSON
-
-Handler "Handler"
- = 'handler' _ '(' _ args:ArgumentList _ ')' _ '{' _ code:FunMutations _ '}'
-   { return {type:'HANDLER', args: args, code: code}; }
-
-ArgumentList
- = name:Name _ ',' _ args:ArgumentList
-   { return [name].concat(args) }
- / name:Name
-   { return [name] }
- / _
-   { return [] }
-
-Name "Declaration name"
- = first:alpha rest:alphanum*
-   { return first + rest.join('') }
-
-Reference "Declaration reference"
- = String
- / Number
- / JSON
- / "Local." name:Name
-   { return {type:'REFERENCE', referenceType:'LOCAL', value:name}; }
- / "Global." name:Name
-   { return {type:'REFERENCE', referenceType:'GLOBAL', value:name}; }
- / name:Name
-   { return {type:'REFERENCE', referenceType:'ALIAS', name:name}; }
 
 String "String"
  = '"' value:[^"\n]+ '"'
@@ -98,32 +55,35 @@ Number "Number"
  = value:[0-9]+
    { return {type:'NUMBER', value:parseInt(value.join(''))}; }
 
-/********
- * JSON *
- ********/
-JSON "JSON"
- = "{" _ values:JSONContent _ "}"
-   { return {type:'JSON', content:values}; }
- / "{" _ "}"
-   { return {type:'JSON', content:null}; }
+DeclarationStatement "Declaration statement"
+ = 'let' _ name:Name _ '=' _ value:Declaration 
+   { return {type:'DECLARATION', name:name, value:value}; }
 
-JSONContent
- = kvp:JSONPair _ "," _ json:JSONContent
-   { json[kvp.key]=kvp.value; return json; }
- / kvp:JSONPair
-   { var json={}; json[kvp.key]=kvp.value; return json; }
+Declaration "Declaration"
+ = Handler
+ / String
+ / Number
+ / JSON
 
-JSONPair
- = key:Name _ ":" _ value:Reference
-   { return {key:key,value:value}; }
+Reference "Reference"
+ = InlineValue
+ / JSON
+ / "Local." name:Name
+   { return {type:'REFERENCE', referenceType:'LOCAL', value:name}; }
+ / "Global." name:Name
+   { return {type:'REFERENCE', referenceType:'GLOBAL', value:name}; }
+ / name:Name
+   { return {type:'REFERENCE', referenceType:'ALIAS', name:name}; }
 
-/*******
- * XML *
- *******/
+
+
+/****************
+ * XML literals *
+ ****************/
 XML "XML"
  = _ tag:XMLSelfClosing
    { return {type:'XML_NODE', name:tag.name, attributes:tag.attributes, content:[]}; }
- / _ openTag:XMLOpen _ content:Fun _ closeTag:XMLClose
+ / _ openTag:XMLOpen _ content:FunCode _ closeTag:XMLClose
    { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content:content}; }
 
 XMLOpen	"XML open tag"
@@ -142,16 +102,70 @@ XMLAttribute "XML node attribute"
  = name:Name "=" value:Reference _
    { return {type: 'XML_ATTRIBUTE', name:name, value:value}; }
 
-/***********
- * Utility *
- ***********/
-_ "Whitespace" = [\t\f\n ]*
 
-_T "Possibly terminal whitespace"
- = [\t\f\n ]* EOF
+
+/*****************
+ * JSON literals *
+ *****************/
+JSON "JSON"
+ = "{" _ values:JSONContent _ "}"
+   { return {type:'JSON', content:values}; }
+ / "{" _ "}"
+   { return {type:'JSON', content:null}; }
+
+JSONContent
+ = kvp:JSONPair _ "," _ json:JSONContent
+   { json[kvp.key]=kvp.value; return json; }
+ / kvp:JSONPair
+   { var json={}; json[kvp.key]=kvp.value; return json; }
+
+JSONPair
+ = key:Name _ ":" _ value:Reference
+   { return {key:key,value:value}; }
+
+
+
+/***************************************************
+ * Handlers and state changing mutation statements *
+ ***************************************************/
+Handler "Handler"
+ = 'handler' _ '(' _ args:ArgumentList _ ')' _ '{' _ code:MutationStatement* _ '}'
+   { return {type:'HANDLER', args: args, code: code}; }
+
+ArgumentList
+ = name:Name _ ',' _ args:ArgumentList
+   { return [name].concat(args) }
+ / name:Name
+   { return [name] }
  / _
+   { return [] }
 
-EOF = !.
+MutationStatement
+ = 'set' _ target:Reference _ '=' _ source:MutationValue _T
+   { return {type:'MUTATION', target:target, source:source}; }
 
-alpha "Alpha character" = [a-zA-Z_]
-alphanum "Alpha numeric character" = [a-zA-Z0-9_]
+MutationValue
+ = Reference
+ / InlineValue
+
+
+
+/*************************************
+ * If/Else branches and conditionals *
+ *************************************/
+IfElse "If/Else statement"
+ = 'if' _ '(' _ cond:Condition _ ')' _ '{' ifTrue:FunCode '}' _ 'else' _ '{' ifFalse:FunCode '}'
+   { return {type:'IF_ELSE', condition:cond, ifTrue:ifTrue, ifFalse:ifFalse}; }
+
+Condition
+ = left:Reference _ comparison:Comparison _ right:Reference
+   { return {type:'CONDITION', left:left, right:right, comparison:comparison }; }
+
+Comparison
+ = '>='
+ / '>'
+ / '<='
+ / '<'
+ / '=='
+
+
