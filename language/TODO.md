@@ -26,3 +26,21 @@ Create function declarations and invocations
 			emitUserRow(friend)
 		}
 	</div>
+
+Create the Mouse data object
+----------------------------
+Rather than 
+
+	Local.mouseX
+
+do
+
+	Mouse.x
+
+and then add
+
+	Mouse.on('down', handler)
+
+Create a Google data object
+---------------------------
+For Google Buzzes, Videos, Search... Poll at a given frequency
