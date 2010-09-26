@@ -13,5 +13,5 @@ let handleClick2 = handler() {
 <div> "Global.x = " Global.x </div>
 <div> "Local.handlerTest = " Local.handlerTest </div>
 <br />
-<button clickHandler=handleClick1> 1 </button>
-<button clickHandler=handleClick2> 2 </button>
+<button onClick=handleClick1> 1 </button>
+<button onClick=handleClick2> 2 </button>

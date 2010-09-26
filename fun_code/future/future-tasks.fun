@@ -8,7 +8,7 @@ for (task in myTasks) {
 		if (task.completed) {
 			<span class="status">"Completed!"</span>
 		} else {
-			<button clickHandler=markComplete(task) />"Mark as completed"</button>
+			<button onClick=markComplete(task) />"Mark as completed"</button>
 		}
 	</div>
 }
@@ -19,7 +19,7 @@ let markComplete = handler(task) {
 
 <h3>"Create a new task"</h3>
 <input data=Local.newTaskTitle />
-<button clickHandler=createNewTask />
+<button onClick=createNewTask />
 
 let createNewTask = handler() {
 	let taskTitle = Local.newTaskTitle

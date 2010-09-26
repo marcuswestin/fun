@@ -1,5 +1,5 @@
 <h1 test="asd">"Damn"
-	<div style="color:red;">"Bamn"</div></h1>
+	<div style={ color:'red' }>"Bamn"</div></h1>
 
 <ol>
 if (Local.mouseY > 150) {

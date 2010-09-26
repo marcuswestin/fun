@@ -1,6 +1,6 @@
 <div class="compose">
 	<input data=Local.newMessage />
-	<button clickHandler=sendMessage>Send</button>
+	<button onClick=sendMessage>Send</button>
 </div>
 
 let sendMessage = handler() {

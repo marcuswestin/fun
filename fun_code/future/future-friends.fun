@@ -11,6 +11,6 @@ for (friend in user.friends) {
 		<img src=friend.picture_url />
 		<span class="name">friend.name</span>
 		<editable data=Local.friendMessages[friend]>
-		<button clickHandler=sendMessageToFriend(friend)>
+		<button onClick=sendMessageToFriend(friend)>
 	</div>
 }
