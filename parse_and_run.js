@@ -22,37 +22,47 @@ void(function(){
 
 if (opts.verbose.toLowerCase() == 'false') { opts.verbose = false }
 
-var compiler = require('./language/compiler'),
-	grammarPath = './language/grammar.peg'
-
-/*********
- * Parse *
- *********/
-var code = fs.readFileSync('./' + opts.code).toString(),
-	result = util.parseWithGrammar(code, grammarPath)
-if (result.error) {
-	sys.puts("Fun parse error", JSON.stringify(result))
-} else if (opts.verbose) {
-	var displayCode = code
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-	
-	var output = '<link href="syntaxHighlighter.css" type="text/css" rel="stylesheet" />'
-		+ '<div id="verbose-output">'
-			+ "<b>Fun</b><pre><code>" + syntaxHighlighter.highlightCode(displayCode) + "</code></pre>"
-			+ "<br/><br/>"
-			+ "<b>AST</b><pre>" + util.prettyPrint(result.ast) + "</pre>"
-		+ '</div>'
-	
-	sys.puts(output)
-}
-
-/***********
- * Compile *
- ***********/
-var compileResult = compiler.compile(result.ast)
-if (compileResult.error) {
-	sys.puts(JSON.stringify(compileResult))
+if (!opts.code) {
+	var files = fs.readdirSync('./fun_code/')
+	for (var i=0, file; file = files[i]; i++) {
+		if (!file.match(/\.fun$/)) { continue }
+		sys.puts('<br /><a href="parse_and_run?code='+file+'">'+file+'</a>')
+	}
 } else {
-	sys.puts("<body><script src=\"lib/fin/fin.js\"></script><script>" + compileResult + "</script></body>")
+	var compiler = require('./language/compiler'),
+		grammarPath = './language/grammar.peg'
+
+	/*********
+	 * Parse *
+	 *********/
+	var code = fs.readFileSync('./' + opts.code).toString(),
+		result = util.parseWithGrammar(code, grammarPath)
+	if (result.error) {
+		sys.puts("Fun parse error", JSON.stringify(result))
+	} else if (opts.verbose) {
+		var displayCode = code
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+
+		var output = '<link href="syntaxHighlighter.css" type="text/css" rel="stylesheet" />'
+			+ '<div id="verbose-output">'
+				+ '<button onclick="document.getElementById(\'verbose-output\').style.display=\'none\';">hide</button>'
+				+ "<b>Fun</b><pre><code>" + syntaxHighlighter.highlightCode(displayCode) + "</code></pre>"
+				+ "<br/><br/>"
+				+ "<b>AST</b><pre>" + util.prettyPrint(result.ast) + "</pre>"
+			+ '</div>'
+
+		sys.puts(output)
+	}
+
+	/***********
+	 * Compile *
+	 ***********/
+	var compileResult = compiler.compile(result.ast)
+	if (compileResult.error) {
+		sys.puts(JSON.stringify(compileResult).replace(/\\n/g, '<br /> - '))
+	} else {
+		sys.puts("<body><script src=\"lib/fin/fin.js\"></script><script>" + compileResult + "</script></body>")
+	}
 }
+

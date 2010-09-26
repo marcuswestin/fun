@@ -11,6 +11,8 @@ FunStatement
    { return declaration; }
  / _ ifElse:IfElse _T
    { return ifElse }
+ / _ forLoop:ForLoop _T
+   { return forLoop }
  / _ value:InlineValue _T
    { return {type:'INLINE_VALUE', value: value}; }
  / _ reference:Reference _T
@@ -183,3 +185,10 @@ Comparison
  / '=='
 
 
+
+/*************
+ * For loops *
+ *************/
+ForLoop "For loop"
+ = 'for' _ '(' _ key:Name _ 'in' _ list:Reference ')' _ '{' forCode:FunCode '}'
+   { return {type:'FOR_LOOP', key:key, list:list, code:forCode }; }

@@ -6,6 +6,11 @@
 		hooks = fun.hooks = {},
 		hookCallbacks = {}
 	
+	var _uniqueID = 0
+	fun.getHookID = function() {
+		return 'funHook' + (++_uniqueID)
+	}
+	
 	fun.getDOMHook = function(parentHookID, hookID, tag, attrs) {
 		if (hooks[hookID]) { return hooks[hookID] }
 		var parent = hooks[parentHookID]

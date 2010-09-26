@@ -1,4 +1,6 @@
-var q = exports.q = function(obj) {
+var util = exports
+
+exports.q = function(obj) {
 	return JSON.stringify(obj)
 }
 
@@ -6,43 +8,79 @@ var join = exports.join = function(args, glue) {
 	return Array.prototype.join.call(args, glue || '')
 }
 
-var uniqueId = 0,
-	unique = exports.unique = function(name) { return '_u' + (uniqueId++) + (name ? '_' + name : '') }
+var _uniqueId = 0
+exports.unique = function(name) { return '_u' + (_uniqueId++) + (name ? '_' + name : '') }
 
 exports.getCachedValue = function(reference) {
 	var type = reference.type,
 		name = reference.value
 	
 	if (type == 'REFERENCE') {
-		return 'fun.getCachedValue('+q(reference.referenceType)+','+q(name)+')'
+		return 'fun.getCachedValue('+util.q(reference.referenceType)+','+util.q(name)+')'
 	} else if (type == 'STRING') {
-		return q(name)
+		return util.q(name)
 	} else if (type == 'NUMBER') {
 		return name
 	} else {
-		throw { error: 'Unknown reference type for getFinCached', reference: reference }
+		throw util.error('Unknown reference type for getFinCached', {reference: reference})
 	}
 }
 
-exports.getHookID = function() { return unique('dom') }
-exports.getHookCode = function(parentHook, hookID, tagName, attrs) {
-	hookID = hookID || exports.getHookID()
+exports.error = function(msg, values) {
+	var moreInfo = values ? (' : ' + JSON.stringify(values)) : ''
+	return new Error(msg + moreInfo)
+}
+
+exports.assert = function(shouldBeTrue, msg, values) {
+	if (shouldBeTrue) { return }
+	throw util.error(msg, values)
+}
+
+var _hookNames = []
+exports.getHookNames = function() { return _hookNames }
+exports.getHookID = function() { return util.q(util.unique('hookID')) }
+exports.getHookName = function(isDynamic) {
+	var hookName = util.unique('hookName')
+	_hookNames.push({ name: hookName, dynamic: isDynamic })
+	return hookName
+}
+exports.getHookCode = function(parentHookName, hookName, tagName, attrs) {
+	util.assert(parentHookName && hookName, 'parentHookName and hookName must be defined')
 	attrs = attrs || []
 	var attrKVPs = {}
 	
 	return 'fun.getDOMHook('
-		+ q(parentHook) + ', '
-		+ q(hookID) + ', '
-		+ q(tagName||'span') + ', '
+		+ parentHookName + ', '
+		+ hookName + ', '
+		+ util.q(tagName||'span') + ', '
 		+ JSON.stringify(attrs) + ')'
 }
 
+exports.setReference = function(context, name, reference) {
+	var referenceTable = context.referenceTable
+	util.assert(!referenceTable[name], 'Repeat Declaration', {name:name})
+	referenceTable[name] = reference
+}
+exports.getReference = function(context, name) {
+	var referenceTable = context.referenceTable
+	util.assert(referenceTable[name], 'Undeclared Referene', {name: name, table: referenceTable})
+	return referenceTable[name]
+}
+
+exports.copy = function(obj, mergeIn) {
+	var newObj = {}
+	for (var key in obj) { newObj[key] = obj[key] }
+	if (mergeIn) {
+		for (var key in mergeIn) { newObj[key] = mergeIn[key] }
+	}
+	return newObj
+}
 
 exports.CodeGenerator = Class(function() {
 	
 	this.init = function() {
-		this._code = []
-		this._indent = ['']
+		this._code = ["\n"]
+		this._indentation = ['']
 		this._variables = {}
 	}
 	
@@ -50,28 +88,52 @@ exports.CodeGenerator = Class(function() {
 	
 	this.log = function() {
 		var args = Array.prototype.slice.call(arguments, 0)
-		return this._add('window.console&&console.log('+join(args.map(JSON.stringify),',')+')') }
+		args = args.map(function(arg) {
+			return arg == 'arguments' ? 'arguments' : JSON.stringify(arg)
+		})
+		return this._add('window.console&&console.log('+join(args,',')+')')
+	}
+	
+	this.newline = function(number) {
+		return this._add(this._repeat("\n", number || 1))
+	}
+	
+	this.boxComment = function(msg) {
+		var len = msg.length + 2
+		return this._add('/*' + this._repeat('*', len) + "**\n"
+			+ ' * ' + msg + " *\n"
+			+ ' *' + this._repeat('*', len) + "**/\n")
+	}
+	
+	this._repeat = function(str, times) {
+		var arr = []
+		arr.length = times
+		return arr.join(str)
+	}
 	
 	this.closureStart = function() {
-		return this._add(';(function(' + join(arguments, ',') + '){', 1);
+		return this._add(';(function(' + join(arguments, ',') + '){').indent(1);
 	}
 	this.closureEnd = function() {
-		this._indent.length -= 1
-		return this._add('})(' + join(arguments, ',') + ');')
+		return this.indent(-1)._add('})(' + join(arguments, ',') + ')')
 	}
 
-	this.functionStart = function(name) { return this._add('function ' + name + '(){', 1) }
+	this.functionStart = function(name) {
+		var args = Array.prototype.slice.call(arguments, 1)
+		return this._add('function ' + name + '(' + args.join(',') + '){').indent(1)
+	}
 	this.functionEnd = function() {
-		this._indent.length -= 1
-		return this._add('}')
+		return this.indent(-1)._add('}')
 	}
 	this.callFunction = function(name) {
 		var args = Array.prototype.slice.call(arguments, 1)
 		return this._add(name + '(' + args.join(', ') + ')')
 	}
 	
-	this.withHookStart = function(hook) { return this.code('fun.withHook(', q(hook), ', function(hook) {\n') }
-	this.withHookEnd = function() { return this.code('})') }
+	this.withHookStart = function(hook, argName) {
+		return this.code('fun.withHook(', hook, ', function('+argName+') {\n').indent(1)
+	}
+	this.withHookEnd = function() { return this.indent(-1).code('})') }
 	
 	this.assign = function(name, value) {
 		this._add((this._variables[name] || name.match(/[\[\.]/) ? '' : 'var ') + name + ' = ' + value)
@@ -98,41 +160,51 @@ exports.CodeGenerator = Class(function() {
 
 		switch(type) {
 			case 'REFERENCE':
-				return this._add('fun.observe('+q(reference.referenceType)+', '+q(name)+', '+callbackCode+')')
+				return this._add('fun.observe('+util.q(reference.referenceType)+', '+util.q(name)+', '+callbackCode+')')
 			case 'NUMBER':
 				return this
 			default:
-				throw { error: 'Unknown reference type for CodeGenerator#observe', reference: reference, callbackCode: callbackCode }
+				throw new util.error('Unknown reference type for CodeGenerator#observe', {reference: reference, callbackCode: callbackCode})
 		}
 	}
 	
-	this.createHook = function(parentHook, hookID, tagName, attrs) {
-		return this._add(exports.getHookCode(parentHook, hookID, tagName, attrs))
+	this.createHook = function(parentHook, hookName, tagName, attrs) {
+		return this._add(util.getHookCode(parentHook, hookName, tagName, attrs))
+	}
+	this.declareHook = function(hookName) {
+		return this._add('var '+hookName+'=fun.getHookID()')
 	}
 	
 	this.reflectInput = function(hook, reference) {
-		return this.callFunction('fun.reflectInput', q(hook), q(reference.referenceType), q(reference.value))
+		return this.callFunction('fun.reflectInput', hook, util.q(reference.referenceType), util.q(reference.value))
 	}
 	
 	this.bindStyle = function(hook, cssKey, reference) {
-		return this.observe(reference, 'fun.getStyleHandler('+q(hook)+','+q(cssKey)+')')
+		return this.observe(reference, 'fun.getStyleHandler('+hook+','+util.q(cssKey)+')')
 	}
 	
 	this.bindAttribute = function(hook, attrName, reference) {
-		return this.observe(reference, 'fun.getAttributeHandler('+q(hook)+','+q(attrName)+')')
+		return this.observe(reference, 'fun.getAttributeHandler('+hook+','+util.q(attrName)+')')
 	}
 	
-	this.mutate = function(target, source) {
-		return this.callFunction('fun.set', q(target.referenceType), q(target.value), exports.getCachedValue(source))
+	this.mutate = function(mutationType, target, source) {
+		return this.callFunction('fun.mutate', 
+				util.q(mutationType),
+				util.q(target.referenceType),
+				util.q(target.value),
+				util.getCachedValue(source))
+	}
+	
+	this._add = function(code) {
+		this._code.push(this._indentation.join("\t") + code)
+		return this
+	}
+	this.indent = function(delta) {
+		this._indentation.length += delta
+		return this
 	}
 	
 	this.toString = function() { return this._code.join("\n") }
-	
-	this._add = function(code, deltaIndent) {
-		this._code.push(this._indent.join("\t") + code)
-		if (deltaIndent) { this._indent.length += deltaIndent }
-		return this
-	}
 })
 
 function Class (parent, proto) {
