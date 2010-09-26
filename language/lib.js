@@ -31,32 +31,20 @@
 		hooks[hookID] = domNode
 	}
 	
-	fun.set = function(id, propName, callback) {
-		if (id == 'LOCAL') {
-			fin.setLocal(propName, callback)
-		} else if (id == 'GLOBAL') {
-			fin.connect(bind(fin, 'setGlobal', propName, callback))
-		} else {
-			fin.connect(bind(fin, 'set', id, propName, callback))
-		}
+	fun.mutate = function(op, id, propName, arg) {
+		var doMutate = bind(fin, op.toLowerCase(), id, propName, arg)
+		if (id == 'LOCAL') { doMutate() }
+		else { fin.connect(doMutate) }
 	}
 	
 	fun.observe = function(id, propName, callback) {
-		if (id == 'LOCAL') {
-			fin.observeLocal(propName, callback)
-		} else if (id == 'GLOBAL') {
-			fin.connect(bind(fin, 'observeGlobal', propName, callback))
-		} else {
-			fin.connect(bind(fin, 'observe', id, propName, callback))
-		}
+		var doObserve = bind(fin, 'observe', id, propName, callback)
+		if (id == 'LOCAL') { doObserve() }
+		else { fin.connect(doObserve) }
 	}
 	
 	fun.getCachedValue = function(type, prop) {
-		if (type == 'LOCAL') {
-			return fin.getLocalCachedMutation(prop).value
-		} else if (type == 'GLOBAL') {
-			return fin.getGlobalCachedMutation(prop).value
-		}
+		return fin.getCachedMutation(type, prop).value
 	}
 	
 	fun.withHook = function(hookID, callback) {
@@ -74,7 +62,7 @@
 		fun.withHook(hook, function(input) {
 			fun.observe(id, prop, function(mutation, value){ input.value = value })
 			input.onkeypress = function() { setTimeout(function() {
-				fun.set(id, prop, input.value)
+				fun.mutate('SET', id, prop, input.value)
 			}, 0)}
 		})
 	}
@@ -104,9 +92,9 @@
 	fun.getCallbackBlock = blockCallback
 	
 	fun.on(document, 'mousemove', function(e) {
-		fun.set('LOCAL', 'mouseX', e.clientX)
-		fun.set('LOCAL', 'mouseY', e.clientY)
+		fun.mutate('SET', 'LOCAL', 'mouseX', e.clientX)
+		fun.mutate('SET', 'LOCAL', 'mouseY', e.clientY)
 	})
-	fun.set('LOCAL', 'mouseX', 0)
-	fun.set('LOCAL', 'mouseY', 0)
+	fun.mutate('SET', 'LOCAL', 'mouseX', 0)
+	fun.mutate('SET', 'LOCAL', 'mouseY', 0)
 })();
