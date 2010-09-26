@@ -68,14 +68,16 @@ Declaration "Declaration"
 Reference "Reference"
  = InlineValue
  / JSON
- / "Local." name:Name
-   { return {type:'REFERENCE', referenceType:'LOCAL', value:name}; }
- / "Global." name:Name
-   { return {type:'REFERENCE', referenceType:'GLOBAL', value:name}; }
+ / Mutables
  / name:Name
    { return {type:'REFERENCE', referenceType:'ALIAS', name:name}; }
 
-
+Mutables "Mutables (Local and Global)"
+ = "Local." name:Name
+   { return {type:'REFERENCE', referenceType:'LOCAL', value:name}; }
+ / "Global." name:Name
+   { return {type:'REFERENCE', referenceType:'GLOBAL', value:name}; }
+ 
 
 /****************
  * XML literals *
@@ -109,19 +111,29 @@ XMLAttribute "XML node attribute"
  *****************/
 JSON "JSON"
  = "{" _ values:JSONContent _ "}"
-   { return {type:'JSON', content:values}; }
- / "{" _ "}"
-   { return {type:'JSON', content:null}; }
+   { return {type:'JSON_OBJECT', content:values}; }
+ / "[" values:JSONList "]"
+   { return {type:'JSON_LIST', content: values}; }
 
 JSONContent
  = kvp:JSONPair _ "," _ json:JSONContent
    { json[kvp.key]=kvp.value; return json; }
  / kvp:JSONPair
    { var json={}; json[kvp.key]=kvp.value; return json; }
+ / _
+   { return {}; }
 
 JSONPair
  = key:Name _ ":" _ value:Reference
    { return {key:key,value:value}; }
+
+JSONList
+ = value:Reference _ "," _ rest:JSONList
+   { return [value].concat(rest) }
+ / value:Reference
+   { return [value] }
+ / _
+   { return [] }
 
 
 
@@ -141,8 +153,10 @@ ArgumentList
    { return [] }
 
 MutationStatement
- = 'set' _ target:Reference _ '=' _ source:MutationValue _T
-   { return {type:'MUTATION', target:target, source:source}; }
+ = 'set' _ target:Mutables _ '=' _ source:MutationValue _T
+   { return {type:'MUTATION', mutationType:'SET', target:target, source:source}; }
+ / target:Mutables '.push(' _ source:MutationValue _ ')' _T
+   { return {type:'MUTATION', mutationType:'APPEND', target:target, source:source}; }
 
 MutationValue
  = Reference
