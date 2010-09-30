@@ -83,7 +83,7 @@ exports.CodeGenerator = Class(function() {
 	this.log = function() {
 		var args = Array.prototype.slice.call(arguments, 0)
 		args = args.map(function(arg) {
-			return arg == 'arguments' ? 'arguments' : JSON.stringify(arg)
+			return typeof arg == 'string' ? arg : JSON.stringify(arg)
 		})
 		return this._add('window.console&&console.log('+join(args,',')+')')
 	}
