@@ -36,14 +36,8 @@ exports.assert = function(shouldBeTrue, msg, values) {
 	throw util.error(msg, values)
 }
 
-var _hookNames = []
-exports.getHookNames = function() { return _hookNames }
 exports.getHookID = function() { return util.q(util.unique('hookID')) }
-exports.getHookName = function(isDynamic) {
-	var hookName = util.unique('hookName')
-	_hookNames.push({ name: hookName, dynamic: isDynamic })
-	return hookName
-}
+exports.getName = function(isDynamic) { return util.unique('name') }
 exports.getHookCode = function(parentHookName, hookName, tagName, attrs) {
 	util.assert(parentHookName && hookName, 'parentHookName and hookName must be defined')
 	attrs = attrs || []
@@ -171,8 +165,11 @@ exports.CodeGenerator = Class(function() {
 	this.createHook = function(parentHook, hookName, tagName, attrs) {
 		return this._add(util.getHookCode(parentHook, hookName, tagName, attrs))
 	}
+	this.declareName = function(name, value) {
+		return this._add('var '+name+' = '+value)
+	}
 	this.declareHook = function(hookName) {
-		return this._add('var '+hookName+'=fun.getHookID()')
+		return this.declareName(hookName, 'fun.getHookID()')
 	}
 	
 	this.reflectInput = function(hook, reference) {

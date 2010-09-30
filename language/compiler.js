@@ -11,7 +11,7 @@ compiler.compile = function(ast) {
 	catch(e) { return {error: "Could not read library file", path: libraryPath, e: e} }
 	
 	var rootContext = {
-		hookName: util.getHookName(),
+		hookName: util.getName(),
 		referenceTable: {}
 	}
 	
@@ -81,7 +81,7 @@ function getXMLCode(context, ast) {
 		attrList = ast.attributes,
 		content = ast.content
 	
-	var hookName = util.getHookName(),
+	var hookName = util.getName(),
 		result = new util.CodeGenerator(),
 		newContext = util.copy(context, {hookName: hookName}),
 		attrs = {}
@@ -152,7 +152,7 @@ function handleXMLStyle(context, styles, targetAttrs, result) {
  * Values and References *
  *************************/
 function getInlineValueCode(context, val) {
-	var hookName = util.getHookName()
+	var hookName = util.getName()
 	return new util.CodeGenerator()
 		.declareHook(hookName)
 		.code(util.getHookCode(context.hookName, hookName), '.innerHTML=', val)
@@ -168,7 +168,7 @@ function getRefered(context, value) {
 
 function getReferenceCode(context, reference) {
 	var parentHookName = context.hookName,
-	    hookName = util.getHookName()
+	    hookName = util.getName()
 	return new util.CodeGenerator()
 		.declareHook(hookName)
 		.closureStart()
@@ -189,8 +189,8 @@ function getIfElseCode(context, ast) {
 		trueAST = ast.ifTrue,
 		elseAST = ast.ifFalse
 	
-	var ifContext = util.copy(context, { hookName: util.getHookName() }),
-		elseContext = util.copy(context, { hookName: util.getHookName() }),
+	var ifContext = util.copy(context, { hookName: util.getName() }),
+		elseContext = util.copy(context, { hookName: util.getName() }),
 		ifHookCode = util.getHookCode(parentHook, ifContext.hookName),
 		elseHookCode = util.getHookCode(parentHook, elseContext.hookName),
 		compareCode = '('+util.getCachedValue(cond.left) + cond.comparison + util.getCachedValue(cond.right)+')'
@@ -228,8 +228,9 @@ function getForLoopCode(context, ast) {
 	var parentHookName = context.hookName,
 		list = ast.list,
 		codeAST = ast.code,
-		loopHookName = util.getHookName(),
-		emitHookName = util.getHookName(true),
+		loopHookName = util.getName(),
+		emitHookName = util.getName(true),
+		valueName = util.getName(),
 		loopContext = util.copy(context, {hookName: emitHookName})
 	
 	loopContext.referenceTable = {}
