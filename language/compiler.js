@@ -57,11 +57,7 @@ function compileFunStatement(context, ast) {
 		case 'INLINE_VALUE':
 			return getInlineValueCode(context, compileFunStatement(context, ast.value))
 		case 'REFERENCE':
-			if (ast.referenceType == "ALIAS") {
-				return getInlineValueCode(context, util.q(util.getReference(context, ast.name).value))
-			} else {
-				return getReferenceCode(context, ast)
-			}
+			return getReferenceCode(context, ast)
 		case 'IF_ELSE':
 			return getIfElseCode(context, ast)
 		case 'FOR_LOOP':
@@ -151,6 +147,16 @@ function handleXMLStyle(context, styles, targetAttrs, result) {
 /*************************
  * Values and References *
  *************************/
+function getReferenceCode(context, ast) {
+	if (ast.referenceType == "ALIAS") {
+		var ref = util.getReference(context, ast.name),
+			nameOrStr = ref.name ? ref.name : util.q(ref.value)
+		return getInlineValueCode(context, nameOrStr)
+	} else {
+		return getObservationCode(context, ast)
+	}
+}
+
 function getInlineValueCode(context, val) {
 	var hookName = util.getName()
 	return new util.CodeGenerator()
@@ -166,7 +172,7 @@ function getRefered(context, value) {
 	}
 }
 
-function getReferenceCode(context, reference) {
+function getObservationCode(context, reference) {
 	var parentHookName = context.hookName,
 	    hookName = util.getName()
 	return new util.CodeGenerator()
@@ -235,7 +241,7 @@ function getForLoopCode(context, ast) {
 	
 	loopContext.referenceTable = {}
 	loopContext.referenceTable.__proto__ = context.referenceTable
-	util.setReference(loopContext, ast.key, {value: 'SPECIAL_FOR_LOOP_REFERENCE - REPLACE WITH DYNAMIC VALUE'})
+	util.setReference(loopContext, ast.key, {name: valueName})
 	
 	// Create new context with referenceTable prototyping the current context's reference table
 	return new util.CodeGenerator()
@@ -244,7 +250,7 @@ function getForLoopCode(context, ast) {
 			.createHook(parentHookName, loopHookName)
 			.observe(list, 'onMutation')
 			.functionStart('onMutation', 'mutation')
-				.log('mutation', 'arguments')
+				.declareName(valueName, 'mutation.args[0]')
 				.declareHook(emitHookName)
 				.callFunction('fun.getDOMHook', loopHookName, emitHookName)
 				// .code('fun.handleListMutation(mutation, function() {')
