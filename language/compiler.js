@@ -202,6 +202,8 @@ function getIfElseCode(context, ast) {
 		compareCode = '('+util.getCachedValue(cond.left) + cond.comparison + util.getCachedValue(cond.right)+')'
 	
 	return new util.CodeGenerator()
+		.declareHook(ifContext.hookName)
+		.declareHook(elseContext.hookName)
 		.closureStart('ifPath', 'elsePath')
 			.code(ifHookCode) // force creation of the dom hooks for proper ordering
 			.code(elseHookCode)
