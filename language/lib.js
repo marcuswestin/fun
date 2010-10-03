@@ -26,6 +26,12 @@
 		return hook
 	}
 	
+	fun.destroyHook = function(hookID) {
+		var hook = hooks[hookID]
+		if (!hooks[hookID]) { return }
+		hook.innerHTML = ''
+	}
+	
 	fun.hook = function(hookID) { return hooks[hookID] }
 	
 	fun.value = function(hookID, value) {
