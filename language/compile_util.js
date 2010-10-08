@@ -1,17 +1,24 @@
-var util = exports
+var sys = require('sys'),
+	util = exports
 
-exports.q = function(obj) {
+util.q = function(obj) {
 	return JSON.stringify(obj)
 }
 
-var join = exports.join = function(args, glue) {
+util.log = function() {
+	sys.puts(Array.prototype.slice.call(arguments, 0).map(function(arg) {
+		return JSON.stringify(arg)
+	}).join("\n"))
+}
+
+util.join = function(args, glue) {
 	return Array.prototype.join.call(args, glue || '')
 }
 
 var _uniqueId = 0
-exports.unique = function(name) { return '_u' + (_uniqueId++) + (name ? '_' + name : '') }
+util.unique = function(name) { return '_u' + (_uniqueId++) + (name ? '_' + name : '') }
 
-exports.getCachedValue = function(reference) {
+util.getCachedValue = function(reference) {
 	var type = reference.type,
 		name = reference.value
 	
@@ -26,19 +33,19 @@ exports.getCachedValue = function(reference) {
 	}
 }
 
-exports.error = function(msg, values) {
+util.error = function(msg, values) {
 	var moreInfo = values ? (' : ' + JSON.stringify(values)) : ''
 	return new Error(msg + moreInfo)
 }
 
-exports.assert = function(shouldBeTrue, msg, values) {
+util.assert = function(shouldBeTrue, msg, values) {
 	if (shouldBeTrue) { return }
 	throw util.error(msg, values)
 }
 
-exports.getHookID = function() { return util.q(util.unique('hookID')) }
-exports.getName = function(isDynamic) { return util.unique('name') }
-exports.getHookCode = function(parentHookName, hookName, tagName, attrs) {
+util.getHookID = function() { return util.q(util.unique('hookID')) }
+util.getName = function(isDynamic) { return util.unique('name') }
+util.getHookCode = function(parentHookName, hookName, tagName, attrs) {
 	util.assert(parentHookName && hookName, 'parentHookName and hookName must be defined')
 	attrs = attrs || []
 	var attrKVPs = {}
@@ -50,18 +57,18 @@ exports.getHookCode = function(parentHookName, hookName, tagName, attrs) {
 		+ JSON.stringify(attrs) + ')'
 }
 
-exports.setReference = function(context, name, reference) {
+util.setReference = function(context, name, reference) {
 	var referenceTable = context.referenceTable
 	util.assert(!referenceTable[name], 'Repeat Declaration', {name:name})
 	referenceTable[name] = reference
 }
-exports.getReference = function(context, name) {
+util.getReference = function(context, name) {
 	var referenceTable = context.referenceTable
 	util.assert(referenceTable[name], 'Undeclared Referene', {name: name, table: referenceTable})
 	return referenceTable[name]
 }
 
-exports.copy = function(obj, mergeIn) {
+util.copy = function(obj, mergeIn) {
 	var newObj = {}
 	for (var key in obj) { newObj[key] = obj[key] }
 	if (mergeIn) {
@@ -70,7 +77,7 @@ exports.copy = function(obj, mergeIn) {
 	return newObj
 }
 
-exports.CodeGenerator = Class(function() {
+util.CodeGenerator = Class(function() {
 	
 	this.init = function() {
 		this._code = ["\n"]
@@ -78,14 +85,14 @@ exports.CodeGenerator = Class(function() {
 		this._variables = {}
 	}
 	
-	this.code = function(code) { return this._add(join(arguments)) }
+	this.code = function(code) { return this._add(util.join(arguments)) }
 	
 	this.log = function() {
 		var args = Array.prototype.slice.call(arguments, 0)
 		args = args.map(function(arg) {
 			return typeof arg == 'string' ? arg : JSON.stringify(arg)
 		})
-		return this._add('window.console&&console.log('+join(args,',')+')')
+		return this._add('window.console&&console.log('+util.join(args,',')+')')
 	}
 	
 	this.newline = function(number) {
@@ -106,10 +113,10 @@ exports.CodeGenerator = Class(function() {
 	}
 	
 	this.closureStart = function() {
-		return this._add(';(function(' + join(arguments, ',') + '){').indent(1);
+		return this._add(';(function(' + util.join(arguments, ',') + '){').indent(1);
 	}
 	this.closureEnd = function() {
-		return this.indent(-1)._add('})(' + join(arguments, ',') + ')')
+		return this.indent(-1)._add('})(' + util.join(arguments, ',') + ')')
 	}
 
 	this.functionStart = function(name) {
