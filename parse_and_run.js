@@ -11,7 +11,7 @@ var sys = require('sys'),
  * Parse commandline options *
  *****************************/
 var args = process.argv.slice(2),
-	opts = { code: '', verbose: "true" }
+	opts = { code: '', verbose: "false" }
 
 void(function(){
 	for (var i=0, arg; arg = args[i]; i++) {
