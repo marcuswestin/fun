@@ -1,17 +1,25 @@
-"mouse: (" Local.mouseX "," Local.mouseY ")"
+<div>
+	"mouse: (" Local.mouseX "," Local.mouseY ")"
+</div>
 
-if (Local.mouseX >= 100) { "mouse.x >= 100" }
-else { "mouse.x < 100" }
+<div>
+	if (Local.mouseX >= 100) { "mouse.x >= 100" }
+	else { "mouse.x < 100" }
+</div>
 
-if (100 >= Local.mouseY) {
-	"mouse.y < 100"
-} else {
-	if (Local.mouseY <= 200) {
-		"100 < mouse.y <= 200"
+<div>
+	if (100 >= Local.mouseY) {
+		"mouse.y < 100"
 	} else {
-		"100 < 200 < mouse.y"
+		if (Local.mouseY <= 200) {
+			"100 < mouse.y <= 200"
+		} else {
+			"100 < 200 < mouse.y"
+		}
 	}
-}
+</div>
 
-if (Local.mouseY <= Local.mouseX) { "mouse.y <= mouse.x" }
-else { "mouse.y > mouse.x" }
+<div>
+	if (Local.mouseY <= Local.mouseX) { "mouse.y <= mouse.x" }
+	else { "mouse.y > mouse.x" }
+</div>
