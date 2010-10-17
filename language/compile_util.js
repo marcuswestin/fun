@@ -1,6 +1,9 @@
 var sys = require('sys'),
 	util = exports
 
+util.BYTES = 'bytes'
+util.LIST = 'list'
+
 util.q = function(obj) {
 	return JSON.stringify(obj)
 }
@@ -41,6 +44,13 @@ util.error = function(msg, values) {
 util.assert = function(shouldBeTrue, msg, values) {
 	if (shouldBeTrue) { return }
 	throw util.error(msg, values)
+}
+util.assertType = function(reference, type) {
+	if (reference.valueType) {
+		util.assert(reference.valueType == type, "Reference has multiple implied types", {currentType: reference.valueType, newType: type})
+	} else {
+		reference.valueType = type
+	}
 }
 
 util.getHookID = function() { return util.q(util.unique('hookID')) }
@@ -156,12 +166,13 @@ util.CodeGenerator = Class(function() {
 	}
 	
 	this.observe = function(reference, callbackCode) {
-		var type = reference.type,
-			name = reference.value
-
-		switch(type) {
+		switch(reference.type) {
 			case 'REFERENCE':
-				return this._add('fun.observe('+util.q(reference.referenceType)+', '+util.q(name)+', '+callbackCode+')')
+				return this._add('fun.observe('
+						+ util.q(reference.valueType || util.BYTES) + ', '
+						+ util.q(reference.referenceType) + ', '
+						+ util.q(reference.value) + ', '
+						+ callbackCode + ')')
 			case 'NUMBER':
 				return this
 			default:

@@ -6,6 +6,12 @@
 		hooks = fun.hooks = {},
 		hookCallbacks = {}
 	
+	var BYTES = 'bytes',
+		LIST = 'list',
+		_typeMethods = {}
+	_typeMethods[BYTES] = 'observe'
+	_typeMethods[LIST] = 'observeList'
+	
 	var _uniqueID = 0
 	fun.getHookID = function() {
 		return 'funHook' + (++_uniqueID)
@@ -48,11 +54,19 @@
 		else { fin.connect(doMutate) }
 	}
 	
-	fun.observe = function(id, propName, callback) {
-		var doObserve = bind(fin, 'observe', id, propName, callback)
+	fun.observe = function(type, id, propName, callback) {
+		var methodName = _typeMethods[type],
+			doObserve = bind(fin, methodName, id, propName, callback)
 		if (id == 'LOCAL') { doObserve() }
 		else { fin.connect(doObserve) }
 	}
+	
+	fun.handleListMutation = function(mutation, callback) {
+		var args = mutation.args
+		for (var i=0, arg; arg = args[i]; i++) {
+			callback(arg)
+		}
+	} 
 	
 	fun.getCachedValue = function(type, prop) {
 		return fin.getCachedMutation(type, prop).value
@@ -71,7 +85,7 @@
 	
 	fun.reflectInput = function(hook, id, prop) {
 		fun.withHook(hook, function(input) {
-			fun.observe(id, prop, function(mutation, value){ input.value = value })
+			fun.observe(BYTES, id, prop, function(mutation, value){ input.value = value })
 			input.onkeypress = function() { setTimeout(function() {
 				fun.mutate('SET', id, prop, input.value)
 			}, 0)}

@@ -173,15 +173,20 @@ function getRefered(context, value) {
 }
 
 function getObservationCode(context, reference) {
-	var parentHookName = context.hookName,
+	var value = getRefered(context, reference),
+		parentHookName = context.hookName,
 	    hookName = util.getName()
+	
+	util.assertType(value, util.BYTES)
+	
 	return new util.CodeGenerator()
 		.declareHook(hookName)
 		.closureStart()
 			.assign('hook', util.getHookCode(parentHookName, hookName))
 			.callFunction('fun.observe', 
-				util.q(reference.referenceType), 
-				util.q(reference.value), 
+				util.q(value.valueType),
+				util.q(value.referenceType), 
+				util.q(value.value), 
 				'function(mut,val){ hook.innerHTML=val }')
 		.closureEnd()
 }
@@ -233,12 +238,14 @@ function getIfElseCode(context, ast) {
 
 function getForLoopCode(context, ast) {
 	var parentHookName = context.hookName,
-		list = ast.list,
+		list = getRefered(context, ast.list),
 		codeAST = ast.code,
 		loopHookName = util.getName(),
 		emitHookName = util.getName(true),
 		valueName = util.getName(),
 		loopContext = util.copy(context, {hookName: emitHookName})
+	
+	util.assertType(list, 'list')
 	
 	loopContext.referenceTable = {}
 	loopContext.referenceTable.__proto__ = context.referenceTable
@@ -251,12 +258,11 @@ function getForLoopCode(context, ast) {
 			.createHook(parentHookName, loopHookName)
 			.observe(list, 'onMutation')
 			.functionStart('onMutation', 'mutation')
-				.declareName(valueName, 'mutation.args[0]')
-				.declareHook(emitHookName)
-				.callFunction('fun.getDOMHook', loopHookName, emitHookName)
-				// .code('fun.handleListMutation(mutation, function() {')
+				.code('fun.handleListMutation(mutation, function('+valueName+') {')
+					.declareHook(emitHookName)
+					.callFunction('fun.getDOMHook', loopHookName, emitHookName)
 					.code(compile(loopContext, codeAST))
-				// .code('})')
+				.code('})')
 			.functionEnd()
 		.closureEnd()
 }
