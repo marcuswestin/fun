@@ -1,12 +1,21 @@
-let addItem = handler() {
-	Local.items.push('new item')
-}
+let addItem = handler() { Global.items.push(Local.text) }
+let containerStyle = { padding: 5, margin: 5, border: '1px solid' }
 
-<button onClick=addItem>"Add item"</button>
+<div style=containerStyle>
+	<input data=Global.foo />
+	<br /> "Global.foo: " Global.foo
+</div>
 
-<br /> "Items:"
-<li>
-for (item in Local.items) {
-	<ol> "item: " item </ol>
-}
-</li>
+<div style=containerStyle>
+	"Add item with text: " <input data=Local.text />
+	<br /> <button onClick=addItem>"Add item: " Local.text</button>
+</div>
+
+<div style=containerStyle>
+	"Global.items:"
+	<ol>
+		for (item in Global.items) {
+			<li> "item: " item </li>
+		}
+	</ol>
+</div>
