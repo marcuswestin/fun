@@ -151,6 +151,7 @@ util.CodeGenerator = Class(function() {
 		this._variables[name] = true
 		return this
 	}
+	this.debug = function() { return this.code('debugger') }
 	
 	this.returnIfDefinedAndEqual = function(var1, var2) {
 		return this._add('if ('+var1+'!==undefined && '+var2+'!==undefined && '+var1+'=='+var2+') { return; }')

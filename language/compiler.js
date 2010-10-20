@@ -112,6 +112,12 @@ function handleXMLOnClick(context, args, mutationStatements, result) {
 		mutationCode = new util.CodeGenerator()
 	for (var i=0, statement; statement = mutationStatements[i]; i++) {
 		var target = statement.target
+		
+		if (statement.type == 'DEBUGGER') {
+			mutationCode.code('debugger')
+			continue
+		}
+		
 		util.assert(statement.type == 'MUTATION', 
 			'Handler code should be mutation statements',{code:mutationStatements})
 		util.assert(target.type == 'REFERENCE' && target.referenceType != 'ALIAS',

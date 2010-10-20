@@ -156,7 +156,9 @@ ArgumentList
    { return [] }
 
 MutationStatement
- = 'set' _ target:Mutables _ '=' _ source:MutationValue _T
+ = 'debugger' _T
+   { return {type:'DEBUGGER'}; }
+ / 'set' _ target:Mutables _ '=' _ source:MutationValue _T
    { return {type:'MUTATION', mutationType:'SET', target:target, source:source}; }
  / target:Mutables '.push(' _ source:MutationValue _ ')' _T
    { return {type:'MUTATION', mutationType:'APPEND', target:target, source:source}; }
