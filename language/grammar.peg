@@ -71,6 +71,7 @@ Reference "Reference"
  = InlineValue
  / JSON
  / Mutables
+ / Handler
  / name:Name
    { return {type:'REFERENCE', referenceType:'ALIAS', name:name}; }
 
