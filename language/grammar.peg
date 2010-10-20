@@ -89,15 +89,15 @@ XML "XML"
  = _ tag:XMLSelfClosing
    { return {type:'XML_NODE', name:tag.name, attributes:tag.attributes, content:[]}; }
  / _ openTag:XMLOpen _ content:FunCode _ closeTag:XMLClose
-   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes, content:content}; }
+   { return {type:'XML_NODE', name:openTag.name, attributes:openTag.attributes.concat(closeTag.attributes), content:content}; }
 
 XMLOpen	"XML open tag"
  = '<' _ tagName:Name _ attributes:XMLAttribute* '>'
    { return {name:tagName, attributes:attributes}; }
 
 XMLClose "XML close tag"
- = '</' tagName:Name '>'
-   { return {name:tagName}; }
+ = '</' tagName:Name _ attributes:XMLAttribute* '>'
+   { return {name:tagName, attributes:attributes}; }
 
 XMLSelfClosing "Self closing XML tag"
  = '<' tagName:Name _ attributes:XMLAttribute* '/>'
