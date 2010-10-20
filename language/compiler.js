@@ -222,7 +222,7 @@ function getIfElseCode(context, ast) {
 			.observe(cond.left, 'blocker.addBlock()')
 			.observe(cond.right, 'blocker.addBlock()')
 	} else {
-		compareCode = '('+util.getCachedValue(cond.expression)+')'
+		compareCode = '(!!'+util.getCachedValue(cond.expression)+')'
 		result
 			.observe(cond.expression, 'evaluate')
 	}
@@ -235,10 +235,11 @@ function getIfElseCode(context, ast) {
 			.functionEnd()
 			.functionStart('evaluate')
 				.assign('thisTime', compareCode)
-				.returnIfEqual('!!thisTime', '!!lastTime')
+				.returnIfDefinedAndEqual('thisTime', 'lastTime')
 				.assign('lastTime', 'thisTime')
 				.callFunction('togglePath')
 			.functionEnd()
+			.callFunction('evaluate')
 		.closureEnd(
 			'\nfunction ifPath(){'+compile(ifContext, trueAST)+'}', 
 			'\nfunction elsePath(){'+compile(elseContext, elseAST)+'}'

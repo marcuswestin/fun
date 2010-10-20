@@ -69,7 +69,8 @@
 	} 
 	
 	fun.getCachedValue = function(type, prop) {
-		return fin.getCachedMutation(type, prop).value
+		var mutation = fin.getCachedMutation(type, prop)
+		return mutation && mutation.value
 	}
 	
 	fun.withHook = function(hookID, callback) {

@@ -152,8 +152,8 @@ util.CodeGenerator = Class(function() {
 		return this
 	}
 	
-	this.returnIfEqual = function(var1, var2) {
-		return this._add ('if ('+var1+' == '+var2+') { return; }')
+	this.returnIfDefinedAndEqual = function(var1, var2) {
+		return this._add('if ('+var1+'!==undefined && '+var2+'!==undefined && '+var1+'=='+var2+') { return; }')
 	}
 	
 	this.ifElse = function(condExpr, ifCode, elseCode) {
