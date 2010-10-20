@@ -200,21 +200,34 @@ function getIfElseCode(context, ast) {
 		trueAST = ast.ifTrue,
 		elseAST = ast.ifFalse
 	
+	util.assert((cond.comparison && cond.left && cond.right) || cond.expression, 'Conditionals must have either an expression or a comparison with left and right parameters')
+	
 	var ifContext = util.copy(context, { hookName: util.getName() }),
 		elseContext = util.copy(context, { hookName: util.getName() }),
 		ifHookCode = util.getHookCode(parentHook, ifContext.hookName),
 		elseHookCode = util.getHookCode(parentHook, elseContext.hookName),
-		compareCode = '('+util.getCachedValue(cond.left) + cond.comparison + util.getCachedValue(cond.right)+')'
+		compareCode
 	
-	return new util.CodeGenerator()
+	var result = new util.CodeGenerator()
 		.declareHook(ifContext.hookName)
 		.declareHook(elseContext.hookName)
 		.closureStart('ifPath', 'elsePath')
 			.code(ifHookCode) // force creation of the dom hooks for proper ordering
 			.code(elseHookCode)
+	
+	if (cond.comparison) {
+		compareCode = '('+util.getCachedValue(cond.left) + cond.comparison + util.getCachedValue(cond.right)+')'
+		result
 			.assign('blocker', 'fun.getCallbackBlock(evaluate, {fireOnce: false})')
 			.observe(cond.left, 'blocker.addBlock()')
 			.observe(cond.right, 'blocker.addBlock()')
+	} else {
+		compareCode = '('+util.getCachedValue(cond.expression)+')'
+		result
+			.observe(cond.expression, 'evaluate')
+	}
+	
+	result
 			.assign('lastTime', undefined)
 			.functionStart('togglePath')
 				.code('fun.destroyHook(lastTime ? '+elseContext.hookName+' : '+ifContext.hookName+')')
@@ -222,7 +235,7 @@ function getIfElseCode(context, ast) {
 			.functionEnd()
 			.functionStart('evaluate')
 				.assign('thisTime', compareCode)
-				.returnIfEqual('thisTime', 'lastTime')
+				.returnIfEqual('!!thisTime', '!!lastTime')
 				.assign('lastTime', 'thisTime')
 				.callFunction('togglePath')
 			.functionEnd()
@@ -230,6 +243,8 @@ function getIfElseCode(context, ast) {
 			'\nfunction ifPath(){'+compile(ifContext, trueAST)+'}', 
 			'\nfunction elsePath(){'+compile(elseContext, elseAST)+'}'
 		)
+	
+	return result
 }
 
 /*************************

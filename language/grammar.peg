@@ -175,7 +175,9 @@ IfElse "If/Else statement"
 
 Condition
  = left:Reference _ comparison:Comparison _ right:Reference
-   { return {type:'CONDITION', left:left, right:right, comparison:comparison }; }
+  { return {type:'CONDITION', left:left, right:right, comparison:comparison }; }
+ / expression:Reference
+  { return {type:'CONDITION', expression:expression}; }
 
 Comparison
  = '>='
