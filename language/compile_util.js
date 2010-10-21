@@ -18,9 +18,6 @@ util.join = function(args, glue) {
 	return Array.prototype.join.call(args, glue || '')
 }
 
-var _uniqueId = 0
-util.unique = function(name) { return '_u' + (_uniqueId++) + (name ? '_' + name : '') }
-
 util.getCachedValue = function(reference) {
 	var type = reference.type,
 		name = reference.value
@@ -53,8 +50,10 @@ util.assertType = function(reference, type) {
 	}
 }
 
+var _uniqueId = 0
+util.unique = function(name) { return '_' + (name ? name + '_' : '') + '$' + (_uniqueId++) }
 util.getHookID = function() { return util.q(util.unique('hookID')) }
-util.getName = function(isDynamic) { return util.unique('name') }
+util.getName = function(name) { return util.unique(name) }
 util.getHookCode = function(parentHookName, hookName, tagName, attrs) {
 	util.assert(parentHookName && hookName, 'parentHookName and hookName must be defined')
 	attrs = attrs || []

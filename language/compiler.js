@@ -11,7 +11,7 @@ compiler.compile = function(ast) {
 	catch(e) { return {error: "Could not read library file", path: libraryPath, e: e} }
 	
 	var rootContext = {
-		hookName: util.getName(),
+		hookName: util.getName('ROOT_HOOK'),
 		referenceTable: {}
 	}
 	
@@ -77,7 +77,7 @@ function getXMLCode(context, ast) {
 		attrList = ast.attributes,
 		content = ast.content
 	
-	var hookName = util.getName(),
+	var hookName = util.getName('XML_HOOK'),
 		result = new util.CodeGenerator(),
 		newContext = util.copy(context, {hookName: hookName}),
 		attrs = {}
@@ -164,7 +164,7 @@ function getReferenceCode(context, ast) {
 }
 
 function getInlineValueCode(context, val) {
-	var hookName = util.getName()
+	var hookName = util.getName('INLINE_HOOK')
 	return new util.CodeGenerator()
 		.declareHook(hookName)
 		.code(util.getHookCode(context.hookName, hookName), '.innerHTML=', val)
@@ -181,7 +181,7 @@ function getRefered(context, value) {
 function getObservationCode(context, reference) {
 	var value = getRefered(context, reference),
 		parentHookName = context.hookName,
-	    hookName = util.getName()
+	    hookName = util.getName('OBSERVATION_HOOK')
 	
 	util.assertType(value, util.BYTES)
 	
@@ -208,8 +208,8 @@ function getIfElseCode(context, ast) {
 	
 	util.assert((cond.comparison && cond.left && cond.right) || cond.expression, 'Conditionals must have either an expression or a comparison with left and right parameters')
 	
-	var ifContext = util.copy(context, { hookName: util.getName() }),
-		elseContext = util.copy(context, { hookName: util.getName() }),
+	var ifContext = util.copy(context, { hookName: util.getName("IF_HOOK") }),
+		elseContext = util.copy(context, { hookName: util.getName("ELSE_HOOK") }),
 		ifHookCode = util.getHookCode(parentHook, ifContext.hookName),
 		elseHookCode = util.getHookCode(parentHook, elseContext.hookName),
 		compareCode
@@ -262,16 +262,16 @@ function getForLoopCode(context, ast) {
 	var parentHookName = context.hookName,
 		list = getRefered(context, ast.list),
 		codeAST = ast.code,
-		loopHookName = util.getName(),
-		emitHookName = util.getName(true),
-		valueName = util.getName(),
+		loopHookName = util.getName("LOOP_ANCHOR_HOOK"),
+		emitHookName = util.getName("LOOP_EMIT_HOOK"),
+		iteratorName = util.getName("LOOP_ITERATOR"),
 		loopContext = util.copy(context, {hookName: emitHookName})
 	
 	util.assertType(list, 'list')
 	
 	loopContext.referenceTable = {}
 	loopContext.referenceTable.__proto__ = context.referenceTable
-	util.setReference(loopContext, ast.key, {name: valueName})
+	util.setReference(loopContext, ast.key, {name: iteratorName})
 	
 	// Create new context with referenceTable prototyping the current context's reference table
 	return new util.CodeGenerator()
@@ -280,7 +280,7 @@ function getForLoopCode(context, ast) {
 			.createHook(parentHookName, loopHookName)
 			.observe(list, 'onMutation')
 			.functionStart('onMutation', 'mutation')
-				.code('fun.handleListMutation(mutation, function('+valueName+') {')
+				.code('fun.handleListMutation(mutation, function('+iteratorName+') {')
 					.declareHook(emitHookName)
 					.callFunction('fun.getDOMHook', loopHookName, emitHookName)
 					.code(compile(loopContext, codeAST))
