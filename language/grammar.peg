@@ -55,7 +55,7 @@ Number "Number"
  = value:[0-9]+
    { return {type:'NUMBER', value:parseInt(value.join(''))}; }
 
-DeclarationStatement "Declaration statement"
+DeclarationStatement
  = 'let' _ name:Name _ '=' _ value:Declaration 
    { return {type:'DECLARATION', name:name, value:value}; }
 
