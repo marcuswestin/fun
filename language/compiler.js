@@ -53,7 +53,7 @@ function compileFunStatement(context, ast) {
 			return ast.value
 		case 'DECLARATION':
 			util.setReference(context, ast.name, ast.value)
-			return ''
+			return getDeclarationCode(context, ast.value)
 		case 'INLINE_VALUE':
 			return getInlineValueCode(context, compileFunStatement(context, ast.value))
 		case 'REFERENCE':
@@ -64,6 +64,8 @@ function compileFunStatement(context, ast) {
 			return getForLoopCode(context, ast)
 		case 'XML_NODE':
 			return getXMLCode(context, ast)
+		case 'TEMPLATE_INVOCATION':
+			return getTemplateInvocationCode(context, ast)
 		default:
 			throw util.error("UNDEFINED AST TYPE: " + ast.type, ast)
 	}
@@ -153,6 +155,11 @@ function handleXMLStyle(context, styles, targetAttrs, result) {
 /*************************
  * Values and References *
  *************************/
+function getDeclarationCode(context, ast) {
+	if (ast.type == 'TEMPLATE') { return getTemplateDeclarationCode(context, ast) }
+	else { return '' } // no need to output code for other declarations
+}
+
 function getReferenceCode(context, ast) {
 	if (ast.referenceType == "ALIAS") {
 		var ref = util.getReference(context, ast.name),
@@ -195,6 +202,29 @@ function getObservationCode(context, reference) {
 				util.q(value.value), 
 				'function(mut,val){ hook.innerHTML=val }')
 		.closureEnd()
+}
+
+
+/*************
+ * Templates *
+ *************/
+function getTemplateDeclarationCode(context, ast) {
+	var templateFunctionName = util.getName('TEMPLATE_FUNCTION'),
+		templateHookName = util.getName('TEMPLATE_HOOK_NAME');
+	
+	ast.templateName = templateFunctionName
+	context.hookName = templateHookName
+	
+	return new util.CodeGenerator()
+		.functionStart(templateFunctionName, templateHookName)
+			.code(compile(context, ast.code))
+		.functionEnd()
+}
+
+function getTemplateInvocationCode(context, ast) {
+	var templateAST = util.getReference(context, ast.name)
+	return new util.CodeGenerator()
+		.callFunction(templateAST.templateName, context.hookName)
 }
 
 /************************

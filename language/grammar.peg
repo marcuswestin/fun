@@ -13,6 +13,8 @@ FunStatement
    { return ifElse }
  / _ forLoop:ForLoop _T
    { return forLoop }
+ / _ invocation:TemplateInvocation _T
+   { return invocation; }
  / _ value:InlineValue _T
    { return {type:'INLINE_VALUE', value: value}; }
  / _ reference:Reference _T
@@ -64,12 +66,14 @@ Declaration "Declaration"
  / String
  / Number
  / JSON
+ / Template
 
 Reference "Reference"
  = InlineValue
  / JSON
  / Mutables
  / Handler
+ / Template
  / name:Name
    { return {type:'REFERENCE', referenceType:'ALIAS', name:name}; }
 
@@ -135,6 +139,18 @@ JSONList
    { return [value] }
  / _
    { return [] }
+
+/*************
+ * Templates *
+ *************/
+
+Template "Template"
+ = 'template' '(' _ args:ArgumentList _ ')' _ '{' _ code:FunCode _ '}'
+   { return {type:'TEMPLATE', args: args, code: code}; }
+
+TemplateInvocation "Template invocation"
+ = name:Name '(' _ args:ArgumentList _ ')'
+   { return {type:'TEMPLATE_INVOCATION', name: name, args: args}; }
 
 
 
