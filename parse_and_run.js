@@ -29,14 +29,18 @@ if (!opts.code) {
 		sys.puts('<br /><a href="parse_and_run?code='+file+'">'+file+'</a>')
 	}
 } else {
-	var compiler = require('./language/compiler'),
+	var preprocessor = require('./language/preprocessor'),
+		compiler = require('./language/compiler'),
 		grammarPath = './language/grammar.peg'
 
 	/*********
 	 * Parse *
 	 *********/
-	var code = fs.readFileSync('./' + opts.code).toString(),
-		result = util.parseWithGrammar(code, grammarPath)
+	var preCode = fs.readFileSync('./' + opts.code).toString(),
+		codePath = process.cwd() + '/' + opts.code.substr(0, opts.code.lastIndexOf('/') + 1),
+		postCode = preprocessor.preprocess(preCode, codePath),
+		result = util.parseWithGrammar(postCode, grammarPath)
+
 	if (result.error) {
 		sys.puts("Fun parse error", JSON.stringify(result))
 	} else if (opts.verbose) {

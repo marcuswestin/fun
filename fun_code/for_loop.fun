@@ -12,10 +12,11 @@ let containerStyle = { padding: 5, margin: 5, border: '1px solid' }
 </div>
 
 <div style=containerStyle>
-	"Global.items:"
+	"Global.items: asdasd"
 	<ol>
 		for (item in Global.items) {
 			<li> "item: " item </li>
 		}
 	</ol>
 </div>
+
