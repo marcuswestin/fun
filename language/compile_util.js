@@ -176,7 +176,7 @@ util.CodeGenerator = Class(function() {
 			case 'NUMBER':
 				return this
 			default:
-				throw new util.error('Unknown reference type for CodeGenerator#observe', {reference: reference, callbackCode: callbackCode})
+				throw util.error('Unknown reference type for CodeGenerator#observe', {reference: reference, callbackCode: callbackCode})
 		}
 	}
 	
