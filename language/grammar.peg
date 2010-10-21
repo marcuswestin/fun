@@ -17,13 +17,11 @@ FunStatement
    { return {type:'INLINE_VALUE', value: value}; }
  / _ reference:Reference _T
    { return reference; }
- / Comment
+ / Comment _T
    { return [] }
 
 Comment "Comment"
  = _ '//' [^\n]*
-
-
 
 /***********
  * Utility *
