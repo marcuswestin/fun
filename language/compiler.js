@@ -65,7 +65,7 @@ function compileFunStatement(context, ast) {
 		case 'XML_NODE':
 			return getXMLCode(context, ast)
 		default:
-			return util.q("UNDEFINED AST TYPE " + ast.type + ": " + JSON.stringify(ast));
+			throw util.error("UNDEFINED AST TYPE: " + ast.type, ast)
 	}
 }
 
