@@ -73,7 +73,7 @@ util.setReference = function(context, name, reference) {
 }
 util.getReference = function(context, name) {
 	var referenceTable = context.referenceTable
-	util.assert(referenceTable[name], 'Undeclared Referene', {name: name, table: referenceTable})
+	util.assert(referenceTable[name], 'Undeclared Reference', {name: name, table: referenceTable})
 	return referenceTable[name]
 }
 
