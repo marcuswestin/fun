@@ -20,8 +20,7 @@ util.errorMsg = function(type, e) {
 
 util.parseWithGrammar = function(code, grammarPath) {
 	var grammar = fs.readFileSync(grammarPath).toString(),
-		parser,
-		ast
+		parser, ast
 	
 	try { parser = PEG.buildParser(grammar) }
 	catch(e) { return { error: util.errorMsg('Grammar', e) } }
