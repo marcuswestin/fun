@@ -51,7 +51,7 @@ exports.tokenize = function (inputString, prefix, suffix) {
 
 // Begin tokenization. If the source string is empty, return nothing.
 
-    if (!this) {
+    if (!inputString) {
         return;
     }
 
