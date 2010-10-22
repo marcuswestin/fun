@@ -26,6 +26,8 @@ exports.tokenize = function (inputString, prefix, suffix) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.
     var i = 0;                  // The index of the current character.
+    var line = 1;               // The line of the current character.
+    var lineStart = 0;          // The index at the beginning of the line
     var length = inputString.length;
     var n;                      // The number value.
     var q;                      // The quote character.
@@ -41,7 +43,9 @@ exports.tokenize = function (inputString, prefix, suffix) {
             type: type,
             value: value,
             from: from,
-            to: i
+            to: i,
+            line: line,
+            colomn: from - lineStart + 1
         };
     };
 
@@ -67,9 +71,18 @@ exports.tokenize = function (inputString, prefix, suffix) {
     while (c) {
         from = i;
 
+        if (c == '\n') {
+
+// Keep track of the line number
+
+            line += 1;
+            i += 1;
+            lineStart = i;
+            c = inputString.charAt(i);
+
 // Ignore whitespace.
 
-        if (c <= ' ') {
+        } else if (c <= ' ') {
             i += 1;
             c = inputString.charAt(i);
 
