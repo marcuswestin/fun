@@ -5,7 +5,7 @@
 
 // Produce an array of simple token objects from a string.
 // A simple token object contains these members:
-//      type: 'name', 'string', 'number', 'operator'
+//      type: 'name', 'string', 'number', 'symbol'
 //      value: string or number value of the token
 //      from: index of first character of the token
 //      to: index of the last character + 1
@@ -13,7 +13,7 @@
 // Comments of the // type are ignored.
 
 // Operators are by default single characters. Multicharacter
-// operators can be made by supplying a string of prefix and
+// symbolss can be made by supplying a string of prefix and
 // suffix characters.
 // characters. For example,
 //      '<>+-&', '=>&:'
@@ -266,13 +266,13 @@ exports.tokenize = function (inputString, prefix, suffix) {
                 str += c;
                 i += 1;
             }
-            result.push(make('operator', str));
+            result.push(make('symbol', str));
 
-// single-character operator
+// single-character symbol
 
         } else {
             i += 1;
-            result.push(make('operator', c));
+            result.push(make('symbol', c));
             c = inputString.charAt(i);
         }
     }
