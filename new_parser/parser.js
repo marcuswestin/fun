@@ -82,7 +82,6 @@ var advance = function(type, value, expressionType) {
 		check(value, gToken.value)
 	}
 }
-var peek = function(amount) { return gTokens[gIndex + (amount || 1)] }
 var isAhead = function(amount, type, value) {
 	var token = gTokens[gIndex + amount]
 	if (type && type != token.type) { return false }
@@ -138,7 +137,7 @@ var parseXML = function() {
 
 var parseXMLAttributes = function() {
 	debug('parseXMLAttributes')
-	if (!peek('name')) { return [] } // no attributes
+	if (!isAhead(1, 'name')) { return [] } // no attributes
 }
 
 /****************
