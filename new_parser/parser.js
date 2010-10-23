@@ -3,6 +3,11 @@ var util = require('./util'),
 	q = util.q,
 	debug = util.debug
 
+var LPAREN = '(',
+    RPAREN = ')',
+    LBLOCK = '{',
+    RBLOCK = '}'
+
 var gToken, gIndex, gTokens, gState, gAST
 
 exports.parse = function(tokens) {
