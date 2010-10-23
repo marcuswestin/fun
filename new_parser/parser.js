@@ -52,9 +52,9 @@ var advance = function(type, value, expressionType) {
 	gToken = gTokens[++gIndex]
 	function check(v1, v2) {
 		assert.equal(v1, v2,
-			['Expected a', q(type),
+			['Expected the', q(type),
 				value ? 'of value ' + q(value) : '',
-				expressionType ? 'for ' + expressionType : '',
+				expressionType ? 'for the ' + expressionType : '',
 				'on line:', gToken.line,
 				'column:', gToken.column,
 				'but found a', q(gToken.type),
