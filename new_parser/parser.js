@@ -35,11 +35,11 @@ var parseStatement = function() {
 		case 'name':
 		    switch (gToken.value) {
         		case 'let': return parseDeclaration()
-        		case 'for': return parseForLoop()
-        		case 'if': return parseIfStatement()
-        		default: return getAlias()
-        	}
-        	
+				case 'for': return parseForLoop()
+				case 'if': return parseIfStatement()
+				default: return getAlias()
+			}
+		
 		default:
 			throw new Error('Unknown parse statement token: ' + JSON.stringify(gToken))
 	}
@@ -170,25 +170,25 @@ function parseForLoop() {
  ****************/
 function parseIfStatement() {
 	debug('parseIfStatement')
-    
-    advance('symbol', LPAREN, 'beginning of the if statement\'s conditional')
-    var condition = parseCondition()
-    advance('symbol', RPAREN, 'end of the if statement\'s conditional')
-    
-    advance('symbol', LBLOCK, 'beginning of the if statement\'s block')
-    var statements = []
-    while(true) {
+	
+	advance('symbol', LPAREN, 'beginning of the if statement\'s conditional')
+	var condition = parseCondition()
+	advance('symbol', RPAREN, 'end of the if statement\'s conditional')
+	
+	advance('symbol', LBLOCK, 'beginning of the if statement\'s block')
+	var statements = []
+	while(true) {
 		if (isAhead(1, 'symbol', RBLOCK)) { break }
 		advance()
 		statements.push(parseStatement())
 	}
-    advance('symbol', RBLOCK, 'end of the if statement\'s block')
-
-    return { type:'IF_STATEMENT', condition:condition, block:statements }
+	advance('symbol', RBLOCK, 'end of the if statement\'s block')
+	
+	return { type:'IF_STATEMENT', condition:condition, block:statements }
 }
 
 function parseCondition() {
-    // TODO Implement condition parsing
-    advance()
-    return {}
+	// TODO Implement condition parsing
+	advance()
+	return {}
 }
