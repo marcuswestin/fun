@@ -45,6 +45,18 @@ var parseStatement = function() {
 	}
 }
 
+function parseBlock(statementType) {
+	advance('symbol', LBLOCK, 'beginning of the '+statementType+'\'s block')
+	var block = []
+	while(!isAhead(1, 'symbol', RBLOCK)) {
+		advance()
+		block.push(parseStatement())
+	}
+	advance('symbol', RBLOCK, 'end of the '+statementType+' statement\'s block')
+	return block
+}
+
+
 /*******************
  * Utility methods *
  *******************/
@@ -172,17 +184,10 @@ function parseForLoop() {
 	var iterable = getAlias()
 	advance('symbol', RPAREN, 'end of for_loop\'s iterator statement')
 	
-	// parse "{ ... the for loop statements ... }"
-	advance('symbol', LBLOCK)
-	var statements = []
-	while(true) {
-		if (isAhead(1, 'symbol', RBLOCK)) { break }
-		advance()
-		statements.push(parseStatement())
-	}
-	advance('symbol', RBLOCK)
+	// parse "{ ... for loop statements ... }"
+	var block = parseBlock('for_loop')
 	
-	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:statements }
+	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 }
 
 /****************
@@ -195,16 +200,10 @@ function parseIfStatement() {
 	var condition = parseCondition()
 	advance('symbol', RPAREN, 'end of the if statement\'s conditional')
 	
-	advance('symbol', LBLOCK, 'beginning of the if statement\'s block')
-	var statements = []
-	while(true) {
-		if (isAhead(1, 'symbol', RBLOCK)) { break }
-		advance()
-		statements.push(parseStatement())
-	}
-	advance('symbol', RBLOCK, 'end of the if statement\'s block')
+	var ifBlock = parseBlock('if statement'),
+		elseBlock = isAhead(1, 'name', 'else') ? parseBlock('else statement') : null
 	
-	return { type:'IF_STATEMENT', condition:condition, block:statements }
+	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 }
 
 function parseCondition() {
