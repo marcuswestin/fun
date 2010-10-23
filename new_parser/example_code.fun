@@ -10,3 +10,12 @@ let somethingBig = 999.99e10
 	"How are you?"
 	test "?"
 </div>
+
+if (something) {
+    <div>
+    	"Hi " <em>"Marcus"</em>
+    	something "How are you?"
+    	test "?"
+    </div>
+}
+
