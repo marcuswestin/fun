@@ -22,13 +22,19 @@ exports.parse = function(tokens) {
 
 var parseStatement = function() {
 	switch(gToken.type) {
-		case 'name':
-			return parseName()
-		case 'symbol':
-			return parseXML()
 		case 'string':
 		case 'number':
-			return valueAST()
+			return getLiteralValue()
+		case 'symbol':
+			return parseXML() // only XML statements begin with a symbol (<)
+		case 'name':
+		    switch (gToken.value) {
+        		case 'let': return parseDeclaration()
+        		case 'for': return parseForLoop()
+        		case 'if': return parseIfStatement()
+        		default: return parseAlias()
+        	}
+        	
 		default:
 			throw new Error('Unknown parse statement token: ' + JSON.stringify(gToken))
 	}
@@ -67,20 +73,20 @@ var isAhead = function(amount, type, value) {
 	return true
 }
 
-var valueAST = function() {
+/******************************
+ * Aliases and literal values *
+ ******************************/
+function parseAlias() {
+ // TODO Parse dot notation
+ return { type:'ALIAS', name:gToken.value }
+}
+
+function getLiteralValue() {
 	assert(gToken.type == 'string' || gToken.type == 'number')
 	return { type:gToken.type.toUpperCase(), value:gToken.value }
 }
 
-var parseName = function() {
-	debug('parseName')
-	switch (gToken.value) {
-		case 'let': return parseDeclaration()
-		case 'for': return parseForLoop()
-		case 'if': return parseIfStatement()
-		default: return { type:'REFERENCE', name: gToken.value }
-	}
-}
+ 
 
 /*******
  * XML *
@@ -133,12 +139,13 @@ function parseDeclarable() {
 	advance()
 	switch(gToken.type) {
 		case 'name':
-			return { type:'ALIAS', name:gToken.value }
+		    return parseAlias()
 		case 'symbol':
+			// TODO Parse JSON literal
 			return parseXML()
 		case 'string':
 		case 'number':
-			return valueAST()
+			return getLiteralValue()
 		default:
 			throw new Error('Unkown declarable token: ' + JSON.stringify(gToken))
 	}
