@@ -82,8 +82,8 @@ var isAhead = function(amount, type, value) {
  * Aliases and literal values *
  ******************************/
 function getAlias() {
- // TODO Parse dot notation
- return { type:'ALIAS', name:gToken.value }
+    // TODO Parse dot notation
+    return { type:'ALIAS', name:gToken.value }
 }
 
 function getLiteralValue() {
