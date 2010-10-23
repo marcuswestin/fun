@@ -37,7 +37,7 @@ var parseStatement = function() {
         		case 'let': return parseDeclaration()
         		case 'for': return parseForLoop()
         		case 'if': return parseIfStatement()
-        		default: return parseAlias()
+        		default: return getAlias()
         	}
         	
 		default:
@@ -81,7 +81,7 @@ var isAhead = function(amount, type, value) {
 /******************************
  * Aliases and literal values *
  ******************************/
-function parseAlias() {
+function getAlias() {
  // TODO Parse dot notation
  return { type:'ALIAS', name:gToken.value }
 }
@@ -144,7 +144,7 @@ function parseDeclarable() {
 	advance()
 	switch(gToken.type) {
 		case 'name':
-		    return parseAlias()
+		    return getAlias()
 		case 'symbol':
 			// TODO Parse JSON literal
 			return parseXML()
