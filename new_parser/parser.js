@@ -40,13 +40,13 @@ var parseStatement = function() {
 var advance = function(type, value, expressionType) {
 	gToken = gTokens[++gIndex]
 	function check(v1, v2) {
-		assert.equal(v1, v2, 
+		assert.equal(v1, v2,
 			['Expected a', q(type),
-				value ? 'of value ' + q(value) : '', 
+				value ? 'of value ' + q(value) : '',
 				expressionType ? 'for ' + expressionType : '',
 				'on line:', gToken.line,
 				'column:', gToken.column,
-				'but found a', q(gToken.type), 
+				'but found a', q(gToken.type),
 				'of value', q(gToken.value)].join(' ')
 	)}
 	if (type) { check(type, gToken.type) }
