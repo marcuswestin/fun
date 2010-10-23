@@ -45,7 +45,7 @@ exports.tokenize = function (inputString, prefix, suffix) {
             from: from,
             to: i,
             line: line,
-            colomn: from - lineStart + 1
+            column: from - lineStart + 1
         };
     };
 
