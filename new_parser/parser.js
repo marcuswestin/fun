@@ -119,7 +119,7 @@ var parseXML = function() {
 		advance('name', tagName, 'matching XML tags')
 		advance('symbol', '>')
 		
-		return { type:'XML', tag:tagName, attributes:attributes, content:statements }
+		return { type:'XML', tag:tagName, attributes:attributes, block:statements }
 	}
 }
 
@@ -169,5 +169,25 @@ function parseForLoop() {
  ****************/
 function parseIfStatement() {
 	debug('parseIfStatement')
-	throw new Error("If statements are not yet implemented")
+    
+    advance('symbol', LPAREN, 'beginning of the if statement\'s conditional')
+    var condition = parseCondition()
+    advance('symbol', RPAREN, 'end of the if statement\'s conditional')
+    
+    advance('symbol', LBLOCK, 'beginning of the if statement\'s block')
+    var statements = []
+    while(true) {
+		if (isAhead(1, 'symbol', RBLOCK)) { break }
+		advance()
+		statements.push(parseStatement())
+	}
+    advance('symbol', RBLOCK, 'end of the if statement\'s block')
+
+    return { type:'IF_STATEMENT', condition:condition, block:statements }
+}
+
+function parseCondition() {
+    // TODO Implement condition parsing
+    advance()
+    return {}
 }
