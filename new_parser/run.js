@@ -7,6 +7,7 @@ require('./underscore')
 var start = new Date().getTime(),
     tokens = tokenizer.tokenize(sourceCode, '', ''),
     ast = parser.parse(tokens),
+	// TODO import compiler and compile the ast to js
     timeToRun = (new Date().getTime() - start) / 1000
 
 console.log('\nTokens:')

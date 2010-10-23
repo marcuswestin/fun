@@ -136,6 +136,7 @@ var parseXML = function() {
 }
 
 var parseXMLAttributes = function() {
+	// TODO parse XML attributes
 	debug('parseXMLAttributes')
 	if (!isAhead(1, 'name')) { return [] } // no attributes
 }
