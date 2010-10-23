@@ -19,3 +19,10 @@ if (something) {
     </div>
 }
 
+for (item in items) {
+    <div>
+    	"Hi " <em>"Marcus"</em>
+    	somethingBig "How are you?"
+    	test "?"
+    </div>
+}
