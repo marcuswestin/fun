@@ -72,7 +72,15 @@ var advance = function(type, value, expressionType) {
 				'but found a', q(gToken.type),
 				'of value', q(gToken.value)].join(' ')
 	)}
-	if (type) { check(type, gToken.type) }
+	// TODO DRY the two "if (type/value instanceof Array) { ... }" statements below
+	if (type) {
+		if (type instanceof Array) { for (var i=0, tp; tp=type[i]; i++) {
+			if (tp != gToken.type) { continue }
+			type = tp // allow for the check to pass if one of the types passed in matches
+			break
+		}}
+		check(type, gToken.type)
+	}
 	if (value) {
 		if (value instanceof Array) { for (var i=0, val; val=value[i]; i++) {
 			if (val != gToken.value) { continue }
