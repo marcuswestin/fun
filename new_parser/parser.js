@@ -158,11 +158,31 @@ function parseDeclarable() {
 }
 
 /*************
- * For loops *
- *************/
+* For loops *
+*************/
 function parseForLoop() {
 	debug('parseForLoop')
-	throw new Error("For loops are not yet implemented")
+	
+	// parse "(item in Global.items)"
+	advance('symbol', LPAREN, 'beginning of for_loop\'s iterator statement')
+	advance('name', null, 'for_loop\'s iterator')
+	var iterator = gToken.value
+	advance('name', 'in', 'for_loop\'s "in" keyword')
+	advance('name', null, 'for_loop\'s iterable value')
+	var iterable = getAlias()
+	advance('symbol', RPAREN, 'end of for_loop\'s iterator statement')
+	
+	// parse "{ ... the for loop statements ... }"
+	advance('symbol', LBLOCK)
+	var statements = []
+	while(true) {
+		if (isAhead(1, 'symbol', RBLOCK)) { break }
+		advance()
+		statements.push(parseStatement())
+	}
+	advance('symbol', RBLOCK)
+	
+	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:statements }
 }
 
 /****************
