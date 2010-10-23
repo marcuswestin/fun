@@ -1,4 +1,13 @@
 var tokenizer = require('./tokens'),
-	sourceCode = require('fs').readFileSync('./fun_code/handler.fun').toString()
+	parser = require('./parser'),
+	sourceCode = require('fs').readFileSync('./example_code.fun').toString()
 
-console.log(tokenizer.tokenize(sourceCode, '', ''))
+require('./underscore')
+
+var tokens = tokenizer.tokenize(sourceCode, '', '')
+console.log('\nTokens:')
+console.log(_.map(tokens, function(token){ return token.type+' '+token.value }))
+
+var ast = parser.parse(tokens)
+console.log('\nAST:')
+console.log(JSON.stringify(ast))
