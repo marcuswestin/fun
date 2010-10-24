@@ -42,10 +42,10 @@ var parseStatement = function() {
 				case 'let': return parseDeclaration()
 				case 'for': return parseForLoop()
 				case 'if': return parseIfStatement()
-				case 'in': throw new Error('Unexpected keyword "in" at the beginning of a statement')
+				case 'in': halt('Unexpected keyword "in" at the beginning of a statement')
 			}
 		default:
-			throw new Error('Unknown parse statement token: ' + JSON.stringify(gToken))
+			halt('Unknown parse statement token: ' + gToken.type)
 	}
 }
 
@@ -118,13 +118,13 @@ function parseValueOrAlias() {
 		case 'symbol':
 			if (gToken.value == '<') { return parseXML() }
 			else if (gToken.value == L_CURLY || gToken.value == L_ARRAY) { return parseJSON() }
-			else { throw new Error('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
+			else { halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
 		case 'keyword':
 			if (gToken.value == 'template') { return parseTemplate() }
 			else if (gToken.value == 'handler') { return parseHandler() }
-			else { throw new Error('Expected keyword of value "template" or "handler" but found "'+gToken.value+'"')}
+			else { halt('Expected keyword of value "template" or "handler" but found "'+gToken.value+'"')}
 		default:
-			throw new Error('Unexpected value or alias token: ' + JSON.stringify(gToken))
+			halt('Unexpected value or alias token: ' + gToken.type + ' ' + gToken.value)
 	}
 }
 
