@@ -35,8 +35,7 @@ var parseStatement = function() {
 		case 'symbol':
 			return parseXML() // only XML statements begin with a symbol (<)
 		case 'name':
-			// TODO parse template invocation
-			return parseAlias()
+			return parseAliasOrInvocation()
 		case 'keyword':
 			switch (gToken.value) {
 				case 'let': return parseDeclaration()
@@ -111,7 +110,7 @@ function parseValueOrAlias() {
 	advance()
 	switch(gToken.type) {
 		case 'name':
-		    return parseAlias()
+		    return parseAliasOrInvocation()
 		case 'string':
 		case 'number':
 			return getLiteralValue()
@@ -128,8 +127,8 @@ function parseValueOrAlias() {
 	}
 }
 
-function parseAlias() {
-	debug('parseAlias')
+function parseAliasOrInvocation() {
+	debug('parseAliasOrInvocation')
 	var namespace = []
 	while(true) {
 		assert(gToken.type == 'name')
@@ -138,7 +137,14 @@ function parseAlias() {
 		advance('symbol', '.')
 		advance('name')
 	}
-	return { type:'ALIAS', namespace:namespace }
+	if (isAhead('symbol', L_PAREN)) {
+		advance('symbol', L_PAREN)
+		var args = parseValueList(R_PAREN)
+		advance('symbol', R_PAREN)
+		return { type:'INVOCATION', namespace:namespace, args:args }
+	} else {
+		return { type:'ALIAS', namespace:namespace }
+	}
 }
 
 function getLiteralValue() {
@@ -236,16 +242,19 @@ function parseJSONObject() {
 function parseJSONArray() {
 	debug('parseJSONArray')
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
-	var content = []
-	
+	var content = parseValueList(R_ARRAY)
+	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
+	return { type:'JSON_ARRAY', content:content }
+}
+function parseValueList(breakSymbol) {
+	var list = []
 	while (true) {
-		if (isAhead('symbol', R_ARRAY)) { break }
-		content.push(parseValueOrAlias())
+		if (isAhead('symbol', breakSymbol)) { break }
+		list.push(parseValueOrAlias())
 		if (!isAhead('symbol', ',')) { break }
 		advance('symbol', ',')
 	}
-	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
-	return { type:'JSON_ARRAY', content:content }
+	return list
 }
 
 /*************

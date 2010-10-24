@@ -61,3 +61,8 @@ let aHandler = handler(asd) {
 	<div>"Hello there!"</div>
 	if (asd) { "cool" }
 }
+
+
+aTemplate('asd', aHandler(1))
+
+something.callable(1,2,3,)
