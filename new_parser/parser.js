@@ -206,8 +206,13 @@ function parseIfStatement() {
 	var condition = parseCondition()
 	advance('symbol', RPAREN, 'end of the if statement\'s conditional')
 	
-	var ifBlock = parseBlock('if statement'),
-		elseBlock = isAhead('name', 'else') ? parseBlock('else statement') : null
+	var ifBlock = parseBlock('if statement')
+	
+	var elseBlock = null
+	if (isAhead('keyword', 'else')) {
+		advance('keyword', 'else')
+		elseBlock = parseBlock('else statement')
+	}
 	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 }

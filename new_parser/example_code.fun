@@ -17,6 +17,8 @@ if (something) {
     	something "How are you?"
     	test "?"
     </div>
+} else {
+	"COOL!"
 }
 if (something <= somethingBig) {
     <div>
