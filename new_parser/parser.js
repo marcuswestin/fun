@@ -217,6 +217,7 @@ function parseIfStatement() {
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 }
 function parseCondition() {
+	// TODO Parse compond statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
 	var type = gToken.type,
 		value = gToken.value
 	
