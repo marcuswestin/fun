@@ -166,14 +166,48 @@ function parseDeclarable() {
 		case 'name':
 		    return getAlias()
 		case 'symbol':
-			// TODO Parse JSON literal
-			return parseXML()
+			if (gToken.value == '<') { return parseXML() }
+			else if (gToken.value == L_CURLY || gToken.value == L_ARRAY) { return parseJSON() }
+			else { throw new Error('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
 		case 'string':
 		case 'number':
 			return getLiteralValue()
 		default:
 			throw new Error('Unkown declarable token: ' + JSON.stringify(gToken))
 	}
+}
+
+/********
+ * JSON *
+ ********/
+function parseJSON() {
+	if (gToken.value == L_CURLY) { return parseJSONObject() }
+	else { return parseJSONArray() }
+}
+function parseJSONObject() {
+	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
+	var content = []
+	while (!(gToken.type == 'symbol' && gToken.value == R_CURLY)) {
+		var nameValuePair = {}
+		advance(['name','string'])
+		nameValuePair.name = gToken.value
+		advance('symbol', ':')
+		nameValuePair.value = parseDeclarable()
+		content.push(nameValuePair)
+		advance('symbol', [',',R_CURLY],
+				'comma before another JSON name-value-pair or right curly at the end of the JSON object')
+	}
+	return { type:'JSON_OBJECT', content:content }
+}
+function parseJSONArray() {
+	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
+	var content = []
+	while (!(gToken.type == 'symbol' && gToken.value == R_ARRAY)) {
+		content.push(parseDeclarable())
+		advance('symbol', [',',R_ARRAY],
+				'comma before another array item or right bracket at the end of the array')
+	}
+	return { type:'JSON_ARRAY', content:content }
 }
 
 /*************

@@ -4,6 +4,9 @@ test
 
 let something = 1123
 let somethingBig = 999.99e10
+let someJSON = { aString:'asd', aNumber:123, anArray:[1,2,3], moreJSON:
+	{ "WOOT": 123 }
+}
 
 <div>
 	"Hi " <em>"Marcus"</em>
