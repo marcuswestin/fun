@@ -12,3 +12,4 @@ var ast = parser.parse(tokens)
 console.log('\nAST:')
 console.log(JSON.stringify(ast))
 
+// TODO import compiler and compile the ast to js
