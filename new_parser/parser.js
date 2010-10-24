@@ -19,8 +19,8 @@ exports.parse = function(tokens) {
 	gAST = []
 	
 	while (true) {
+		if (gIndex + 1 == gTokens.length) { break }
 		advance()
-		if (gIndex == gTokens.length) { break }
 		gAST.push(parseStatement())
 	}
 	
@@ -64,8 +64,13 @@ function parseBlock(statementType) {
 /*******************
  * Utility methods *
  *******************/
+var halt = function(msg) {
+	throw new Error([msg, 'on line:', gToken.line, 'column:', gToken.column].join(' '))
+}
 var advance = function(type, value, expressionType) {
-	gToken = gTokens[++gIndex]
+	var nextToken = gTokens[++gIndex]
+	if (!nextToken) { halt('Unexpected end of file') }
+	gToken = nextToken
 	function check(v1, v2) {
 		assert.equal(v1, v2,
 			['Expected a', q(type),
