@@ -207,13 +207,25 @@ function parseIfStatement() {
 	advance('symbol', RPAREN, 'end of the if statement\'s conditional')
 	
 	var ifBlock = parseBlock('if statement'),
-		elseBlock = isAhead(1, 'name', 'else') ? parseBlock('else statement') : null
+		elseBlock = isAhead('name', 'else') ? parseBlock('else statement') : null
 	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 }
-
 function parseCondition() {
-	// TODO Implement condition parsing
-	advance()
-	return {}
+	var type = gToken.type,
+		value = gToken.value
+	
+	// Only strings, numbers, and aliases allowed
+	advance(['string', 'number', 'name'])
+	var left = parseStatement()
+	
+	var comparison, right
+	if (isAhead('symbol', ['<','<=','>','>=','=='])) {
+		advance('symbol')
+		comparison = gToken.value
+		advance(['string', 'number', 'name'])
+		var right = parseStatement()
+	}
+	
+	return { left:left, comparison:comparison, right:right }
 }
