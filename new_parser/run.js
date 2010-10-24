@@ -1,4 +1,4 @@
-var tokenizer = require('./tokens'),
+var tokenizer = require('./tokenizer'),
 	parser = require('./parser'),
 	sourceCode = require('fs').readFileSync('./example_code.fun').toString()
 
