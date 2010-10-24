@@ -36,7 +36,7 @@ var parseStatement = function() {
 			return parseXML() // only XML statements begin with a symbol (<)
 		case 'name':
 			// TODO parse template invocation
-			return getAlias()
+			return parseAlias()
 		case 'keyword':
 			switch (gToken.value) {
 				case 'let': return parseDeclaration()
@@ -106,7 +106,7 @@ function parseValueOrAlias() {
 	advance()
 	switch(gToken.type) {
 		case 'name':
-		    return getAlias()
+		    return parseAlias()
 		case 'string':
 		case 'number':
 			return getLiteralValue()
@@ -121,15 +121,21 @@ function parseValueOrAlias() {
 	}
 }
 
-function getAlias() {
-	assert(gToken.type == 'name')
-	// TODO Parse dot notation
-	return { type:'ALIAS', name:gToken.value }
+function parseAlias() {
+	var namespace = []
+	while(true) {
+		assert(gToken.type == 'name')
+		namespace.push(gToken.value)
+		if (!isAhead('symbol', '.')) { break }
+		advance('symbol', '.')
+		advance('name')
+	}
+	return { type:'ALIAS', namespace:namespace }
 }
 
 function getLiteralValue() {
 	assert(gToken.type == 'string' || gToken.type == 'number')
-	return { type:gToken.type.toUpperCase(), value:gToken.value }
+	return { type:gToken.type.toUpperCase(), value:gToken.value } // type is STRING or NUMBER
 }
 
 /*******
@@ -225,7 +231,7 @@ function parseForLoop() {
 	var iterator = gToken.value
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	advance('name', null, 'for_loop\'s iterable value')
-	var iterable = getAlias()
+	var iterable = gToken.value
 	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	
 	// parse "{ ... for loop statements ... }"

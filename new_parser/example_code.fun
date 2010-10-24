@@ -8,6 +8,8 @@ let someJSON = { aString:'asd', aNumber:123, anArray:[1,2,3], moreJSON:
 	{ "WOOT": 123 }
 }
 
+someJSON.moreJSON.WOOT
+
 <div>
 	"Hi " <em>"Marcus"</em>
 	"How are you?"
