@@ -187,12 +187,11 @@ var parseXMLAttributes = function() {
 
 function parseAssignment(msg) {
 	debug('parseAssignment')
-	var assignment = []
 	advance('name', null, msg)
-	assignment.push(gToken.value)
+	var name = gToken.value
 	advance('symbol', '=', msg)
-	assignment.push(parseValueOrAlias())
-	return assignment
+	var value = parseValueOrAlias()
+	return [name, value]
 }
 
 /****************
