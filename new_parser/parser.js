@@ -3,10 +3,12 @@ var util = require('./util'),
 	q = util.q,
 	debug = util.debug
 
-var LPAREN = '(',
-	RPAREN = ')',
-	LBLOCK = '{',
-	RBLOCK = '}'
+var L_PAREN = '(',
+	R_PAREN = ')',
+	L_CURLY = '{',
+	R_CURLY = '}',
+	L_ARRAY = '[',
+	R_ARRAY = ']'
 
 var gToken, gIndex, gTokens, gState, gAST
 
@@ -41,20 +43,19 @@ var parseStatement = function() {
 				case 'if': return parseIfStatement()
 				case 'in': throw new Error('Unexpected keyword "in" at the beginning of a statement')
 			}
-		
 		default:
 			throw new Error('Unknown parse statement token: ' + JSON.stringify(gToken))
 	}
 }
 
 function parseBlock(statementType) {
-	advance('symbol', LBLOCK, 'beginning of the '+statementType+'\'s block')
+	advance('symbol', L_CURLY, 'beginning of the '+statementType+'\'s block')
 	var block = []
-	while(!isAhead('symbol', RBLOCK)) {
+	while(!isAhead('symbol', R_CURLY)) {
 		advance()
 		block.push(parseStatement())
 	}
-	advance('symbol', RBLOCK, 'end of the '+statementType+' statement\'s block')
+	advance('symbol', R_CURLY, 'end of the '+statementType+' statement\'s block')
 	return block
 }
 
@@ -182,13 +183,13 @@ function parseForLoop() {
 	debug('parseForLoop')
 	
 	// parse "(item in Global.items)"
-	advance('symbol', LPAREN, 'beginning of for_loop\'s iterator statement')
+	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	advance('name', null, 'for_loop\'s iterator')
 	var iterator = gToken.value
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	advance('name', null, 'for_loop\'s iterable value')
 	var iterable = getAlias()
-	advance('symbol', RPAREN, 'end of for_loop\'s iterator statement')
+	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	
 	// parse "{ ... for loop statements ... }"
 	var block = parseBlock('for_loop')
@@ -202,9 +203,9 @@ function parseForLoop() {
 function parseIfStatement() {
 	debug('parseIfStatement')
 	
-	advance('symbol', LPAREN, 'beginning of the if statement\'s conditional')
+	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
 	var condition = parseCondition()
-	advance('symbol', RPAREN, 'end of the if statement\'s conditional')
+	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
 	
 	var ifBlock = parseBlock('if statement')
 	
