@@ -182,7 +182,7 @@ var parseXMLAttributes = function() {
 
 function parseAssignment(msg) {
 	debug('parseAssignment')
-	var assignment
+	var assignment = {}
 	advance('name', null, msg)
 	assignment.name = gToken.value
 	advance('symbol', '=', msg)
