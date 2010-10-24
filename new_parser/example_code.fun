@@ -10,7 +10,12 @@ let someJSON = { aString:'asd', aNumber:123, anArray:[1,2,3], moreJSON:
 
 someJSON.moreJSON.WOOT
 
-<div>
+let styles = {
+	awesomeStyle: { color:'magenta', fontSize:'1000px' }
+}
+let clickHandler = 'handlers dont exist yet!'
+
+<div style=styles.awesomeStyle width=100 onClick=clickHandler>
 	"Hi " <em>"Marcus"</em>
 	"How are you?"
 	test "?"

@@ -167,16 +167,27 @@ var parseXML = function() {
 		return { type:'XML', tag:tagName, attributes:attributes, block:statements }
 	}
 }
-
 var parseXMLAttributes = function() {
-	// TODO parse XML attributes
 	debug('parseXMLAttributes')
-	if (!isAhead('name')) { return [] } // no attributes
+	
+	var XMLAttributes = []
+	while (isAhead('name')) {
+		// TODO DRY with parseDeclaration
+		var attribute = {}
+		advance('name')
+		attribute.name = gToken.value
+		advance('symbol','=')
+		attribute.value = parseValueOrAlias()
+		XMLAttributes.push(attribute)
+	}
+	
+	return XMLAttributes
 }
 
 /****************
  * Declarations *
  ****************/
+// TODO DRY with parseXMLAttributes loop
 function parseDeclaration() {
 	debug('parseDeclaration')
 	advance('name', null, 'declaration')
