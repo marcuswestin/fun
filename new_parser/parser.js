@@ -174,29 +174,30 @@ var parseXMLAttributes = function() {
 	
 	var XMLAttributes = []
 	while (isAhead('name')) {
-		// TODO DRY with parseDeclaration
-		var attribute = {}
-		advance('name')
-		attribute.name = gToken.value
-		advance('symbol','=')
-		attribute.value = parseValueOrAlias()
-		XMLAttributes.push(attribute)
+		XMLAttributes.push(parseAssignment('XML_attribute'))
 	}
 	
 	return XMLAttributes
 }
 
+function parseAssignment(msg) {
+	debug('parseAssignment')
+	var assignment
+	advance('name', null, msg)
+	assignment.name = gToken.value
+	advance('symbol', '=', msg)
+	assignment.value = parseValueOrAlias()
+	return assignment
+}
+
 /****************
  * Declarations *
  ****************/
-// TODO DRY with parseXMLAttributes loop
 function parseDeclaration() {
 	debug('parseDeclaration')
-	advance('name', null, 'declaration')
-	var name = gToken.value
-	advance('symbol', '=', 'declaration')
-	value = parseValueOrAlias()
-	return { type:'DECLARATION', name:name, value:value }
+	var declaration = parseAssignment('declaration')
+	declaration.type = 'DECLARATION'
+	return declaration
 }
 
 /********
