@@ -178,7 +178,8 @@ var parseXMLAttributes = function() {
 	
 	var XMLAttributes = []
 	while (isAhead('name')) {
-		XMLAttributes.push(parseAssignment('XML_attribute'))
+		var assignment = parseAssignment('XML_attribute')
+		XMLAttributes.push({ name:assignment[0], value:assignment[1] })
 	}
 	
 	return XMLAttributes
@@ -186,11 +187,11 @@ var parseXMLAttributes = function() {
 
 function parseAssignment(msg) {
 	debug('parseAssignment')
-	var assignment = {}
+	var assignment = []
 	advance('name', null, msg)
-	assignment.name = gToken.value
+	assignment.push(gToken.value)
 	advance('symbol', '=', msg)
-	assignment.value = parseValueOrAlias()
+	assignment.push(parseValueOrAlias())
 	return assignment
 }
 
@@ -199,9 +200,8 @@ function parseAssignment(msg) {
  ****************/
 function parseDeclaration() {
 	debug('parseDeclaration')
-	var declaration = parseAssignment('declaration')
-	declaration.type = 'DECLARATION'
-	return declaration
+	var assignment = parseAssignment('declaration')
+	return { type:'DECLARATION', name:assignment[0], value:assignment[1] }
 }
 
 /********
