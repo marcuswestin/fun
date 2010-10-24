@@ -35,6 +35,7 @@ var parseStatement = function() {
 		case 'symbol':
 			return parseXML() // only XML statements begin with a symbol (<)
 		case 'name':
+			// TODO parse template invocation
 			return getAlias()
 		case 'keyword':
 			switch (gToken.value) {
@@ -112,6 +113,8 @@ function parseValueOrAlias() {
 			if (gToken.value == '<') { return parseXML() }
 			else if (gToken.value == L_CURLY || gToken.value == L_ARRAY) { return parseJSON() }
 			else { throw new Error('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
+		// TODO parse keyword handler
+		// TODO parse keyword template
 		default:
 			throw new Error('Unexpected value or alias token: ' + JSON.stringify(gToken))
 	}
