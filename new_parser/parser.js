@@ -50,7 +50,7 @@ var parseStatement = function() {
 function parseBlock(statementType) {
 	advance('symbol', LBLOCK, 'beginning of the '+statementType+'\'s block')
 	var block = []
-	while(!isAhead(1, 'symbol', RBLOCK)) {
+	while(!isAhead('symbol', RBLOCK)) {
 		advance()
 		block.push(parseStatement())
 	}
@@ -74,29 +74,25 @@ var advance = function(type, value, expressionType) {
 				'but found a', q(gToken.type),
 				'of value', q(gToken.value)].join(' ')
 	)}
-	// TODO DRY the two "if (type/value instanceof Array) { ... }" statements below
-	if (type) {
-		if (type instanceof Array) { for (var i=0, tp; tp=type[i]; i++) {
-			if (tp != gToken.type) { continue }
-			type = tp // allow for the check to pass if one of the types passed in matches
-			break
-		}}
-		check(type, gToken.type)
-	}
-	if (value) {
-		if (value instanceof Array) { for (var i=0, val; val=value[i]; i++) {
-			if (val != gToken.value) { continue }
-			value = val // allow for the check to pass if one of the values passed in matches
-			break
-		}}
-		check(value, gToken.value)
-	}
+	if (type) { check(findInArray(type, gToken.type), gToken.type) }
+	if (value) { check(findInArray(value, gToken.value), gToken.value) }
 }
-var isAhead = function(amount, type, value) {
-	var token = gTokens[gIndex + amount]
-	if (type && type != token.type) { return false }
-	if (value && value != token.value) { return false }
+var isAhead = function(type, value, steps) {
+	var token = gTokens[gIndex + (steps || 1)]
+	if (type && findInArray(type, token.type) != token.type) { return false }
+	if (value && findInArray(value, token.value) != token.value) { return false }
 	return true
+}
+// Find an item in an array and return it
+//  if target is in array, return target
+//  if target is not in array, return array
+//  if array is not an array, return array
+var findInArray = function(array, target) {
+	if (!(array instanceof Array)) { return array }
+	for (var i=0, item; item = array[i]; i++) {
+		if (item == target) { return item }
+	}
+	return array
 }
 
 /******************************
@@ -131,7 +127,7 @@ var parseXML = function() {
 	} else {
 		var statements = []
 		while(true) {
-			if (isAhead(1, 'symbol', '<') && isAhead(2, 'symbol', '/')) { break }
+			if (isAhead('symbol', '<') && isAhead('symbol', '/', 2)) { break }
 			advance()
 			statements.push(parseStatement())
 		}
@@ -148,7 +144,7 @@ var parseXML = function() {
 var parseXMLAttributes = function() {
 	// TODO parse XML attributes
 	debug('parseXMLAttributes')
-	if (!isAhead(1, 'name')) { return [] } // no attributes
+	if (!isAhead('name')) { return [] } // no attributes
 }
 
 /****************
