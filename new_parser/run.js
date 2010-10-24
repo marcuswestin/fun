@@ -4,16 +4,11 @@ var tokenizer = require('./tokens'),
 
 require('./underscore')
 
-var start = new Date().getTime(),
-    tokens = tokenizer.tokenize(sourceCode, '', ''),
-    ast = parser.parse(tokens),
-	// TODO import compiler and compile the ast to js
-    timeToRun = (new Date().getTime() - start) / 1000
-
+var tokens = tokenizer.tokenize(sourceCode, ['let','for','if','in'], '=<>', '=')
 console.log('\nTokens:')
 console.log(_.map(tokens, function(token){ return token.type+' '+token.value }))
 
+var ast = parser.parse(tokens)
 console.log('\nAST:')
 console.log(JSON.stringify(ast))
 
-console.log('Compilation took', (new Date().getTime() - start) / 1000, 'seconds')
