@@ -96,9 +96,27 @@ var findInArray = function(array, target) {
 	return array
 }
 
-/******************************
- * Aliases and literal values *
- ******************************/
+/**********************
+ * Aliases and values *
+ **********************/
+function parseValueOrAlias() {
+	debug('parseValueOrAlias')
+	advance()
+	switch(gToken.type) {
+		case 'name':
+		    return getAlias()
+		case 'string':
+		case 'number':
+			return getLiteralValue()
+		case 'symbol':
+			if (gToken.value == '<') { return parseXML() }
+			else if (gToken.value == L_CURLY || gToken.value == L_ARRAY) { return parseJSON() }
+			else { throw new Error('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
+		default:
+			throw new Error('Unexpected value or alias token: ' + JSON.stringify(gToken))
+	}
+}
+
 function getAlias() {
 	assert(gToken.type == 'name')
 	// TODO Parse dot notation
@@ -109,8 +127,6 @@ function getLiteralValue() {
 	assert(gToken.type == 'string' || gToken.type == 'number')
 	return { type:gToken.type.toUpperCase(), value:gToken.value }
 }
-
- 
 
 /*******
  * XML *
@@ -156,25 +172,8 @@ function parseDeclaration() {
 	advance('name', null, 'declaration')
 	var name = gToken.value
 	advance('symbol', '=', 'declaration')
-	value = parseDeclarable()
+	value = parseValueOrAlias()
 	return { type:'DECLARATION', name:name, value:value }
-}
-function parseDeclarable() {
-	debug('parseDeclarable')
-	advance()
-	switch(gToken.type) {
-		case 'name':
-		    return getAlias()
-		case 'symbol':
-			if (gToken.value == '<') { return parseXML() }
-			else if (gToken.value == L_CURLY || gToken.value == L_ARRAY) { return parseJSON() }
-			else { throw new Error('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
-		case 'string':
-		case 'number':
-			return getLiteralValue()
-		default:
-			throw new Error('Unkown declarable token: ' + JSON.stringify(gToken))
-	}
 }
 
 /********
@@ -192,7 +191,7 @@ function parseJSONObject() {
 		advance(['name','string'])
 		nameValuePair.name = gToken.value
 		advance('symbol', ':')
-		nameValuePair.value = parseDeclarable()
+		nameValuePair.value = parseValueOrAlias()
 		content.push(nameValuePair)
 		advance('symbol', [',',R_CURLY],
 				'comma before another JSON name-value-pair or right curly at the end of the JSON object')
@@ -203,7 +202,7 @@ function parseJSONArray() {
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
 	var content = []
 	while (!(gToken.type == 'symbol' && gToken.value == R_ARRAY)) {
-		content.push(parseDeclarable())
+		content.push(parseValueOrAlias())
 		advance('symbol', [',',R_ARRAY],
 				'comma before another array item or right bracket at the end of the array')
 	}
