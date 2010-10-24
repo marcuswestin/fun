@@ -52,3 +52,7 @@ for (item in items) {
     	test "?"
     </div>
 }
+
+let aTemplate = template(asd,qwe) {
+	
+}

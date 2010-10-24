@@ -311,7 +311,24 @@ function parseCondition() {
  *************/
 function parseTemplate() {
 	debug('parseTemplate')
-	throw new Error('TODO parseTemplate not yet implemented')
+	advance('symbol', L_PAREN)
+	var args = parseArgumentList()
+	advance('symbol', R_PAREN)
+	var block = parseBlock('template')
+	return { type:'TEMPLATE', args:args, block:block }
+}
+
+function parseArgumentList() {
+	debug('parseArgumentList')
+	var args = []
+	while (true) {
+		if (isAhead('symbol', R_PAREN)) { break }
+		advance('name')
+		args.push(gToken.value)
+		if (!isAhead('symbol', ',')) { break }
+		advance('symbol', ',')
+	}
+	return args
 }
 
 /************
