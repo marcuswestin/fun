@@ -215,27 +215,32 @@ function parseJSONObject() {
 	debug('parseJSONObject')
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
 	var content = []
-	while (!(gToken.type == 'symbol' && gToken.value == R_CURLY)) {
+	while (true) {
+		if (isAhead('symbol', R_CURLY)) { break }
 		var nameValuePair = {}
 		advance(['name','string'])
 		nameValuePair.name = gToken.value
 		advance('symbol', ':')
 		nameValuePair.value = parseValueOrAlias()
 		content.push(nameValuePair)
-		advance('symbol', [',',R_CURLY],
-				'comma before another JSON name-value-pair or right curly at the end of the JSON object')
+		if (!isAhead('symbol', ',')) { break }
+		advance('symbol',',')
 	}
+	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
 	return { type:'JSON_OBJECT', content:content }
 }
 function parseJSONArray() {
 	debug('parseJSONArray')
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
 	var content = []
-	while (!(gToken.type == 'symbol' && gToken.value == R_ARRAY)) {
+	
+	while (true) {
+		if (isAhead('symbol', R_ARRAY)) { break }
 		content.push(parseValueOrAlias())
-		advance('symbol', [',',R_ARRAY],
-				'comma before another array item or right bracket at the end of the array')
+		if (!isAhead('symbol', ',')) { break }
+		advance('symbol', ',')
 	}
+	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
 	return { type:'JSON_ARRAY', content:content }
 }
 

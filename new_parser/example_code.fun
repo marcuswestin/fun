@@ -2,10 +2,15 @@ let test = 'test'
 test
 "ASD"
 
+let anEmptyObject = {}
+let anEmptyArray = []
+let anArray = [123,234]
+
 let something = 1123
 let somethingBig = 999.99e10
 let someJSON = { aString:'asd', aNumber:123, anArray:[1,2,3], moreJSON:
 	{ "WOOT": 123 }
+	, // stray comma, should parse OK anyway
 }
 
 someJSON.moreJSON.WOOT
