@@ -305,16 +305,27 @@ function parseCondition() {
 	return { left:left, comparison:comparison, right:right }
 }
 
-/*************
- * Templates *
- *************/
+/************************
+ * Templates & Handlers *
+ ************************/
 function parseTemplate() {
 	debug('parseTemplate')
+	var callable = parseCallable('template')
+	return { type:'TEMPLATE', args:callable[0], block:callable[1] }
+}
+
+function parseHandler() {
+	debug('parseHandler')
+	var callable = parseCallable('handler')
+	return { type:'HANDLER', args:callable[0], block:callable[1] }
+}
+
+function parseCallable(msg) {
 	advance('symbol', L_PAREN)
 	var args = parseArgumentList()
 	advance('symbol', R_PAREN)
-	var block = parseBlock('template')
-	return { type:'TEMPLATE', args:args, block:block }
+	var block = parseBlock(msg)
+	return [args, block]
 }
 
 function parseArgumentList() {
@@ -328,12 +339,4 @@ function parseArgumentList() {
 		advance('symbol', ',')
 	}
 	return args
-}
-
-/************
- * Handlers *
- ************/
-function parseHandler() {
-	debug('parseHandler')
-	throw new Error('TODO parseHandler not yet implemented')
 }

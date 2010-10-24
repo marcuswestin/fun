@@ -20,13 +20,13 @@ let styles = {
 }
 let clickHandler = 'handlers dont exist yet!'
 
-<div style=styles.awesomeStyle width=100 onClick=clickHandler>
+<div style=styles.awesomeStyle width=100 onClick=handler(){  }>
 	"Hi " <em>"Marcus"</em>
 	"How are you?"
 	test "?"
 </div>
 
-<button>"click handler at closing tag"</button onClick=clickHandler>
+<button>"click handler at closing tag"</button onClick=handler(){ asd }>
 
 if (something) {
     <div>
@@ -54,5 +54,10 @@ for (item in items) {
 }
 
 let aTemplate = template(asd,qwe) {
-	
+	<div>"Hello there!"</div>
+	if (asd) { "cool" }
+}
+let aHandler = handler(asd) {
+	<div>"Hello there!"</div>
+	if (asd) { "cool" }
 }
