@@ -81,6 +81,7 @@ var advance = function(type, value, expressionType) {
 }
 var isAhead = function(type, value, steps) {
 	var token = gTokens[gIndex + (steps || 1)]
+	if (!token) { return false }
 	if (type && findInArray(type, token.type) != token.type) { return false }
 	if (value && findInArray(value, token.value) != token.value) { return false }
 	return true
