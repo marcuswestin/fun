@@ -114,8 +114,10 @@ function parseValueOrAlias() {
 			if (gToken.value == '<') { return parseXML() }
 			else if (gToken.value == L_CURLY || gToken.value == L_ARRAY) { return parseJSON() }
 			else { throw new Error('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
-		// TODO parse keyword handler
-		// TODO parse keyword template
+		case 'keyword':
+			if (gToken.value == 'template') { return parseTemplate() }
+			else if (gToken.value == 'handler') { return parseHandler() }
+			else { throw new Error('Expected keyword of value "template" or "handler" but found "'+gToken.value+'"')}
 		default:
 			throw new Error('Unexpected value or alias token: ' + JSON.stringify(gToken))
 	}
@@ -297,4 +299,20 @@ function parseCondition() {
 	}
 	
 	return { left:left, comparison:comparison, right:right }
+}
+
+/*************
+ * Templates *
+ *************/
+function parseTemplate() {
+	debug('parseTemplate')
+	throw new Error('TODO parseTemplate not yet implemented')
+}
+
+/************
+ * Handlers *
+ ************/
+function parseHandler() {
+	debug('parseHandler')
+	throw new Error('TODO parseHandler not yet implemented')
 }

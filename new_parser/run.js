@@ -4,7 +4,7 @@ var tokenizer = require('./tokenizer'),
 
 require('./underscore')
 
-var keywords = ['let','for','in','if','else'],
+var keywords = ['let','for','in','if','else','template','handler'],
 	tokens = tokenizer.tokenize(sourceCode, keywords, '=<>', '=')
 console.log('\nTokens:')
 console.log(_.map(tokens, function(token){ return token.type+' '+token.value }))
