@@ -162,6 +162,8 @@ var parseXML = function() {
 		advance('symbol', '<')
 		advance('symbol', '/')
 		advance('name', tagName, 'matching XML tags')
+		// allow for attributes on closing tag, e.g. <button>"Click"</button onClick=handler(){ ... }>
+		attributes = attributes.concat(parseXMLAttributes())
 		advance('symbol', '>')
 		
 		return { type:'XML', tag:tagName, attributes:attributes, block:statements }

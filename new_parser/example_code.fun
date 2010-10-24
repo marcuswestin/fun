@@ -21,6 +21,8 @@ let clickHandler = 'handlers dont exist yet!'
 	test "?"
 </div>
 
+<button>"click handler at closing tag"</button onClick=clickHandler>
+
 if (something) {
     <div>
     	"Hi " <em>"Marcus"</em>
