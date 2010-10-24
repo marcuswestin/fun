@@ -122,6 +122,7 @@ function parseValueOrAlias() {
 }
 
 function parseAlias() {
+	debug('parseAlias')
 	var namespace = []
 	while(true) {
 		assert(gToken.type == 'name')
@@ -134,6 +135,7 @@ function parseAlias() {
 }
 
 function getLiteralValue() {
+	debug('getLiteralValue')
 	assert(gToken.type == 'string' || gToken.type == 'number')
 	return { type:gToken.type.toUpperCase(), value:gToken.value } // type is STRING or NUMBER
 }
@@ -208,6 +210,7 @@ function parseJSON() {
 	else { return parseJSONArray() }
 }
 function parseJSONObject() {
+	debug('parseJSONObject')
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
 	var content = []
 	while (!(gToken.type == 'symbol' && gToken.value == R_CURLY)) {
@@ -223,6 +226,7 @@ function parseJSONObject() {
 	return { type:'JSON_OBJECT', content:content }
 }
 function parseJSONArray() {
+	debug('parseJSONArray')
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
 	var content = []
 	while (!(gToken.type == 'symbol' && gToken.value == R_ARRAY)) {
@@ -275,6 +279,7 @@ function parseIfStatement() {
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 }
 function parseCondition() {
+	debug('parseCondition')
 	// TODO Parse compond statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
 	var type = gToken.type,
 		value = gToken.value
