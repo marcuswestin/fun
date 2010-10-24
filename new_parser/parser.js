@@ -33,11 +33,13 @@ var parseStatement = function() {
 		case 'symbol':
 			return parseXML() // only XML statements begin with a symbol (<)
 		case 'name':
-		    switch (gToken.value) {
-        		case 'let': return parseDeclaration()
+			return getAlias()
+		case 'keyword':
+			switch (gToken.value) {
+				case 'let': return parseDeclaration()
 				case 'for': return parseForLoop()
 				case 'if': return parseIfStatement()
-				default: return getAlias()
+				case 'in': throw new Error('Unexpected keyword "in" at the beginning of a statement')
 			}
 		
 		default:
@@ -187,7 +189,7 @@ function parseForLoop() {
 	advance('symbol', LPAREN, 'beginning of for_loop\'s iterator statement')
 	advance('name', null, 'for_loop\'s iterator')
 	var iterator = gToken.value
-	advance('name', 'in', 'for_loop\'s "in" keyword')
+	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	advance('name', null, 'for_loop\'s iterable value')
 	var iterable = getAlias()
 	advance('symbol', RPAREN, 'end of for_loop\'s iterator statement')
