@@ -4,9 +4,9 @@ var util = require('./util'),
 	debug = util.debug
 
 var LPAREN = '(',
-    RPAREN = ')',
-    LBLOCK = '{',
-    RBLOCK = '}'
+	RPAREN = ')',
+	LBLOCK = '{',
+	RBLOCK = '}'
 
 var gToken, gIndex, gTokens, gState, gAST
 
