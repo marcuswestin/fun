@@ -96,7 +96,12 @@ function compileInlineValue(context, ast) {
 }
 
 function compileAlias(context, ast) {
-	halt('TODO compileAlias not yet implemented')
+	assert(ast.type == 'ALIAS', 'Expected an ALIAS by found a ' + ast.type)
+	assert(ast.namespace.length == 1, 'TODO Implement alias dot notation namespace lookups')
+	var name = ast.namespace[0]
+	
+	var valueAST = _getReference(context, name)
+	return compileInlineValue(context, valueAST)
 }
 
 /*******
@@ -110,7 +115,19 @@ function compileXML(context, ast) {
  * Declarations *
  ****************/
 function compileDeclaration(context, ast) {
-	halt('TODO compileDeclaration not yet implemented')
+	_setReference(context, ast.name, ast.value)
+	return ''
+}
+
+var _setReference = function(context, name, reference) {
+	var referenceTable = context.referenceTable
+	assert(!referenceTable[name], 'Repeat Declaration', { name:name })
+	referenceTable[name] = reference
+}
+var _getReference = function(context, name) {
+	var referenceTable = context.referenceTable
+	assert(referenceTable[name], 'Undeclared Reference', { name: name, table: referenceTable })
+	return referenceTable[name]
 }
 
 /**********************
