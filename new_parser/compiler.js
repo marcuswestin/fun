@@ -3,7 +3,8 @@ var compiler = exports,
 	assert = require('./util').assert,
 	bind = require('./util').bind,
 	map = require('./util').map,
-	repeat = require('./util').repeat
+	repeat = require('./util').repeat,
+	boxComment = require('./util').boxComment
 
 compiler.compile = function(ast) {
 	var libraryCode = fs.readFileSync(__dirname + '/lib.js').toString(),
