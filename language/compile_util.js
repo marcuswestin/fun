@@ -109,7 +109,7 @@ util.CodeGenerator = Class(function() {
 	}
 	
 	this.boxComment = function(msg) {
-		var len = msg.length + 2
+		var len = msg.length + 1
 		return this._add('/*' + this._repeat('*', len) + "**\n"
 			+ ' * ' + msg + " *\n"
 			+ ' *' + this._repeat('*', len) + "**/\n")
@@ -117,7 +117,7 @@ util.CodeGenerator = Class(function() {
 	
 	this._repeat = function(str, times) {
 		var arr = []
-		arr.length = times
+		arr.length = times + 1
 		return arr.join(str)
 	}
 	
