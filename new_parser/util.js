@@ -24,3 +24,29 @@ util.map = function(arr, fn) {
 	}
 	return result
 }
+
+var repeat = util.repeat = function(str, times) {
+	var arr = []
+	arr.length = times + 1
+	return arr.join(str)
+}
+
+util.indent = function(code) {
+	var lines = code.replace(/\t/g, '').split('\n'),
+		result = [],
+		indentation = 0,
+		openRegex = /\{/g,
+		closeRegex = /\}/g,
+		match = null
+	
+	for (var i=0, line; i < lines.length; i++) {
+		line = lines[i]
+		match = line.match(closeRegex)
+		if (match) { indentation -= match.length }
+		repeat(' ', indentation)
+		result.push(repeat('\t', indentation) + line)
+		match = line.match(openRegex)
+		if (match) { indentation += match.length }
+	}
+	return result.join('\n')
+}
