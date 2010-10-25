@@ -14,7 +14,7 @@ assert.equal = function(v1, v2, msg) {
 }
 
 util.debug = function(msg) {
-	sys.puts(msg)
+	// sys.puts(msg)
 }
 
 util.map = function(arr, fn) {
@@ -50,19 +50,14 @@ var bind = util.bind = function(context, method) {
 util.indent = function(code) {
 	var lines = code.replace(/\t/g, '').split('\n'),
 		result = [],
-		indentation = 0,
-		openRegex = /\{/g,
-		closeRegex = /\}/g,
-		match = null
+		indentation = 0
 	
 	for (var i=0, line; i < lines.length; i++) {
 		line = lines[i]
-		match = line.match(closeRegex)
-		if (match) { indentation -= match.length }
-		repeat(' ', indentation)
+		
+		if (line.match(/^\s*\}/)) { indentation-- }
 		result.push(repeat('\t', indentation) + line)
-		match = line.match(openRegex)
-		if (match) { indentation += match.length }
+		if (line.match(/\{\s*$/)) { indentation++ }
 	}
 	return result.join('\n')
 }

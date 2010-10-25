@@ -12,11 +12,13 @@ compiler.compile = function(ast) {
 
 	return code(
 		'function initFunApp() {',
-		'	var {{ rootHookName }} = fun.getHookID()',
+		'	var {{ rootHookName }} = fun.name("rootHook")',
 		'	fun.setHook({{ rootHookName }}, document.body)',
 			compile(rootContext, ast),
 		'}',
-		{ rootHookName: rootContext.hookName })
+		{
+			rootHookName: rootContext.hookName
+		})
 		+ '\n\n' + boxComment('Library code') + '\n' + libraryCode
 }
 
@@ -62,9 +64,8 @@ function compile(context, ast, indentation) {
 function compileStatement(context, ast) {
 	switch (ast.type) {
 		case 'STRING':
-			return compileString(context, ast)
 		case 'NUMBER':
-			return compileNumber(context, ast)
+			return compileInlineValue(context, ast)
 		case 'ALIAS':
 			return compileAlias(context, ast)
 		case 'XML':
@@ -85,12 +86,13 @@ function compileStatement(context, ast) {
 /**********************
  * Values and Aliases *
  **********************/
-function compileString(context, ast) {
-	return '*** TODO Implement compileString ***'
-}
-
-function compileNumber(context, ast) {
-	halt('TODO compileNumber not yet implemented')
+function compileInlineValue(context, ast) {
+	return code(
+		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
+		{
+			parentHook: context.hookName,
+			value: JSON.stringify(ast.value)
+		})
 }
 
 function compileAlias(context, ast) {
