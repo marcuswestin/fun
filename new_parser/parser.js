@@ -41,7 +41,7 @@ var parseStatement = function() {
 				case 'let': return parseDeclaration()
 				case 'for': return parseForLoop()
 				case 'if': return parseIfStatement()
-				case 'in': halt('Unexpected keyword "in" at the beginning of a statement')
+				default: halt('Unexpected keyword "'+gToken.value+'" at the beginning of a statement')
 			}
 		default:
 			halt('Unknown parse statement token: ' + gToken.type)
