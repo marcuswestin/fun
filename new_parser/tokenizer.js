@@ -13,7 +13,7 @@
 // Comments of the // type are ignored.
 
 // Operators are by default single characters. Multicharacter
-// symbolss can be made by supplying a string of prefix and
+// symbols can be made by supplying a string of prefix and
 // suffix characters.
 // characters. For example,
 //      '<>+-&', '=>&:'
@@ -22,7 +22,7 @@
 
 
 
-exports.tokenize = function (inputString, prefix, suffix) {
+exports.tokenize = function (inputString, keywords, prefix, suffix) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.
     var i = 0;                  // The index of the current character.
@@ -45,9 +45,15 @@ exports.tokenize = function (inputString, prefix, suffix) {
             from: from,
             to: i,
             line: line,
-            colomn: from - lineStart + 1
+            column: from - lineStart + 1
         };
     };
+    
+// Allow for keyword lookup with "if (str in keywords) { ... }"
+
+    for (var kWord, keyI=0; kWord = keywords[keyI]; keyI++) {
+        keywords[kWord] = true;
+    }
 
 // Begin tokenization. If the source string is empty, return nothing.
 
@@ -101,7 +107,7 @@ exports.tokenize = function (inputString, prefix, suffix) {
                     break;
                 }
             }
-            result.push(make('name', str));
+            result.push(make(str in keywords ? 'keyword' : 'name', str));
 
 // number.
 
