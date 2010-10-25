@@ -13,6 +13,8 @@ let someJSON = { aString:'asd', aNumber:123, anArray:[1,2,3], moreJSON:
 	, // stray comma, should parse OK anyway
 }
 
+12314123
+
 someJSON.moreJSON.WOOT
 
 let styles = {
