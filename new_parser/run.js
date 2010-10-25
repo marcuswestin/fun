@@ -1,15 +1,12 @@
-var tokenizer = require('./tokenizer'),
-	parser = require('./parser'),
+var map = require('./util').map,
 	sourceCode = require('fs').readFileSync('./example_code.fun').toString()
 
-require('./underscore')
-
-var keywords = ['let','for','in','if','else','template','handler'],
-	tokens = tokenizer.tokenize(sourceCode, keywords, '=<>', '=')
+var keywords = ['let','for','in','if','else','template','handler']
+var tokens = require('./tokenizer').tokenize(sourceCode, keywords, '=<>', '=')
 console.log('\nTokens:')
-console.log(_.map(tokens, function(token){ return token.type+' '+token.value }))
+console.log(map(tokens, function(token){ return token.type+' '+token.value }))
 
-var ast = parser.parse(tokens)
+var ast = require('./parser').parse(tokens)
 console.log('\nAST:')
 console.log(JSON.stringify(ast))
 
