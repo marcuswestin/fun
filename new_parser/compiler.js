@@ -61,21 +61,21 @@ function compile(context, ast, indentation) {
 function compileStatement(context, ast) {
 	switch (ast.type) {
 		case 'STRING':
-			return compileString()
+			return compileString(context, ast)
 		case 'NUMBER':
-			return compileNumber()
+			return compileNumber(context, ast)
 		case 'ALIAS':
-			return compileAlias()
+			return compileAlias(context, ast)
 		case 'XML':
-			return compileXML()
+			return compileXML(context, ast)
 		case 'DECLARATION':
-			return compileDeclaration()
+			return compileDeclaration(context, ast)
 		case 'IF_STATEMENT':
-			return compileIfStatement()
+			return compileIfStatement(context, ast)
 		case 'FOR_LOOP':
-			return compileForLoop()
+			return compileForLoop(context, ast)
 		case 'INVOCATION':
-			return compileInvocation()
+			return compileInvocation(context, ast)
 		default:
 			halt('Unknown AST type ' + ast.type)
 	}
@@ -84,49 +84,49 @@ function compileStatement(context, ast) {
 /**********************
  * Values and Aliases *
  **********************/
-function compileString() {
+function compileString(context, ast) {
 	return '*** TODO Implement compileString ***'
 }
 
-function compileNumber() {
+function compileNumber(context, ast) {
 	halt('TODO compileNumber not yet implemented')
 }
 
-function compileAlias() {
+function compileAlias(context, ast) {
 	halt('TODO compileAlias not yet implemented')
 }
 
 /*******
  * XML *
  *******/
-function compileXML() {
+function compileXML(context, ast) {
 	halt('TODO compileXML not yet implemented')
 }
 
 /****************
  * Declarations *
  ****************/
-function compileDeclaration() {
+function compileDeclaration(context, ast) {
 	halt('TODO compileDeclaration not yet implemented')
 }
 
 /**********************
  * If/Else statements *
  **********************/
-function compileIfStatement() {
+function compileIfStatement(context, ast) {
 	halt('TODO compileIfStatement not yet implemented')
 }
 
 /*************
  * For loops *
  *************/
-function compileForLoop() {
+function compileForLoop(context, ast) {
 	halt('TODO compileForLoop not yet implemented')
 }
 
 /****************************************
  * Invocations (handlers and templates) *
  ****************************************/
-function compileInvocation() {
+function compileInvocation(context, ast) {
 	halt('TODO compileInvocation not yet implemented')
 }
