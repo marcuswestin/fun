@@ -1,5 +1,5 @@
-var util = require('./util'),
-	assert = util.assert
+var sys = require('sys'),
+	util = require('./util'),
 	q = util.q,
 	debug = util.debug
 
@@ -11,6 +11,12 @@ var L_PAREN = '(',
 	R_ARRAY = ']'
 
 var gToken, gIndex, gTokens, gState, gAST
+
+exports.ParseError = function(file, msg) {
+	this.name = 'ParseError';
+	this.message = ['On line', gToken.line + ',', 'column', gToken.column, 'of', '"'+file+'":', msg].join(' ')
+}
+exports.ParseError.prototype = Error.protoype
 
 exports.parse = function(tokens) {
 	gTokens = tokens
@@ -63,20 +69,20 @@ function parseBlock(statementType) {
 /*******************
  * Utility methods *
  *******************/
+var assert = function(ok, msg) { if (!ok) halt(msg) }
 var halt = function(msg) {
-	throw new Error([msg, 'on line:', gToken.line, 'column:', gToken.column].join(' '))
+	sys.puts(util.grabLine(gToken.file, gToken.line, gToken.column, gToken.span));
+	throw new exports.ParseError(gToken.file, msg)
 }
 var advance = function(type, value, expressionType) {
 	var nextToken = gTokens[++gIndex]
 	if (!nextToken) { halt('Unexpected end of file') }
 	gToken = nextToken
 	function check(v1, v2) {
-		assert.equal(v1, v2,
+		assert(v1 == v2,
 			['Expected a', q(type),
 				value ? 'of value ' + q(value) : '',
 				expressionType ? 'for the ' + expressionType : '',
-				'on line:', gToken.line,
-				'column:', gToken.column,
 				'but found a', q(gToken.type),
 				'of value', q(gToken.value)].join(' ')
 	)}
@@ -108,10 +114,16 @@ function astGenerator(generatorFn) {
 			result = generatorFn(),
 			endToken = gToken
 		
+		result.file = startToken.file
 		result.line = startToken.line
 		result.column = startToken.column
 		result.lineEnd = endToken.line
 		result.columnEnd = endToken.column
+		if (result.line == result.lineEnd) {
+			result.span = endToken.column - startToken.column + endToken.span
+		} else {
+			result.span = startToken.span
+		}
 		
 		return result
 	}

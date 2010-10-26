@@ -20,20 +20,34 @@
 // will match any of these:
 //      <=  >>  >>>  <>  >=  +: -: &: &&: &&
 
+var fs = require('fs'),
+    sys = require('sys'),
+	util = require('./util')
 
+exports.TokenizeError = function(file, line, column, msg) {
+	this.name = 'TokenizeError';
+	this.message = ['On line', line + ',', 'column', column, 'of', '"'+file+'":', msg].join(' ')
+}
 
-exports.tokenize = function (inputString, keywords, prefix, suffix) {
+exports.tokenize = function (inputFile, keywords, prefix, suffix) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.
     var i = 0;                  // The index of the current character.
     var line = 1;               // The line of the current character.
     var lineStart = 0;          // The index at the beginning of the line
-    var length = inputString.length;
+    var inputString;            // The string to tokenize
+    var length;                 // The length of the input string
     var n;                      // The number value.
     var q;                      // The quote character.
     var str;                    // The string value.
 
     var result = [];            // An array to hold the results.
+
+    var halt = function (msg) {
+        var col = from - lineStart + 1
+        sys.puts(util.grabLine(inputFile, line, col, i - from));
+        throw new exports.TokenizeError(inputFile, line, col, msg);
+    }
 
     var make = function (type, value) {
 
@@ -43,9 +57,10 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
             type: type,
             value: value,
             from: from,
-            to: i,
+            span: i - from,
             line: line,
-            column: from - lineStart + 1
+            column: from - lineStart + 1,
+            file: inputFile
         };
     };
     
@@ -56,8 +71,9 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
     }
 
 // Begin tokenization. If the source string is empty, return nothing.
-
-    if (!inputString) {
+    inputString = fs.readFileSync(inputFile).toString()
+    length = inputString.length
+    if (!length) {
         return;
     }
 
@@ -156,7 +172,7 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
                     c = inputString.charAt(i);
                 }
                 if (c < '0' || c > '9') {
-                    make('number', str).error("Bad exponent");
+                    halt("Bad exponent");
                 }
                 do {
                     i += 1;
@@ -170,7 +186,7 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
             if (c >= 'a' && c <= 'z') {
                 str += c;
                 i += 1;
-                make('number', str).error("Bad number");
+                halt("Bad number - should not end in a letter");
             }
 
 // Convert the string value to a number. If it is finite, then it is a good
@@ -180,7 +196,7 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
             if (isFinite(n)) {
                 result.push(make('number', n));
             } else {
-                make('number', str).error("Bad number");
+                halt("Bad number");
             }
 
 // string
@@ -192,7 +208,7 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
             for (;;) {
                 c = inputString.charAt(i);
                 if (c < ' ') {
-                    make('string', str).error(c === '\n' || c === '\r' || c === '' ?
+                    halt(c === '\n' || c === '\r' || c === '' ?
                         "Unterminated string." :
                         "Control character in string.", make('', str));
                 }
@@ -208,7 +224,7 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
                 if (c === '\\') {
                     i += 1;
                     if (i >= length) {
-                        make('string', str).error("Unterminated string");
+                        halt("Unterminated string");
                     }
                     c = inputString.charAt(i);
                     switch (c) {
@@ -229,11 +245,11 @@ exports.tokenize = function (inputString, keywords, prefix, suffix) {
                         break;
                     case 'u':
                         if (i >= length) {
-                            make('string', str).error("Unterminated string");
+                            halt("Unterminated string");
                         }
                         c = parseInt(inputString.substr(i + 1, 4), 16);
                         if (!isFinite(c) || c < 0) {
-                            make('string', str).error("Unterminated string");
+                            halt("Unterminated string");
                         }
                         c = String.fromCharCode(c);
                         i += 4;

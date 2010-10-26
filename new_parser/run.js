@@ -1,20 +1,43 @@
 var sys = require('sys'),
 	util = require('./util'),
-	sourceCode = require('fs').readFileSync('./example_code_2.fun').toString()
+	tokenizer = require('./tokenizer'),
+	parser = require('./parser'),
+	compiler = require('./compiler'),
+	inputFile = process.cwd() + '/example_code_2.fun'
 
 function log() {
 	var args = Array.prototype.slice.call(arguments, 0)
-	sys.puts('console.log('+util.map(args, JSON.stringify).join(',')+')')
+	log.output.push('console.log('+util.map(args, JSON.stringify).join(',')+')')
+}
+log.output = []
+
+var didThrow = false
+function intercept(errorName, fn) {
+	if (didThrow) { return }
+	try {
+		fn()
+	} catch(e) {
+		didThrow = true
+		if (e.name != errorName) { throw e }
+		sys.puts(e.name + ' ' + e.message)
+	}
 }
 
-var keywords = ['let','for','in','if','else','template','handler']
-var tokens = require('./tokenizer').tokenize(sourceCode, keywords, '=<>', '=')
+var tokens
+intercept("TokenizeError", function() {
+	var keywords = ['let','for','in','if','else','template','handler']
+	tokens = tokenizer.tokenize(inputFile, keywords, '=<>', '=')
+	log('Tokens:', util.map(tokens, function(token){ return token.type+' '+token.value }))
+})
 
-log('Tokens:', util.map(tokens, function(token){ return token.type+' '+token.value }))
+var ast
+intercept("ParseError", function() {
+	ast = parser.parse(tokens, inputFile)
+	log('AST:', ast)
+})
 
-var ast = require('./parser').parse(tokens)
-log('AST:', ast)
-
-var output = require('./compiler').compile(ast),
-	indented = util.indent(output)
-require('sys').puts(util.indent(output))
+intercept("CompileError", function() {
+	var output = compiler.compile(ast, inputFile)
+	sys.puts(log.output.join('\n'))
+	sys.puts(util.indent(output))
+})

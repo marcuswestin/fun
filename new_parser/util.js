@@ -1,17 +1,9 @@
 var util = exports
 
-var sys = require('sys')
+var sys = require('sys'),
+	fs = require('fs')
 
 var q = util.q = function(val) { return JSON.stringify(val) }
-
-var assert = util.assert = function(shouldBeTrue, msg) {
-	if (shouldBeTrue) { return }
-	throw new Error(msg)
-}
-
-assert.equal = function(v1, v2, msg) {
-	assert(v1 == v2, msg || 'Not equal: ' + JSON.stringify(v1) + ' and ' + JSON.stringify(v2))
-}
 
 util.debug = function(msg) {
 	// sys.puts(msg)
@@ -60,4 +52,12 @@ util.indent = function(code) {
 		if (line.match(/\{\s*$/)) { indentation++ }
 	}
 	return result.join('\n')
+}
+
+util.grabLine = function(file, line, column, length) {
+	length = length || 1
+	var code = fs.readFileSync(file).toString(),
+		lines = code.split('\n')
+	return '\n' + lines[line - 1] + '\n'
+		+ repeat(' ', column - 1) + repeat('^', length)
 }

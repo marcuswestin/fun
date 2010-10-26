@@ -1,12 +1,19 @@
 var compiler = exports,
 	fs = require('fs'),
-	assert = require('./util').assert,
-	bind = require('./util').bind,
-	map = require('./util').map,
-	repeat = require('./util').repeat,
-	boxComment = require('./util').boxComment
+	sys = require('sys'),
+	util = require('./util'),
+	bind = util.bind,
+	map = util.map,
+	repeat = util.repeat,
+	boxComment = util.boxComment
 
-compiler.compile = function(ast) {
+exports.CompileError = function(file, ast, msg) {
+	this.name = "CompileError"
+	this.message = ['On line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
+}
+exports.CompileError.prototype = Error.prototype
+
+compiler.compile = function(ast, inputFile) {
 	var libraryCode = fs.readFileSync(__dirname + '/lib.js').toString(),
 		rootContext = { hookName: name('ROOT_HOOK'), referenceTable: {} }
 
@@ -28,8 +35,6 @@ compiler.compile = function(ast) {
 function name(readable) { return '_' + (readable || '') + '$' + (name._uniqueId++) }
 name._uniqueId = 0
 
-var halt = function(msg) { throw new Error(msg) }
-
 var emitReplaceRegex = /{{\s*(\w+)\s*}}/
 function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
@@ -49,11 +54,17 @@ function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
 	return code
 }
 
+var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
+var halt = function(ast, msg) {
+	sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span))
+	throw new exports.CompileError(ast.file, ast, msg)
+}
+
 /************************
  * Top level statements *
  ************************/
 function compile(context, ast, indentation) {
-	assert(context && context.hookName && context.referenceTable, "compile called with invalid context", {context:context})
+	assert(context && context.hookName && context.referenceTable, ast, "compile called with invalid context")
 	if (ast instanceof Array) {
 		return map(ast, bind(this, compileStatement, context)).join('\n') + '\n'
 	} else {
@@ -79,7 +90,7 @@ function compileStatement(context, ast) {
 		case 'INVOCATION':
 			return compileInvocation(context, ast)
 		default:
-			halt('Unknown AST type ' + ast.type)
+			halt(ast, 'Unknown AST type ' + ast.type)
 	}
 }
 
@@ -96,8 +107,8 @@ function compileInlineValue(context, ast) {
 }
 
 function compileAlias(context, ast) {
-	assert(ast.type == 'ALIAS', 'Expected an ALIAS by found a ' + ast.type)
-	assert(ast.namespace.length == 1, 'TODO Implement alias dot notation namespace lookups')
+	assert(ast.type == 'ALIAS', ast, 'Expected an ALIAS but found a ' + ast.type)
+	assert(ast.namespace.length == 1, ast, 'TODO Implement alias dot notation namespace lookups')
 	var name = ast.namespace[0]
 	
 	var valueAST = _getReference(context, name)
@@ -108,7 +119,7 @@ function compileAlias(context, ast) {
  * XML *
  *******/
 function compileXML(context, ast) {
-	halt('TODO compileXML not yet implemented')
+	halt(ast, 'TODO compileXML not yet implemented')
 }
 
 /****************
@@ -134,19 +145,19 @@ var _getReference = function(context, name) {
  * If/Else statements *
  **********************/
 function compileIfStatement(context, ast) {
-	halt('TODO compileIfStatement not yet implemented')
+	halt(ast, 'TODO compileIfStatement not yet implemented')
 }
 
 /*************
  * For loops *
  *************/
 function compileForLoop(context, ast) {
-	halt('TODO compileForLoop not yet implemented')
+	halt(ast, 'TODO compileForLoop not yet implemented')
 }
 
 /****************************************
  * Invocations (handlers and templates) *
  ****************************************/
 function compileInvocation(context, ast) {
-	halt('TODO compileInvocation not yet implemented')
+	halt(ast, 'TODO compileInvocation not yet implemented')
 }
