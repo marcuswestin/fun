@@ -102,6 +102,21 @@ var findInArray = function(array, target) {
 	return array
 }
 
+function astGenerator(generatorFn) {
+	return function() {
+		var startToken = gToken,
+			result = generatorFn(),
+			endToken = gToken
+		
+		result.line = startToken.line
+		result.column = startToken.column
+		result.lineEnd = endToken.line
+		result.columnEnd = endToken.column
+		
+		return result
+	}
+}
+
 /**********************
  * Aliases and values *
  **********************/
@@ -127,7 +142,7 @@ function parseValueOrAlias() {
 	}
 }
 
-function parseAliasOrInvocation() {
+var parseAliasOrInvocation = astGenerator(function() {
 	debug('parseAliasOrInvocation')
 	var namespace = []
 	while(true) {
@@ -145,18 +160,18 @@ function parseAliasOrInvocation() {
 	} else {
 		return { type:'ALIAS', namespace:namespace }
 	}
-}
+})
 
-function getLiteralValue() {
+var getLiteralValue = astGenerator(function() {
 	debug('getLiteralValue')
 	assert(gToken.type == 'string' || gToken.type == 'number')
 	return { type:gToken.type.toUpperCase(), value:gToken.value } // type is STRING or NUMBER
-}
+})
 
 /*******
  * XML *
  *******/
-var parseXML = function() {
+var parseXML = astGenerator(function() {
 	debug('parseXML')
 	advance('name', null, 'XML tag')
 	var tagName = gToken.value,
@@ -183,7 +198,7 @@ var parseXML = function() {
 		
 		return { type:'XML', tag:tagName, attributes:attributes, block:statements }
 	}
-}
+})
 var parseXMLAttributes = function() {
 	debug('parseXMLAttributes')
 	
@@ -208,11 +223,11 @@ function parseAssignment(msg) {
 /****************
  * Declarations *
  ****************/
-function parseDeclaration() {
+var parseDeclaration = astGenerator(function() {
 	debug('parseDeclaration')
 	var assignment = parseAssignment('declaration')
 	return { type:'DECLARATION', name:assignment[0], value:assignment[1] }
-}
+})
 
 /********
  * JSON *
@@ -221,7 +236,7 @@ function parseJSON() {
 	if (gToken.value == L_CURLY) { return parseJSONObject() }
 	else { return parseJSONArray() }
 }
-function parseJSONObject() {
+var parseJSONObject = astGenerator(function() {
 	debug('parseJSONObject')
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
 	var content = []
@@ -238,14 +253,14 @@ function parseJSONObject() {
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
 	return { type:'JSON_OBJECT', content:content }
-}
-function parseJSONArray() {
+})
+var parseJSONArray = astGenerator(function() {
 	debug('parseJSONArray')
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
 	var content = parseValueList(R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
 	return { type:'JSON_ARRAY', content:content }
-}
+})
 function parseValueList(breakSymbol) {
 	var list = []
 	while (true) {
@@ -260,7 +275,7 @@ function parseValueList(breakSymbol) {
 /*************
 * For loops *
 *************/
-function parseForLoop() {
+var parseForLoop = astGenerator(function() {
 	debug('parseForLoop')
 	
 	// parse "(item in Global.items)"
@@ -276,12 +291,12 @@ function parseForLoop() {
 	var block = parseBlock('for_loop')
 	
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
-}
+})
 
 /****************
  * If statement *
  ****************/
-function parseIfStatement() {
+var parseIfStatement = astGenerator(function() {
 	debug('parseIfStatement')
 	
 	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
@@ -297,7 +312,7 @@ function parseIfStatement() {
 	}
 	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
-}
+})
 function parseCondition() {
 	debug('parseCondition')
 	// TODO Parse compond statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
@@ -322,17 +337,17 @@ function parseCondition() {
 /************************
  * Templates & Handlers *
  ************************/
-function parseTemplate() {
+var parseTemplate = astGenerator(function() {
 	debug('parseTemplate')
 	var callable = parseCallable('template')
 	return { type:'TEMPLATE', args:callable[0], block:callable[1] }
-}
+})
 
-function parseHandler() {
+var parseHandler = astGenerator(function() {
 	debug('parseHandler')
 	var callable = parseCallable('handler')
 	return { type:'HANDLER', args:callable[0], block:callable[1] }
-}
+})
 
 function parseCallable(msg) {
 	advance('symbol', L_PAREN)
