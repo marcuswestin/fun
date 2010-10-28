@@ -113,21 +113,21 @@ var findInArray = function(array, target) {
 function astGenerator(generatorFn) {
 	return function() {
 		var startToken = gToken,
-			result = generatorFn(),
+			ast = generatorFn(),
 			endToken = gToken
 		
-		result.file = startToken.file
-		result.line = startToken.line
-		result.column = startToken.column
-		result.lineEnd = endToken.line
-		result.columnEnd = endToken.column
-		if (result.line == result.lineEnd) {
-			result.span = endToken.column - startToken.column + endToken.span
+		ast.file = startToken.file
+		ast.line = startToken.line
+		ast.column = startToken.column
+		ast.lineEnd = endToken.line
+		ast.columnEnd = endToken.column
+		if (ast.line == ast.lineEnd) {
+			ast.span = endToken.column - startToken.column + endToken.span
 		} else {
-			result.span = startToken.span
+			ast.span = startToken.span
 		}
 		
-		return result
+		return ast
 	}
 }
 
