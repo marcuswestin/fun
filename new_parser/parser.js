@@ -14,7 +14,7 @@ var gToken, gIndex, gTokens, gState, gAST
 
 exports.ParseError = function(file, msg) {
 	this.name = 'ParseError';
-	this.message = ['On line', gToken.line + ',', 'column', gToken.column, 'of', '"'+file+'":', msg].join(' ')
+	this.message = ['on line', gToken.line + ',', 'column', gToken.column, 'of', '"'+file+'":', msg].join(' ')
 }
 exports.ParseError.prototype = Error.protoype
 

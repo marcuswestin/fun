@@ -26,7 +26,7 @@ var fs = require('fs'),
 
 exports.TokenizeError = function(file, line, column, msg) {
 	this.name = 'TokenizeError';
-	this.message = ['On line', line + ',', 'column', column, 'of', '"'+file+'":', msg].join(' ')
+	this.message = ['on line', line + ',', 'column', column, 'of', '"'+file+'":', msg].join(' ')
 }
 
 exports.tokenize = function (inputFile, keywords, prefix, suffix) {

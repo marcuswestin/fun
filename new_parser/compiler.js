@@ -9,7 +9,7 @@ var compiler = exports,
 
 exports.CompileError = function(file, ast, msg) {
 	this.name = "CompileError"
-	this.message = ['On line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
+	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
 }
 exports.CompileError.prototype = Error.prototype
 
