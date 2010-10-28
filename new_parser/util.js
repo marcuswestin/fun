@@ -6,7 +6,7 @@ var sys = require('sys'),
 var q = util.q = function(val) { return JSON.stringify(val) }
 
 util.debug = function(msg) {
-	// sys.puts(msg)
+	// console.log(msg)
 }
 
 util.map = function(arr, fn) {
