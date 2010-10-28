@@ -158,14 +158,7 @@ function parseValueOrAlias() {
 
 var parseAliasOrInvocation = astGenerator(function() {
 	debug('parseAliasOrInvocation')
-	var namespace = []
-	while(true) {
-		assert(gToken.type == 'name')
-		namespace.push(gToken.value)
-		if (!isAhead('symbol', '.')) { break }
-		advance('symbol', '.')
-		advance('name')
-	}
+	var namespace = parseNamespace()
 	if (isAhead('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
 		var args = parseValueList(R_PAREN)
@@ -181,6 +174,18 @@ var getLiteralValue = astGenerator(function() {
 	assert(gToken.type == 'string' || gToken.type == 'number')
 	return { type:gToken.type.toUpperCase(), value:gToken.value } // type is STRING or NUMBER
 })
+
+function parseNamespace() {
+	var namespace = []
+	while(true) {
+		assert(gToken.type == 'name')
+		namespace.push(gToken.value)
+		if (!isAhead('symbol', '.')) { break }
+		advance('symbol', '.')
+		advance('name')
+	}
+	return namespace;
+}
 
 /*******
  * XML *
