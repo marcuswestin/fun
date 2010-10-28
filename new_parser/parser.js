@@ -39,7 +39,9 @@ var parseStatement = function() {
 		case 'number':
 			return getLiteralValue()
 		case 'symbol':
-			return parseXML() // only XML statements begin with a symbol (<)
+			if (gToken.value == '<') { return parseXML() }
+			else if (gToken.value == '=') { halt('Unexpected symbol "=". Did you forget to put "let" at the beginning of the line?') }
+			else { halt('Unexpected symbol "'+gToken.value+'"') }
 		case 'name':
 			return parseAliasOrInvocation()
 		case 'keyword':
