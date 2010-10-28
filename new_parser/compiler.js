@@ -108,10 +108,7 @@ function compileInlineValue(context, ast) {
 
 function compileAlias(context, ast) {
 	assert(ast.type == 'ALIAS', ast, 'Expected an ALIAS but found a ' + ast.type)
-	assert(ast.namespace.length == 1, ast, 'TODO Implement alias dot notation namespace lookups')
-	var name = ast.namespace[0]
-	
-	var valueAST = _getReference(context, name)
+	var valueAST = _getReference(context, ast)
 	return compileInlineValue(context, valueAST)
 }
 
@@ -126,19 +123,29 @@ function compileXML(context, ast) {
  * Declarations *
  ****************/
 function compileDeclaration(context, ast) {
-	_setReference(context, ast.name, ast.value)
+	_setReference(context, ast)
 	return ''
 }
 
-var _setReference = function(context, name, reference) {
-	var referenceTable = context.referenceTable
-	assert(!referenceTable[name], 'Repeat Declaration', { name:name })
-	referenceTable[name] = reference
+var _setReference = function(context, ast) {
+	var baseValue = _getReference(context, ast, true),
+		name = ast.namespace[ast.namespace.length - 1]
+	baseValue['__alias__' + name] = ast.value
 }
-var _getReference = function(context, name) {
-	var referenceTable = context.referenceTable
-	assert(referenceTable[name], 'Undeclared Reference', { name: name, table: referenceTable })
-	return referenceTable[name]
+var _getReference = function(context, ast, skipLast) {
+	var referenceTable = context.referenceTable,
+		value = referenceTable,
+		namespace = ast.namespace,
+		len = namespace.length - (skipLast ? 1 : 0)
+	
+	for (var i=0; i < len; i++) {
+		value = value['__alias__' + namespace[i]]
+		if (!value) {
+			halt(ast, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
+		}
+	}
+	
+	return value
 }
 
 /**********************

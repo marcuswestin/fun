@@ -230,13 +230,15 @@ var parseXMLAttributes = function() {
 	return XMLAttributes
 }
 
-function parseAssignment(msg) {
+function parseAssignment(acceptDotNotation, msg) {
 	debug('parseAssignment')
+	var namespace
 	advance('name', null, msg)
-	var name = gToken.value
+	if (acceptDotNotation) { namespace = parseNamespace() }
+	else { namespace = gToken.value }
 	advance('symbol', '=', msg)
 	var value = parseValueOrAlias()
-	return [name, value]
+	return [namespace, value]
 }
 
 /****************
@@ -245,7 +247,7 @@ function parseAssignment(msg) {
 var parseDeclaration = astGenerator(function() {
 	debug('parseDeclaration')
 	var assignment = parseAssignment('declaration')
-	return { type:'DECLARATION', name:assignment[0], value:assignment[1] }
+	return { type:'DECLARATION', namespace:assignment[0], value:assignment[1] }
 })
 
 /********
