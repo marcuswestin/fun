@@ -116,7 +116,7 @@ function doTokenize (inputFile) {
 
 // name.
 
-        } else if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
+        } else if (c == '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
             str = c;
             i += 1;
             for (;;) {

@@ -1,5 +1,6 @@
 var fs = require('fs'),
 	sys = require('sys'),
+	path = require('path'),
 	util = require('./util'),
 	bind = util.bind,
 	map = util.map,
@@ -8,7 +9,8 @@ var fs = require('fs'),
 	q = util.q,
 	tokenizer = require('./tokenizer'),
 	parser = require('./parser'),
-	compiler = exports	
+	compiler = exports,
+	gModules = {}
 
 exports.compile = util.intercept('CompileError', doCompile)
 
@@ -30,6 +32,9 @@ function doCompile(ast, rootContext) {
 		{
 			rootHookName: rootContext.hookName
 		})
+		+ '\n\n' + map(gModules, function(code, name) {
+			return boxComment('Module: ' + name) + '\n' + code
+		}).join('\n')
 		+ '\n\ninitFunApp() // let\'s kick it'
 }
 
@@ -155,28 +160,34 @@ function compileXML(context, ast) {
  * Imports & Declarations *
  **************************/
 function compileModuleImport(context, ast) {
-	var path = __dirname + '/modules/' + ast.name + '/'
-	assert(fs.statSync(path).isDirectory(), ast, 'Could not find the module at ' + path)
+	var module = ast.name
+	if (gModules[module]) { return }
+	var modulePath = __dirname + '/modules/' + ast.name + '/'
+	assert(fs.statSync(modulePath).isDirectory(), ast, 'Could not find the module at ' + modulePath)
 	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
-	if (fs.statSync(path + 'lib.fun').isFile()) {
-		var tokens = tokenizer.tokenize(path + 'lib.fun')
+	if (fs.statSync(modulePath + 'lib.fun').isFile()) {
+		var tokens = tokenizer.tokenize(modulePath + 'lib.fun')
 		var newAST = parser.parse(tokens)
 		var result = compile(context, newAST)
 	}
+	if (path.existsSync(modulePath + 'lib.js')) {
+		gModules[module] = fs.readFileSync(modulePath + 'lib.js')
+	}
 	return result
-	// // gModuleCode.push(boxComment('Module: '+ast.name), '\n\n', )
-	// // Hack for now - set the context for the API to hidden variable
-	// api.__context = context
-	// var module = require(path)
-	// module.init(api)
 }
 
-var api = {
-	declare: function(name, params) {
-		
-		__context.referenceTable['__alias__' + name] = params
-	}
-}
+// TODO Create API for importing cutom built fun modules
+// // gModuleCode.push(boxComment('Module: '+ast.name), '\n\n', )
+// // Hack for now - set the context for the API to hidden variable
+// api.__context = context
+// var module = require(jsPath)
+// module.init(api)
+// var api = {
+// 	declare: function(name, params) {
+// 		
+// 		__context.referenceTable['__alias__' + name] = params
+// 	}
+// }
 
 function compileFileImport(context, ast) {
 	halt(ast, 'TODO compileFileImport')

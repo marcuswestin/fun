@@ -8,7 +8,9 @@ jsio('from shared.javascript import bind');
 	
 	var _unique = 0
 	fun.name = function(readable) { return '_' + (readable || '') + '$' + (_unique++) }
-	
+
+/* Hooks
+ *******/
 	var _hooks = {}
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
 	fun.getHook = function(name) { return _hooks[name] }
@@ -26,6 +28,15 @@ jsio('from shared.javascript import bind');
 		// }
 		return hook
 	}
+
+/* Mutations
+ ***********/
+	fun.mutate = function(op, id, propName, arg) {
+		var doMutate = bind(fin, op.toLowerCase(), id, propName, arg)
+		if (id == 'LOCAL') { doMutate() }
+		else { fin.connect(doMutate) }
+	}
+
 	
 /* Observations
  **************/
@@ -35,5 +46,14 @@ jsio('from shared.javascript import bind');
 		if (id == 'LOCAL') { doObserve() }
 		else { fin.connect(doObserve) }
 	}
-	
+
+/* DOM
+ *****/
+	fun.on = function(element, eventName, handler) {
+		if (element.addEventListener) {
+			element.addEventListener(eventName, handler, false)
+		} else if (element.attachEvent){
+			element.attachEvent("on"+eventName, handler)
+		}
+	}
 })()
