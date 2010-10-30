@@ -39,15 +39,18 @@ var parseStatement = function() {
 	switch(gToken.type) {
 		case 'string':
 		case 'number':
-			return getLiteralValue()
+			return getStaticValue()
 		case 'symbol':
-			if (gToken.value == '<') { return parseXML() }
-			else if (gToken.value == '=') { halt('Unexpected symbol "=". Did you forget to put "let" at the beginning of the line?') }
-			else { halt('Unexpected symbol "'+gToken.value+'"') }
+			switch(gToken.value) {
+				case '<': return parseXML()
+				case '=': halt('Unexpected symbol "=". Did you forget a "let" at the beginning of the line?')
+				default: halt('Unexpected symbol "'+gToken.value+'"')
+			}
 		case 'name':
 			return parseAliasOrInvocation()
 		case 'keyword':
 			switch (gToken.value) {
+				case 'import': return parseImport()
 				case 'let': return parseDeclaration()
 				case 'for': return parseForLoop()
 				case 'if': return parseIfStatement()
@@ -133,9 +136,22 @@ function astGenerator(generatorFn) {
 	}
 }
 
-/**********************
- * Aliases and values *
- **********************/
+/***********
+ * Imports *
+ ***********/
+var parseImport = astGenerator(function() {
+	debug('parseImport')
+	advance(['string','name'])
+	if (gToken.type == 'string') {
+		return { type: 'IMPORT_FILE', path: gToken.value }
+	} else {
+		return { type: 'IMPORT_MODULE', name: gToken.value }
+	}
+})
+
+/*****************************
+ * Items, aliases and values *
+ *****************************/
 function parseValueOrAlias() {
 	debug('parseValueOrAlias')
 	advance()
@@ -144,17 +160,48 @@ function parseValueOrAlias() {
 		    return parseAliasOrInvocation()
 		case 'string':
 		case 'number':
-			return getLiteralValue()
+			return getStaticValue()
 		case 'symbol':
-			if (gToken.value == '<') { return parseXML() }
-			else if (gToken.value == L_CURLY || gToken.value == L_ARRAY) { return parseJSON() }
-			else { halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON') }
+			return parseValueLiteral();
 		case 'keyword':
-			if (gToken.value == 'template') { return parseTemplate() }
-			else if (gToken.value == 'handler') { return parseHandler() }
-			else { halt('Expected keyword of value "template" or "handler" but found "'+gToken.value+'"')}
+			return parseKeyword();
 		default:
 			halt('Unexpected value or alias token: ' + gToken.type + ' ' + gToken.value)
+	}
+}
+
+function parseValueLiteral() {
+	switch(gToken.value) {
+		case '<':
+			return parseXML()
+		case L_CURLY:
+		case L_ARRAY:
+			return parseJSON()
+		case '@':
+			return parseItem()
+		default:
+			halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON')
+	}
+}
+
+var parseItem = astGenerator(function() {
+	debug('parseItem')
+	assert(gToken.type == 'symbol' && gToken.value == '@')
+	advance(['name', 'number'])
+	var itemID = gToken.value
+	if (isAhead('symbol', '.')) {
+		// TODO parse property
+	}
+	return { type:'ITEM', id: itemID }
+})
+
+function parseKeywordValue() {
+	switch(gToken.value) {
+		case 'import': return parseImport()
+		case 'template': return parseTemplate()
+		case 'handler': return parseHandler()
+		default:
+			halt('Unexpected keyword "'+gToken.value+'"')
 	}
 }
 

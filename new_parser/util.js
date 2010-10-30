@@ -22,8 +22,10 @@ util.intercept = function(errorName, fn) {
 
 util.map = function(arr, fn) {
 	var result = []
-	for (var i=0, item; item = arr[i]; i++) {
-		result.push(fn(item))
+	if (arr instanceof Array) {
+		for (var i=0, item; item = arr[i]; i++) { result.push(fn(item)) }
+	} else {
+		for (var key in obj) { result.push(fn(obj[key], key)) }
 	}
 	return result
 }

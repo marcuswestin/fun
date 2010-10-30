@@ -11,6 +11,7 @@ jsio('from shared.javascript import bind');
 	
 	var _hooks = {}
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
+	fun.getHook = function(name) { return _hooks[name] }
 	fun.hook = function(parentName, name, tag, attrs) {
 		if (_hooks[name]) { return _hooks[name] }
 		var parent = _hooks[parentName],
@@ -25,7 +26,14 @@ jsio('from shared.javascript import bind');
 		// }
 		return hook
 	}
+	
+/* Observations
+ **************/
+	fun.observe = function(type, id, propName, callback) {
+		var methodName = (type == 'BYTES' ? 'observe' : type == 'LIST' ? 'observeList' : null),
+			doObserve = bind(fin, methodName, id, propName, callback)
+		if (id == 'LOCAL') { doObserve() }
+		else { fin.connect(doObserve) }
+	}
+	
 })()
-
-
-initFunApp()

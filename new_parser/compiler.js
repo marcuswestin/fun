@@ -1,11 +1,14 @@
-var compiler = exports,
-	fs = require('fs'),
+var fs = require('fs'),
 	sys = require('sys'),
 	util = require('./util'),
 	bind = util.bind,
 	map = util.map,
 	repeat = util.repeat,
-	boxComment = util.boxComment
+	boxComment = util.boxComment,
+	q = util.q,
+	tokenizer = require('./tokenizer'),
+	parser = require('./parser'),
+	compiler = exports	
 
 exports.compile = util.intercept('CompileError', doCompile)
 
@@ -27,7 +30,7 @@ function doCompile(ast, rootContext) {
 		{
 			rootHookName: rootContext.hookName
 		})
-		+ '\n\n' + boxComment('Library code') + '\n' + libraryCode
+		+ '\n\ninitFunApp() // let\'s kick it'
 }
 
 /*********************
@@ -101,6 +104,21 @@ function compileStatement(context, ast) {
 /**********************
  * Aliases and Values *
  **********************/
+function compileAlias(context, ast) {
+	assert(ast.type == 'ALIAS', ast, 'Expected an ALIAS but found a ' + ast.type)
+	var valueAST = _getReference(context, ast)
+	switch(valueAST.type) {
+		case 'STATIC_VALUE':
+			return compileStaticValue(context, valueAST)
+		case 'ITEM':
+			assert(ast.namespace.length > 1, ast, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
+			// assert(ast.namespace.length == 2, ast, 'TODO: Handle nested property references')
+			return compileItemProperty(context, valueAST, ast.namespace.slice(1))
+		default:
+			halt(ast, 'Unknown value type ' + valueAST.type)
+	}
+}
+
 function compileStaticValue(context, ast) {
 	return code(
 		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
@@ -110,10 +128,20 @@ function compileStaticValue(context, ast) {
 		})
 }
 
-function compileAlias(context, ast) {
-	assert(ast.type == 'ALIAS', ast, 'Expected an ALIAS but found a ' + ast.type)
-	var valueAST = _getReference(context, ast)
-	return compileInlineValue(context, valueAST)
+function compileItemProperty(context, ast, namespace) {
+	var hookName = name('ITEM_PROPERTY_HOOK')
+	return code(
+		'fun.hook({{ parentHook }}, {{ hookName }})',
+		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
+		'	fun.getHook({{ hookName }}).innerHTML = value',
+		'})',
+		{
+			parentHook: context.hookName,
+			hookName: q(hookName),
+			id: q(ast.id),
+			property: q(namespace[0]),
+			type: q('BYTES')
+		})
 }
 
 /*******
@@ -123,9 +151,42 @@ function compileXML(context, ast) {
 	halt(ast, 'TODO compileXML not yet implemented')
 }
 
-/****************
- * Declarations *
- ****************/
+/**************************
+ * Imports & Declarations *
+ **************************/
+function compileModuleImport(context, ast) {
+	var path = __dirname + '/modules/' + ast.name + '/'
+	assert(fs.statSync(path).isDirectory(), ast, 'Could not find the module at ' + path)
+	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
+	if (fs.statSync(path + 'lib.fun').isFile()) {
+		var tokens = tokenizer.tokenize(path + 'lib.fun')
+		var newAST = parser.parse(tokens)
+		var result = compile(context, newAST)
+	}
+	return result
+	// // gModuleCode.push(boxComment('Module: '+ast.name), '\n\n', )
+	// // Hack for now - set the context for the API to hidden variable
+	// api.__context = context
+	// var module = require(path)
+	// module.init(api)
+}
+
+var api = {
+	declare: function(name, params) {
+		
+		__context.referenceTable['__alias__' + name] = params
+	}
+}
+
+function compileFileImport(context, ast) {
+	halt(ast, 'TODO compileFileImport')
+	// read file
+	// tokenize
+	// parse
+	// compile without output
+	// merge contexts
+}
+
 function compileDeclaration(context, ast) {
 	_setReference(context, ast)
 	return ''
@@ -147,6 +208,7 @@ var _getReference = function(context, ast, skipLast) {
 		if (!value) {
 			halt(ast, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
 		}
+		if (value.type == 'ITEM') { return value } // Item property lookups are dynamic, not static
 	}
 	
 	return value
