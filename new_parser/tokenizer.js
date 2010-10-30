@@ -76,13 +76,6 @@ function doTokenize (inputFile) {
         keywords[kWord] = true;
     }
 
-// Begin tokenization. If the source string is empty, return nothing.
-    inputString = fs.readFileSync(inputFile).toString()
-    length = inputString.length
-    if (!length) {
-        return;
-    }
-
 // If prefix and suffix strings are not provided, supply defaults.
 
     if (typeof prefix !== 'string') {
@@ -93,8 +86,11 @@ function doTokenize (inputFile) {
     }
 
 
-// Loop through this text, one character at a time.
+// Loop through the text, one character at a time.
 
+    inputString = fs.readFileSync(inputFile).toString()
+    length = inputString.length
+    
     c = inputString.charAt(i);
     while (c) {
         from = i;
