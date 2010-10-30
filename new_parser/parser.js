@@ -3,6 +3,8 @@ var sys = require('sys'),
 	q = util.q,
 	debug = util.debug
 
+exports.parse = util.intercept('ParseError', doParse)
+
 var L_PAREN = '(',
 	R_PAREN = ')',
 	L_CURLY = '{',
@@ -12,13 +14,13 @@ var L_PAREN = '(',
 
 var gToken, gIndex, gTokens, gState, gAST
 
-exports.ParseError = function(file, msg) {
+var ParseError = function(file, msg) {
 	this.name = 'ParseError';
 	this.message = ['on line', gToken.line + ',', 'column', gToken.column, 'of', '"'+file+'":', msg].join(' ')
 }
-exports.ParseError.prototype = Error.protoype
+ParseError.prototype = Error.protoype
 
-exports.parse = function(tokens) {
+function doParse(tokens) {
 	gTokens = tokens
 	gIndex = -1
 	gToken = null
@@ -74,7 +76,7 @@ function parseBlock(statementType) {
 var assert = function(ok, msg) { if (!ok) halt(msg) }
 var halt = function(msg) {
 	sys.puts(util.grabLine(gToken.file, gToken.line, gToken.column, gToken.span));
-	throw new exports.ParseError(gToken.file, msg)
+	throw new ParseError(gToken.file, msg)
 }
 var advance = function(type, value, expressionType) {
 	var nextToken = gTokens[++gIndex]

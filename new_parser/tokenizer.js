@@ -24,12 +24,16 @@ var fs = require('fs'),
     sys = require('sys'),
 	util = require('./util')
 
-exports.TokenizeError = function(file, line, column, msg) {
+exports.tokenize = util.intercept('TokenizeError', doTokenize)
+
+var TokenizeError = function(file, line, column, msg) {
 	this.name = 'TokenizeError';
 	this.message = ['on line', line + ',', 'column', column, 'of', '"'+file+'":', msg].join(' ')
 }
+TokenizeError.prototype = Error.prototype
 
-exports.tokenize = function (inputFile, keywords, prefix, suffix) {
+var keywords = ['import', 'let','for','in','if','else','template','handler']
+function doTokenize (inputFile) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.
     var i = 0;                  // The index of the current character.
@@ -40,13 +44,15 @@ exports.tokenize = function (inputFile, keywords, prefix, suffix) {
     var n;                      // The number value.
     var q;                      // The quote character.
     var str;                    // The string value.
+    var prefix = '=<>';
+    var suffix = '=';
 
     var result = [];            // An array to hold the results.
 
     var halt = function (msg) {
         var col = from - lineStart + 1
         sys.puts(util.grabLine(inputFile, line, col, i - from));
-        throw new exports.TokenizeError(inputFile, line, col, msg);
+        throw new TokenizeError(inputFile, line, col, msg);
     }
 
     var make = function (type, value) {

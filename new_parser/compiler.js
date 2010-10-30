@@ -7,16 +7,17 @@ var compiler = exports,
 	repeat = util.repeat,
 	boxComment = util.boxComment
 
-exports.CompileError = function(file, ast, msg) {
+exports.compile = util.intercept('CompileError', doCompile)
+
+var CompileError = function(file, ast, msg) {
 	this.name = "CompileError"
 	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
 }
-exports.CompileError.prototype = Error.prototype
+CompileError.prototype = Error.prototype
 
-compiler.compile = function(ast, inputFile) {
-	var libraryCode = fs.readFileSync(__dirname + '/lib.js').toString(),
-		rootContext = { hookName: name('ROOT_HOOK'), referenceTable: {} }
-
+function doCompile(ast, rootContext) {
+	rootContext = rootContext || { hookName: name('ROOT_HOOK'), referenceTable: {} }
+	
 	return code(
 		'function initFunApp() {',
 		'	var {{ rootHookName }} = fun.name("rootHook")',

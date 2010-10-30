@@ -9,6 +9,17 @@ util.debug = function(msg) {
 	// console.log(msg)
 }
 
+util.intercept = function(errorName, fn) {
+	return function() {
+		try { return fn.apply(this, arguments) }
+		catch(e) {
+			if (e.name != errorName) { sys.puts(e.stack) }
+			sys.puts(e.name + ': ' + e.message)
+			process.exit(1)
+		}
+	}
+}
+
 util.map = function(arr, fn) {
 	var result = []
 	for (var i=0, item; item = arr[i]; i++) {
