@@ -58,13 +58,13 @@ function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
 var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
 	sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span))
-	throw new exports.CompileError(ast.file, ast, msg)
+	throw new CompileError(ast.file, ast, msg)
 }
 
 /************************
  * Top level statements *
  ************************/
-function compile(context, ast, indentation) {
+function compile(context, ast) {
 	assert(context && context.hookName && context.referenceTable, ast, "compile called with invalid context")
 	if (ast instanceof Array) {
 		return map(ast, bind(this, compileStatement, context)).join('\n') + '\n'
