@@ -75,9 +75,8 @@ function compile(context, ast) {
 
 function compileStatement(context, ast) {
 	switch (ast.type) {
-		case 'STRING':
-		case 'NUMBER':
-			return compileInlineValue(context, ast)
+		case 'STATIC_VALUE':
+			return compileStaticValue(context, ast)
 		case 'ALIAS':
 			return compileAlias(context, ast)
 		case 'XML':
@@ -90,15 +89,19 @@ function compileStatement(context, ast) {
 			return compileForLoop(context, ast)
 		case 'INVOCATION':
 			return compileInvocation(context, ast)
+		case 'IMPORT_MODULE':
+			return compileModuleImport(context, ast)
+		case 'IMPORT_FILE':
+			return compileFileImport(cotext, ast)
 		default:
 			halt(ast, 'Unknown AST type ' + ast.type)
 	}
 }
 
 /**********************
- * Values and Aliases *
+ * Aliases and Values *
  **********************/
-function compileInlineValue(context, ast) {
+function compileStaticValue(context, ast) {
 	return code(
 		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
 		{

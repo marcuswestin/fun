@@ -171,10 +171,10 @@ var parseAliasOrInvocation = astGenerator(function() {
 	}
 })
 
-var getLiteralValue = astGenerator(function() {
-	debug('getLiteralValue')
+var getStaticValue = astGenerator(function() {
+	debug('getStaticValue')
 	assert(gToken.type == 'string' || gToken.type == 'number')
-	return { type:gToken.type.toUpperCase(), value:gToken.value } // type is STRING or NUMBER
+	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
 })
 
 function parseNamespace() {
