@@ -1,7 +1,9 @@
 // from lib.js
 fun = {}
 
+jsio('from shared.javascript import bind');
 ;(function() {
+	
 	var doc = document
 	
 	var _unique = 0
