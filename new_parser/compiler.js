@@ -57,8 +57,9 @@ function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
 	
 	while (match = code.match(emitReplaceRegex)) {
 		var wholeMatch = match[0],
-			nameMatch = match[1]
-		code = code.replace(wholeMatch, injectObj[nameMatch] || ('MISSING INJECT VALUE' + nameMatch))
+			nameMatch = match[1],
+			value = injectObj[nameMatch]
+		code = code.replace(wholeMatch, typeof value == 'undefined' ? 'MISSING INJECT VALUE' : value)
 	}
 	return code
 }
