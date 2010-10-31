@@ -9,13 +9,14 @@ util.debug = function(msg) {
 	// console.log(msg)
 }
 
-util.shallowCopy = function(obj) {
-	if (obj instanceof Array) { return Array.prototype.slice.call(obj, 0) }
-	else {
-		var result = {}
-		for (var key in obj) { result[key] = obj[key] }
-		return result
-	}
+util.copyArray = function(arr) {
+	return Array.prototype.slice.call(arr, 0)
+}
+
+util.shallowCopy = function(obj, merge) {
+	var result = {}
+	for (var key in obj) { result[key] = merge && merge[key] ? merge[key] : obj[key] }
+	return result
 }
 
 util.create = function(oldObject) {

@@ -220,12 +220,10 @@ var _storeAlias = function(context, ast) {
 	if (value.type == 'NESTED_ALIAS') {
 		baseValue['__alias__' + name] = { type: 'ALIAS' }
 		for (var i=0, content; content = value.content[i]; i++) {
-			var newAST = util.create(ast)
-			newAST.namespace = util.shallowCopy(ast.namespace)
-			newAST.namespace.push(content.name)
-			newAST.type = 'ALIAS'
-			newAST.value = content.value
-			_setReference(context, newAST)
+			var newNamespace = util.copyArray(ast.namespace).concat(content.name),
+				newAST = util.shallowCopy(ast, { type: 'ALIAS', value: content.value, namespace: newNamespace })
+			
+			_storeAlias(context, newAST)
 		}
 	} else {
 		baseValue['__alias__' + name] = ast.value
