@@ -1,7 +1,8 @@
 import Global
 import Mouse
 
-"Mouse.x: " Mouse.x
+"<br />Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
+"<br />Mouse.isDown: " Mouse.isDown
 "<br />Global.foo: " Global.foo
 
 // let world = { name: 'world', age: 4.6e9 }
