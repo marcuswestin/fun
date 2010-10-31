@@ -33,7 +33,7 @@ function doCompile(ast, rootContext) {
 			rootHookName: rootContext.hookName
 		})
 		+ '\n\n' + map(gModules, function(module, name) {
-			return boxComment('Module: ' + name) + '\n' + module.jsCode
+			return '\n' + boxComment('Module: ' + name) + '\n' + module.jsCode
 		}).join('\n')
 		+ '\n\ninitFunApp() // let\'s kick it'
 }
