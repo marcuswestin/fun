@@ -1,12 +1,8 @@
 import Global
-import Local
 import Mouse
 
-Global.foo
-
-Local.foo
-
-Mouse.__mouseX__
+"Mouse.x: " Mouse.x
+"<br />Global.foo: " Global.foo
 
 // let world = { name: 'world', age: 4.6e9 }
 

@@ -32,8 +32,8 @@ function doCompile(ast, rootContext) {
 		{
 			rootHookName: rootContext.hookName
 		})
-		+ '\n\n' + map(gModules, function(code, name) {
-			return boxComment('Module: ' + name) + '\n' + code
+		+ '\n\n' + map(gModules, function(module, name) {
+			return boxComment('Module: ' + name) + '\n' + module.jsCode
 		}).join('\n')
 		+ '\n\ninitFunApp() // let\'s kick it'
 }
@@ -113,6 +113,8 @@ function compileAlias(context, ast) {
 	assert(ast.type == 'ALIAS', ast, 'Expected an ALIAS but found a ' + ast.type)
 	var valueAST = _getReference(context, ast)
 	switch(valueAST.type) {
+		case 'ALIAS':
+			return compileAlias(context, valueAST)
 		case 'STATIC_VALUE':
 			return compileStaticValue(context, valueAST)
 		case 'ITEM':
@@ -160,18 +162,20 @@ function compileXML(context, ast) {
  * Imports & Declarations *
  **************************/
 function compileModuleImport(context, ast) {
-	var module = ast.name
-	if (gModules[module]) { return }
-	var modulePath = __dirname + '/modules/' + ast.name + '/'
-	assert(fs.statSync(modulePath).isDirectory(), ast, 'Could not find the module at ' + modulePath)
+	if (gModules[ast.name]) { return }
+	var module = gModules[ast.name] = {
+		name: ast.name,
+		path: __dirname + '/modules/' + ast.name + '/'
+	}
+	assert(fs.statSync(module.path).isDirectory(), ast, 'Could not find the module at ' + module.path)
 	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
-	if (fs.statSync(modulePath + 'lib.fun').isFile()) {
-		var tokens = tokenizer.tokenize(modulePath + 'lib.fun')
+	if (fs.statSync(module.path + 'lib.fun').isFile()) {
+		var tokens = tokenizer.tokenize(module.path + 'lib.fun')
 		var newAST = parser.parse(tokens)
 		var result = compile(context, newAST)
 	}
-	if (path.existsSync(modulePath + 'lib.js')) {
-		gModules[module] = fs.readFileSync(modulePath + 'lib.js')
+	if (path.existsSync(module.path + 'lib.js')) {
+		module.jsCode = fs.readFileSync(module.path + 'lib.js')
 	}
 	return result
 }
@@ -205,8 +209,24 @@ function compileDeclaration(context, ast) {
 
 var _setReference = function(context, ast) {
 	var baseValue = _getReference(context, ast, true),
-		name = ast.namespace[ast.namespace.length - 1]
-	baseValue['__alias__' + name] = ast.value
+		namespace = ast.namespace,
+		name = namespace[namespace.length - 1],
+		value = ast.value
+	
+	assert(!baseValue['__alias__' + name], ast, 'Repeat declaration')
+	if (value.type == 'NESTED_ALIAS') {
+		baseValue['__alias__' + name] = { type: 'ALIAS' }
+		for (var i=0, content; content = value.content[i]; i++) {
+			var newAST = util.create(ast)
+			newAST.namespace = util.shallowCopy(ast.namespace)
+			newAST.namespace.push(content.name)
+			newAST.type = 'ALIAS'
+			newAST.value = content.value
+			_setReference(context, newAST)
+		}
+	} else {
+		baseValue['__alias__' + name] = ast.value
+	}
 }
 var _getReference = function(context, ast, skipLast) {
 	var referenceTable = context.referenceTable,

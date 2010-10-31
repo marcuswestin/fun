@@ -9,6 +9,21 @@ util.debug = function(msg) {
 	// console.log(msg)
 }
 
+util.shallowCopy = function(obj) {
+	if (obj instanceof Array) { return Array.prototype.slice.call(obj, 0) }
+	else {
+		var result = {}
+		for (var key in obj) { result[key] = obj[key] }
+		return result
+	}
+}
+
+util.create = function(oldObject) {
+	function F() {}
+	F.prototype = oldObject;
+	return new F();
+}
+
 util.intercept = function(errorName, fn) {
 	return function() {
 		try { return fn.apply(this, arguments) }
