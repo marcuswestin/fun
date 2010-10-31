@@ -303,11 +303,11 @@ var parseDeclaration = astGenerator(function() {
  * JSON *
  ********/
 function parseJSON() {
-	if (gToken.value == L_CURLY) { return parseJSONObject() }
-	else { return parseJSONArray() }
+	if (gToken.value == L_CURLY) { return parseAliasLiteral() }
+	else { return parseListLiteral() }
 }
-var parseJSONObject = astGenerator(function() {
-	debug('parseJSONObject')
+var parseAliasLiteral = astGenerator(function() {
+	debug('parseObjectLiteral')
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
 	var content = []
 	while (true) {
@@ -322,14 +322,14 @@ var parseJSONObject = astGenerator(function() {
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:'JSON_OBJECT', content:content }
+	return { type:'NESTED_ALIAS', content:content }
 })
-var parseJSONArray = astGenerator(function() {
-	debug('parseJSONArray')
+var parseArrayLiteral = astGenerator(function() {
+	debug('parseListLiteral')
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
 	var content = parseValueList(R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
-	return { type:'JSON_ARRAY', content:content }
+	return { type:'LIST', content:content }
 })
 function parseValueList(breakSymbol) {
 	var list = []
