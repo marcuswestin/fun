@@ -156,7 +156,25 @@ function compileItemProperty(context, ast, namespace) {
  * XML *
  *******/
 function compileXML(context, ast) {
-	halt(ast, 'TODO compileXML not yet implemented')
+	var hookName = name('XML_HOOK'),
+		newContext = util.shallowCopy(context, { hookName:hookName })
+	
+	// TODO add static attributes
+	// TODO add dynamic attributes
+	// TODO support style attribute
+	// TODO support on* attributes (e.g. onclick)
+	
+	return code(
+		'var {{ hookName }} = fun.name()',
+		'fun.hook({{ parentHook }}, {{ hookName }}, {{ tagName }}, {{ staticAttributes }})',
+		'{{ childCode }}',
+		{
+			parentHook: context.hookName,
+			hookName: hookName,
+			tagName: q(ast.tag),
+			staticAttributes: q([]),
+			childCode: ast.block ? compile(newContext, ast.block) : ''
+		})
 }
 
 /**************************
