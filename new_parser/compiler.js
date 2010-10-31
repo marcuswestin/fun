@@ -112,7 +112,7 @@ function compileStatement(context, ast) {
  **********************/
 function compileAlias(context, ast) {
 	assert(ast.type == 'ALIAS', ast, 'Expected an ALIAS but found a ' + ast.type)
-	var valueAST = _getReference(context, ast)
+	var valueAST = _getAlias(context, ast)
 	switch(valueAST.type) {
 		case 'ALIAS':
 			return compileAlias(context, valueAST)
@@ -204,12 +204,12 @@ function compileFileImport(context, ast) {
 }
 
 function compileDeclaration(context, ast) {
-	_setReference(context, ast)
+	_storeAlias(context, ast)
 	return ''
 }
 
-var _setReference = function(context, ast) {
-	var baseValue = _getReference(context, ast, true),
+var _storeAlias = function(context, ast) {
+	var baseValue = _getAlias(context, ast, true),
 		namespace = ast.namespace,
 		name = namespace[namespace.length - 1],
 		value = ast.value
@@ -229,7 +229,7 @@ var _setReference = function(context, ast) {
 		baseValue['__alias__' + name] = ast.value
 	}
 }
-var _getReference = function(context, ast, skipLast) {
+var _getAlias = function(context, ast, skipLast) {
 	var referenceTable = context.referenceTable,
 		value = referenceTable,
 		namespace = ast.namespace,
