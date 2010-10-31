@@ -177,6 +177,8 @@ function compileModuleImport(context, ast) {
 	}
 	if (path.existsSync(module.path + 'lib.js')) {
 		module.jsCode = fs.readFileSync(module.path + 'lib.js')
+	} else {
+		module.jsCode = '// No JS code for ' + module.name
 	}
 	return result
 }
