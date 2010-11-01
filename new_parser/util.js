@@ -15,7 +15,8 @@ util.copyArray = function(arr) {
 
 util.shallowCopy = function(obj, merge) {
 	var result = {}
-	for (var key in obj) { result[key] = merge && merge[key] ? merge[key] : obj[key] }
+	for (var key in obj) { result[key] = obj[key] }
+	for (var key in merge) { result[key] = merge[key] }
 	return result
 }
 
