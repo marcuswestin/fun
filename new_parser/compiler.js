@@ -119,7 +119,10 @@ function compileStaticValue(context, ast) {
 		})
 }
 
-function _compileItemProperty(context, ast) {
+/************************
+ * Item Property values *
+ ************************/
+function compileItemProperty(context, ast) {
 	assert(ast.property.length > 0, ast, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
 	assert(ast.property.length == 1, ast, 'TODO: Handle nested property references')
 	var hookName = name('ITEM_PROPERTY_HOOK')
