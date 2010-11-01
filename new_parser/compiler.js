@@ -87,7 +87,7 @@ function compileStatement(context, ast) {
 		case 'STATIC_VALUE':
 			return compileStaticValue(context, ast)
 		case 'ALIAS':
-			return compileAlias(context, ast)
+			return compileStatement(context, resolve(context, ast))
 		case 'XML':
 			return compileXML(context, ast)
 		case 'DECLARATION':
@@ -107,24 +107,9 @@ function compileStatement(context, ast) {
 	}
 }
 
-/**********************
- * Aliases and Values *
- **********************/
-function compileAlias(context, ast) {
-	assert(ast.type == 'ALIAS', ast, 'Expected an ALIAS but found a ' + ast.type)
-	var valueAST = _getAlias(context, ast)
-	switch(valueAST.type) {
-		case 'ALIAS':
-			return compileAlias(context, valueAST)
-		case 'STATIC_VALUE':
-			return compileStaticValue(context, valueAST)
-		case 'ITEM_PROPERTY':
-			return _compileItemProperty(context, valueAST)
-		default:
-			halt(ast, 'Unknown value type ' + valueAST.type)
-	}
-}
-
+/*****************
+ * Static values *
+ *****************/
 function compileStaticValue(context, ast) {
 	return code(
 		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
