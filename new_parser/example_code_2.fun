@@ -4,8 +4,9 @@ import Mouse
 import "example_import"
 
 let classAlias = 'classValue'
+let followMouseStyle = { position:'absolute', top:Mouse.y, left:Mouse.x }
 
-<div class=classAlias style={ position:'absolute', top:Mouse.y, left:Mouse.x }>
+<div class=classAlias style=followMouseStyle>
 	<br />"Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
 	<br />"Mouse.isDown: " Mouse.isDown
 </div>

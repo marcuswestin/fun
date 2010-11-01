@@ -274,7 +274,9 @@ var _storeAlias = function(context, ast) {
 	
 	assert(!baseValue['__alias__' + name], ast, 'Repeat declaration')
 	if (value.type == 'NESTED_ALIAS') {
-		baseValue['__alias__' + name] = { type: 'ALIAS' }
+		// store the nested alias, and then create a child-alias for each nested property
+		// e.g. let foo = { width: 1 } allows you to reference foo.width as well as do e.g. style=foo
+		baseValue['__alias__' + name] = value
 		for (var i=0, content; content = value.content[i]; i++) {
 			var newNamespace = util.copyArray(ast.namespace).concat(content.name),
 				newAST = util.shallowCopy(ast, { type: 'ALIAS', value: content.value, namespace: newNamespace })
