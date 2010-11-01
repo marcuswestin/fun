@@ -12,11 +12,9 @@ var fs = require('fs'),
 	compiler = exports,
 	gModules = {}
 
-exports.compile = util.intercept('CompileError', doCompile)
-
-function doCompile(ast, rootContext) {
+exports.compile = util.intercept('CompileError', function (ast, rootContext) {
 	rootContext = rootContext || { hookName: name('ROOT_HOOK'), referenceTable: {} }
-	
+
 	return code(
 		'function initFunApp() {',
 		'	var {{ rootHookName }} = fun.name("rootHook")',
@@ -30,7 +28,9 @@ function doCompile(ast, rootContext) {
 			return '\n' + boxComment('Module: ' + name) + '\n' + module.jsCode
 		}).join('\n')
 		+ '\n\ninitFunApp() // let\'s kick it'
-}
+})
+
+
 
 
 /************************
