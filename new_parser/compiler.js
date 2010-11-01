@@ -32,41 +32,6 @@ function doCompile(ast, rootContext) {
 		+ '\n\ninitFunApp() // let\'s kick it'
 }
 
-/*********************
- * Utility functions *
- *********************/
-function name(readable) { return '_' + (readable || '') + '$' + (name._uniqueId++) }
-name._uniqueId = 0
-
-var emitReplaceRegex = /{{\s*(\w+)\s*}}/
-function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
-	var argsLen = arguments.length,
-		lastArg = arguments[argsLen - 1],
-		injectObj = (typeof lastArg == 'string' ? null : lastArg),
-		snippets = Array.prototype.slice.call(arguments, 0, injectObj ? argsLen - 1 : argsLen),
-		code = '\n' + snippets.join('\n'),
-		match
-	
-	while (match = code.match(emitReplaceRegex)) {
-		var wholeMatch = match[0],
-			nameMatch = match[1],
-			value = injectObj[nameMatch]
-		code = code.replace(wholeMatch, typeof value == 'undefined' ? 'MISSING INJECT VALUE' : value)
-	}
-	return code
-}
-
-var CompileError = function(file, ast, msg) {
-	this.name = "CompileError"
-	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
-}
-CompileError.prototype = Error.prototype
-
-var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
-var halt = function(ast, msg) {
-	sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span))
-	throw new CompileError(ast.file, ast, msg)
-}
 
 /************************
  * Top level statements *
@@ -322,4 +287,40 @@ function compileForLoop(context, ast) {
  ****************************************/
 function compileInvocation(context, ast) {
 	halt(ast, 'TODO compileInvocation not yet implemented')
+}
+
+/*********************
+ * Utility functions *
+ *********************/
+function name(readable) { return '_' + (readable || '') + '$' + (name._uniqueId++) }
+name._uniqueId = 0
+
+var emitReplaceRegex = /{{\s*(\w+)\s*}}/
+function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
+	var argsLen = arguments.length,
+		lastArg = arguments[argsLen - 1],
+		injectObj = (typeof lastArg == 'string' ? null : lastArg),
+		snippets = Array.prototype.slice.call(arguments, 0, injectObj ? argsLen - 1 : argsLen),
+		code = '\n' + snippets.join('\n'),
+		match
+	
+	while (match = code.match(emitReplaceRegex)) {
+		var wholeMatch = match[0],
+			nameMatch = match[1],
+			value = injectObj[nameMatch]
+		code = code.replace(wholeMatch, typeof value == 'undefined' ? 'MISSING INJECT VALUE' : value)
+	}
+	return code
+}
+
+var CompileError = function(file, ast, msg) {
+	this.name = "CompileError"
+	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
+}
+CompileError.prototype = Error.prototype
+
+var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
+var halt = function(ast, msg) {
+	sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span))
+	throw new CompileError(ast.file, ast, msg)
 }
