@@ -14,12 +14,6 @@ var fs = require('fs'),
 
 exports.compile = util.intercept('CompileError', doCompile)
 
-var CompileError = function(file, ast, msg) {
-	this.name = "CompileError"
-	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
-}
-CompileError.prototype = Error.prototype
-
 function doCompile(ast, rootContext) {
 	rootContext = rootContext || { hookName: name('ROOT_HOOK'), referenceTable: {} }
 	
@@ -63,6 +57,12 @@ function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
 	}
 	return code
 }
+
+var CompileError = function(file, ast, msg) {
+	this.name = "CompileError"
+	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
+}
+CompileError.prototype = Error.prototype
 
 var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
