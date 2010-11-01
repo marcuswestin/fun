@@ -101,7 +101,7 @@ function compileStatement(context, ast) {
 		case 'IMPORT_MODULE':
 			return compileModuleImport(context, ast)
 		case 'IMPORT_FILE':
-			return compileFileImport(cotext, ast)
+			return compileFileImport(context, ast)
 		default:
 			halt(ast, 'Unknown AST type ' + ast.type)
 	}
@@ -239,9 +239,7 @@ function compileModuleImport(context, ast) {
 	assert(fs.statSync(module.path).isDirectory(), ast, 'Could not find the module at ' + module.path)
 	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
 	if (fs.statSync(module.path + 'lib.fun').isFile()) {
-		var tokens = tokenizer.tokenize(module.path + 'lib.fun')
-		var newAST = parser.parse(tokens)
-		var result = compile(context, newAST)
+		var result = _importFile(module.path + 'lib.fun', context)
 	}
 	if (path.existsSync(module.path + 'lib.js')) {
 		module.jsCode = fs.readFileSync(module.path + 'lib.js')
@@ -252,12 +250,15 @@ function compileModuleImport(context, ast) {
 }
 
 function compileFileImport(context, ast) {
-	halt(ast, 'TODO compileFileImport')
-	// read file
-	// tokenize
-	// parse
-	// compile without output
-	// merge contexts
+	var filePath = __dirname + '/' + ast.path + '.fun'
+	assert(path.existsSync(filePath), ast, 'Could not find file for import: "'+filePath+'"')
+	return _importFile(filePath, context)
+}
+
+function _importFile(path, context) {
+	var tokens = tokenizer.tokenize(path)
+	var newAST = parser.parse(tokens)
+	return compile(context, newAST)
 }
 
 function compileDeclaration(context, ast) {

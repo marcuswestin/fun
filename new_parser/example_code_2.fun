@@ -1,6 +1,8 @@
 import Global
 import Mouse
 
+import "example_import"
+
 let classAlias = 'classValue'
 
 <div class=classAlias style={ position:'absolute', top:Mouse.y, left:Mouse.x }>
