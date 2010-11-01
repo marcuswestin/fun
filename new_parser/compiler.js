@@ -188,7 +188,7 @@ function _handleXMLAttributes(context, ast, hookName) {
 	return { staticAttributes: staticAttributes, dynamicCode: dynamicCode.join('\n') }
 }
 
-// modifies staticAttrs and dynamicCode
+// add static attributes to staticAttrs object
 function _handleStyleAttribute(staticAttrs, dynamicCode, context, ast, hookName, styles) {
 	var styleAttribute = staticAttrs['style'] = {}
 	for (var i=0, style; style = styles[i]; i++) {
@@ -201,7 +201,7 @@ function _handleStyleAttribute(staticAttrs, dynamicCode, context, ast, hookName,
 	}
 }
 
-// modifies dynamicCode
+// add code for dynamic properties to dynamicCode
 function _handleDynamicAttribute(dynamicCode, context, ast, hookName, attrName, value) {
 	assert(value.property.length == 1, ast, 'TODO: Handle nested item property references')
 	dynamicCode.push(code(
@@ -217,9 +217,9 @@ function _handleDynamicAttribute(dynamicCode, context, ast, hookName, attrName, 
 		}))
 }
 
-/**************************
- * Imports & Declarations *
- **************************/
+/*************************
+ * Module & File Imports *
+ *************************/
 function compileModuleImport(context, ast) {
 	if (gModules[ast.name]) { return }
 	var module = gModules[ast.name] = {
@@ -250,6 +250,10 @@ function _importFile(path, context) {
 	var newAST = parser.parse(tokens)
 	return compile(context, newAST)
 }
+
+/**********************
+ * Alias Declarations *
+ **********************/
 
 function compileDeclaration(context, ast) {
 	_storeAlias(context, ast)
