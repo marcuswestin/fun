@@ -171,7 +171,7 @@ function _handleXMLAttributes(context, ast, hookName) {
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
 		assert(attribute.namespace.length == 1, ast, 'TODO Handle dot notation XML attribute namespace (for e.g. style.width=100)')
 		var name = attribute.namespace[0],
-			value = _resolve(context, attribute.value),
+			value = resolve(context, attribute.value),
 			match
 		if (name == 'style') {
 			assert(value.type == 'NESTED_ALIAS', ast, 'You can only assign the style attribute to a JSON object literal, e.g. <div style={ width:100, height:100, background:"red" }/>')
@@ -192,7 +192,7 @@ function _handleXMLAttributes(context, ast, hookName) {
 function _handleStyleAttribute(staticAttrs, dynamicCode, context, ast, hookName, styles) {
 	var styleAttribute = staticAttrs['style'] = {}
 	for (var i=0, style; style = styles[i]; i++) {
-		var value = _resolve(context, style.value)
+		var value = resolve(context, style.value)
 		if (value.type == 'STATIC_VALUE') {
 			styleAttribute[style.name] = value.value
 		} else {
@@ -296,9 +296,9 @@ var _getAlias = function(context, ast, skipLast) {
 	return value
 }
 
-var _resolve = function(context, aliasOrValue) {
+var resolve = function(context, aliasOrValue) {
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
-	else { return _resolve(context, _getAlias(context, aliasOrValue)) }
+	else { return resolve(context, _getAlias(context, aliasOrValue)) }
 }
 
 /**********************
