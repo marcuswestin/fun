@@ -88,6 +88,8 @@ function compileStatement(context, ast) {
 			return compileStaticValue(context, ast)
 		case 'ALIAS':
 			return compileStatement(context, resolve(context, ast))
+		case 'ITEM_PROPERTY':
+			return compileItemProperty(context, ast)
 		case 'XML':
 			return compileXML(context, ast)
 		case 'DECLARATION':
