@@ -12,22 +12,23 @@ var fs = require('fs'),
 	compiler = exports,
 	gModules = {}
 
-exports.compile = util.intercept('CompileError', function (ast, rootContext) {
-	rootContext = rootContext || { hookName: name('ROOT_HOOK'), referenceTable: {} }
-
+exports.compile = util.intercept('CompileError', function (ast, context) {
+	
+	context = context || { hookName: name('ROOT_HOOK'), referenceTable: {} } // root context
+	
 	return code(
-		'function initFunApp() {',
-		'	var {{ rootHookName }} = fun.name("rootHook")',
-		'	fun.setHook({{ rootHookName }}, document.body)',
-			compile(rootContext, ast),
-		'}',
+		';(function funApp() {',
+		'	var {{ hookName }} = fun.name("rootHook")',
+		'	fun.setHook({{ hookName }}, document.body)',
+		'	{{ code }}',
+		'	{{ modules }}',
+		'})(); // let\'s kick it',
 		{
-			rootHookName: rootContext.hookName
+			hookName: context.hookName,
+			code: compile(context, ast),
+			modules: map(gModules, function(module, name) {
+				return boxComment('Module: ' + name) + '\n' + module.jsCode }).join('\n\n\n')
 		})
-		+ '\n\n' + map(gModules, function(module, name) {
-			return '\n' + boxComment('Module: ' + name) + '\n' + module.jsCode
-		}).join('\n')
-		+ '\n\ninitFunApp() // let\'s kick it'
 })
 
 
