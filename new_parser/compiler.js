@@ -201,19 +201,6 @@ function compileModuleImport(context, ast) {
 	return result
 }
 
-// TODO Create API for importing cutom built fun modules
-// // gModuleCode.push(boxComment('Module: '+ast.name), '\n\n', )
-// // Hack for now - set the context for the API to hidden variable
-// api.__context = context
-// var module = require(jsPath)
-// module.init(api)
-// var api = {
-// 	declare: function(name, params) {
-// 		
-// 		__context.referenceTable['__alias__' + name] = params
-// 	}
-// }
-
 function compileFileImport(context, ast) {
 	halt(ast, 'TODO compileFileImport')
 	// read file
