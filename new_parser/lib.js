@@ -1,6 +1,5 @@
 // from lib.js
 fun = {}
-
 jsio('from shared.javascript import bind');
 ;(function() {
 	
@@ -52,6 +51,15 @@ jsio('from shared.javascript import bind');
 
 /* DOM
  *****/
+	fun.attr = function(name, key, value) {
+		var match
+		if (match = key.match(/^style\.(\w+)$/)) {
+			fun.style(name, match[1], value)
+		} else {
+			_hooks[name].setAttribute(key, value)
+		}
+	}
+	
 	// fun.style(hook, 'color', '#fff') or fun.style(hook, { color:'#fff', width:100 })
 	fun.style = function(name, key, value) {
 		if (typeof key == 'object') {

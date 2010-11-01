@@ -273,7 +273,7 @@ var parseXMLAttributes = function() {
 	var XMLAttributes = []
 	while (isAhead('name')) {
 		var assignment = parseAssignment('XML_attribute')
-		XMLAttributes.push({ name:assignment[0], value:assignment[1] })
+		XMLAttributes.push({ namespace:assignment[0], value:assignment[1] })
 	}
 	
 	return XMLAttributes

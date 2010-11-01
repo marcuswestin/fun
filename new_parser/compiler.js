@@ -118,10 +118,8 @@ function compileAlias(context, ast) {
 			return compileAlias(context, valueAST)
 		case 'STATIC_VALUE':
 			return compileStaticValue(context, valueAST)
-		case 'ITEM':
-			assert(ast.namespace.length > 1, ast, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
-			// assert(ast.namespace.length == 2, ast, 'TODO: Handle nested property references')
-			return compileItemProperty(context, valueAST, ast.namespace.slice(1))
+		case 'ITEM_PROPERTY':
+			return _compileItemProperty(context, valueAST)
 		default:
 			halt(ast, 'Unknown value type ' + valueAST.type)
 	}
@@ -136,7 +134,9 @@ function compileStaticValue(context, ast) {
 		})
 }
 
-function compileItemProperty(context, ast, namespace) {
+function _compileItemProperty(context, ast) {
+	assert(ast.property.length > 0, ast, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
+	assert(ast.property.length == 1, ast, 'TODO: Handle nested property references')
 	var hookName = name('ITEM_PROPERTY_HOOK')
 	return code(
 		'fun.hook({{ parentHook }}, {{ hookName }})',
@@ -146,8 +146,8 @@ function compileItemProperty(context, ast, namespace) {
 		{
 			parentHook: context.hookName,
 			hookName: q(hookName),
-			id: q(ast.id),
-			property: q(namespace[0]),
+			id: q(ast.item.id),
+			property: q(ast.property[0]),
 			type: q('BYTES')
 		})
 }
@@ -164,17 +164,69 @@ function compileXML(context, ast) {
 	// TODO support style attribute
 	// TODO support on* attributes (e.g. onclick)
 	
+	var attributes = _handleXMLAttributes(context, ast, hookName)
 	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ hookName }}, {{ tagName }}, {{ staticAttributes }})',
+		'{{ dynamicAttributesCode }}',
 		'{{ childCode }}',
 		{
 			parentHook: context.hookName,
 			hookName: hookName,
 			tagName: q(ast.tag),
-			staticAttributes: q([]),
+			staticAttributes: q(attributes.staticAttributes),
+			dynamicAttributesCode: attributes.dynamicCode,
 			childCode: ast.block ? compile(newContext, ast.block) : ''
 		})
+}
+
+function _handleXMLAttributes(context, ast, hookName) {
+	var staticAttributes = {},
+		dynamicCode = []
+	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
+		assert(attribute.namespace.length == 1, ast, 'TODO Handle dot notation XML attribute namespace (for e.g. style.width=100)')
+		var name = attribute.namespace[0],
+			value = _resolve(context, attribute.value)
+		if (name == 'style') {
+			assert(value.type == 'NESTED_ALIAS', ast, 'You can only assign the style attribute to a JSON object literal, e.g. <div style={ width:100, height:100, background:"red" }/>')
+			_handleStyleAttribute(staticAttributes, dynamicCode, context, ast, hookName, value.content)
+		} else if (value.type == 'STATIC_VALUE') {
+			staticAttributes[name] = value.value
+		} else {
+			assert(value.type != 'NESTED_ALIAS', ast, 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+			_handleDynamicAttribute(dynamicCode, context, ast, hookName, name, value)
+		}
+	}
+	return { staticAttributes: staticAttributes, dynamicCode: dynamicCode.join('\n') }
+}
+
+// modifies staticAttrs and dynamicCode
+function _handleStyleAttribute(staticAttrs, dynamicCode, context, ast, hookName, styles) {
+	var styleAttribute = staticAttrs['style'] = {}
+	for (var i=0, style; style = styles[i]; i++) {
+		var value = _resolve(context, style.value)
+		if (value.type == 'STATIC_VALUE') {
+			styleAttribute[style.name] = value.value
+		} else {
+			_handleDynamicAttribute(dynamicCode, context, ast, hookName, 'style.' + style.name, value)
+		}
+	}
+}
+
+// modifies dynamicCode
+function _handleDynamicAttribute(dynamicCode, context, ast, hookName, attrName, value) {
+	assert(value.property.length == 1, ast, 'TODO: Handle nested item property references')
+	dynamicCode.push(code(
+		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
+		'	fun.attr({{ hookName }}, {{ attr }}, value)',
+		'})',
+		{
+			type: q('BYTES'),
+			id: q(value.item.id),
+			property: q(value.property[0]),
+			attr: q(attrName),
+			hookName: hookName
+		}))
 }
 
 /**************************
@@ -245,10 +297,17 @@ var _getAlias = function(context, ast, skipLast) {
 		if (!value) {
 			halt(ast, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
 		}
-		if (value.type == 'ITEM') { return value } // Item property lookups are dynamic, not static
+		if (value.type == 'ITEM') {
+			return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
+		}
 	}
 	
 	return value
+}
+
+var _resolve = function(context, aliasOrValue) {
+	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
+	else { return _resolve(context, _getAlias(context, aliasOrValue)) }
 }
 
 /**********************
