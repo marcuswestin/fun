@@ -17,7 +17,8 @@ jsio('from shared.javascript import bind');
 	fun.hook = function(parentName, name, tag, attrs) {
 		if (_hooks[name]) { return _hooks[name] }
 		var parent = _hooks[parentName],
-			hook = _hooks[name] = parent.appendChild(doc.createElement(tag || 'span'))
+			hook = _hooks[name] = parent.appendChild(doc.createElement(tag || 'fun'))
+
 		for (var key in attrs) {
 			hook.setAttribute(key, attrs[key])
 		}
