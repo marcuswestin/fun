@@ -20,7 +20,9 @@ jsio('from shared.javascript import bind');
 			hook = _hooks[name] = parent.appendChild(doc.createElement(tag || 'fun'))
 
 		for (var key in attrs) {
-			hook.setAttribute(key, attrs[key])
+			var value = attrs[key]
+			if (key == 'style') { fun.style(name, value) }
+			else { hook.setAttribute(key, attrs[key]) }
 		}
 		// var callbacks = hookCallbacks[hookID]
 		// if (callbacks) { //
@@ -50,6 +52,17 @@ jsio('from shared.javascript import bind');
 
 /* DOM
  *****/
+	// fun.style(hook, 'color', '#fff') or fun.style(hook, { color:'#fff', width:100 })
+	fun.style = function(name, key, value) {
+		if (typeof key == 'object') {
+			for (var styleKey in key) { fun.style(name, styleKey, key[styleKey]) }
+		} else {
+			if (typeof value == 'number') { value = value + 'px' }
+			if (key == 'float') { key = 'cssFloat' }
+			_hooks[name].style[key] = value
+		}
+	}
+	
 	fun.on = function(element, eventName, handler) {
 		if (element.addEventListener) {
 			element.addEventListener(eventName, handler, false)
