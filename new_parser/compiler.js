@@ -44,10 +44,8 @@ function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
 		lastArg = arguments[argsLen - 1],
 		injectObj = (typeof lastArg == 'string' ? null : lastArg),
 		snippets = Array.prototype.slice.call(arguments, 0, injectObj ? argsLen - 1 : argsLen),
-		code, match
-	
-	code = '\n' + snippets.join('\n')
-	if (!injectObj) { return code }
+		code = '\n' + snippets.join('\n'),
+		match
 	
 	while (match = code.match(emitReplaceRegex)) {
 		var wholeMatch = match[0],
