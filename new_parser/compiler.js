@@ -159,11 +159,6 @@ function compileXML(context, ast) {
 	var hookName = name('XML_HOOK'),
 		newContext = util.shallowCopy(context, { hookName:hookName })
 	
-	// TODO add static attributes
-	// TODO add dynamic attributes
-	// TODO support style attribute
-	// TODO support on* attributes (e.g. onclick)
-	
 	var attributes = _handleXMLAttributes(context, ast, hookName)
 	return code(
 		'var {{ hookName }} = fun.name()',
@@ -186,10 +181,13 @@ function _handleXMLAttributes(context, ast, hookName) {
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
 		assert(attribute.namespace.length == 1, ast, 'TODO Handle dot notation XML attribute namespace (for e.g. style.width=100)')
 		var name = attribute.namespace[0],
-			value = _resolve(context, attribute.value)
+			value = _resolve(context, attribute.value),
+			match
 		if (name == 'style') {
 			assert(value.type == 'NESTED_ALIAS', ast, 'You can only assign the style attribute to a JSON object literal, e.g. <div style={ width:100, height:100, background:"red" }/>')
 			_handleStyleAttribute(staticAttributes, dynamicCode, context, ast, hookName, value.content)
+		} else if (match = name.match(/^on(\w+)$/)) {
+			halt('TODO Handle on* xml attributes')
 		} else if (value.type == 'STATIC_VALUE') {
 			staticAttributes[name] = value.value
 		} else {
