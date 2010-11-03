@@ -84,17 +84,17 @@ var halt = function(msg) {
 var advance = function(type, value, expressionType) {
 	var nextToken = gTokens[++gIndex]
 	if (!nextToken) { halt('Unexpected end of file') }
-	gToken = nextToken
 	function check(v1, v2) {
 		assert(v1 == v2,
 			['Expected a', q(type),
 				value ? 'of value ' + q(value) : '',
 				expressionType ? 'for the ' + expressionType : '',
-				'but found a', q(gToken.type),
-				'of value', q(gToken.value)].join(' ')
+				'but found a', q(nextToken.type),
+				'of value', q(nextToken.value)].join(' ')
 	)}
-	if (type) { check(findInArray(type, gToken.type), gToken.type) }
-	if (value) { check(findInArray(value, gToken.value), gToken.value) }
+	if (type) { check(findInArray(type, nextToken.type), nextToken.type) }
+	if (value) { check(findInArray(value, nextToken.value), nextToken.value) }
+	gToken = nextToken
 }
 var isAhead = function(type, value, steps) {
 	var token = gTokens[gIndex + (steps || 1)]
