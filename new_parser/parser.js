@@ -233,7 +233,7 @@ function parseNamespace() {
 		advance('symbol', '.')
 		advance('name')
 	}
-	return namespace;
+	return namespace
 }
 
 /*******
