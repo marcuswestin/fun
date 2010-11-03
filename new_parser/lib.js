@@ -35,7 +35,10 @@ jsio('from shared.javascript import bind, blockCallback');
 		if (id == 'LOCAL') { doMutate() }
 		else { fin.connect(doMutate) }
 	}
-
+	fun.cachedValue = function(id, propName) {
+		var mutation = fin.getCachedMutation(id, propName)
+		return mutation && mutation.value
+	}
 	
 /* Observations
  **************/
