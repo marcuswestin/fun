@@ -17,10 +17,8 @@ jsio('from shared.javascript import bind, blockCallback');
 		if (_hooks[name]) { return _hooks[name] }
 		var parent = _hooks[parentName],
 			hook = _hooks[name] = parent.appendChild(doc.createElement(tag || 'fun'))
-
 		for (var key in attrs) {
-			var value = attrs[key]
-			if (key == 'style') { fun.style(name, value) }
+			if (key == 'style') { fun.style(name, attrs[key]) }
 			else { hook.setAttribute(key, attrs[key]) }
 		}
 		return hook
