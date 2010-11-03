@@ -70,7 +70,7 @@ function compileStaticValue(context, ast) {
 		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
 		{
 			parentHook: context.hookName,
-			value: JSON.stringify(ast.value)
+			value: q(ast.value)
 		})
 }
 
