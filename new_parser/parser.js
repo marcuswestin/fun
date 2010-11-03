@@ -118,7 +118,7 @@ var findInArray = function(array, target) {
 function astGenerator(generatorFn) {
 	return function() {
 		var startToken = gToken,
-			ast = generatorFn(),
+			ast = generatorFn.apply(this, arguments),
 			endToken = gToken
 		
 		ast.file = startToken.file
