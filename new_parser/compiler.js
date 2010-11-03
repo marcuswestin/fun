@@ -358,6 +358,6 @@ CompileError.prototype = Error.prototype
 
 var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
-	sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span))
+	if (ast.file) { sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span)) }
 	throw new CompileError(ast.file, ast, msg)
 }
