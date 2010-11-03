@@ -52,7 +52,7 @@ function compileStatement(context, ast) {
 		case 'ALIAS':           return compileStatement(context, resolve(context, ast))
 		case 'ITEM_PROPERTY':   return compileItemProperty(context, ast)
 		case 'XML':             return compileXML(context, ast)
-		case 'DECLARATION':     return compileDeclaration(context, ast)
+		case 'DECLARATION':     return handleDeclaration(context, ast)
 		case 'IF_STATEMENT':    return compileIfStatement(context, ast)
 		case 'FOR_LOOP':        return compileForLoop(context, ast)
 		case 'INVOCATION':      return compileInvocation(context, ast)
@@ -208,7 +208,8 @@ function _importFile(path, context) {
  * Alias Declarations *
  **********************/
 
-function compileDeclaration(context, ast) {
+function handleDeclaration(context, ast) {
+	assert(ast.type == 'DECLARATION', ast)
 	_storeAlias(context, ast)
 	return ''
 }
