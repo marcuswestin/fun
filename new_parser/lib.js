@@ -23,11 +23,6 @@ jsio('from shared.javascript import bind, blockCallback');
 			if (key == 'style') { fun.style(name, value) }
 			else { hook.setAttribute(key, attrs[key]) }
 		}
-		// var callbacks = hookCallbacks[hookID]
-		// if (callbacks) { //
-		// 	for (var i=0, callback; callback = callbacks[i]; i++) { callback(hook) }
-		// 	delete hookCallbacks[hookID]
-		// }
 		return hook
 	}
 	fun.destroyHook = function(hookName) {
