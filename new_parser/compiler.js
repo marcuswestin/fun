@@ -48,6 +48,9 @@ function compile(context, ast) {
 
 function compileStatement(context, ast) {
 	switch (ast.type) {
+		case 'RUNTIME_ITERATOR': // fall through to STATIC_VALUE
+		                         // TODO Give types to the runtime iterator values,
+		                         // so that list iterators can take other things than static
 		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
 		case 'ALIAS':            return compileStatement(context, resolve(context, ast))
 		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
@@ -58,7 +61,6 @@ function compileStatement(context, ast) {
 		case 'INVOCATION':       return compileInvocation(context, ast)
 		case 'IMPORT_MODULE':    return compileModuleImport(context, ast)
 		case 'IMPORT_FILE':      return compileFileImport(context, ast)
-		case 'RUNTIME_ITERATOR': return compileRuntimeIterator(context, ast)
 		default:                 halt(ast, 'Unknown AST type ' + ast.type)
 	}
 }
@@ -71,9 +73,18 @@ function compileStaticValue(context, ast) {
 		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
 		{
 			parentHook: context.hookName,
-			value: q(ast.value)
+			value: _getValue(ast)
 		})
 }
+
+function _getValue(ast) {
+	switch(ast.type) {
+		case 'STATIC_VALUE':     return q(ast.value)
+		case 'RUNTIME_ITERATOR': return ast.name
+		default: halt(ast, 'Unknown value type "'+ast.type+'"')
+	}
+}
+
 
 /************************
  * Item Property values *
@@ -313,14 +324,6 @@ function compileIfStatement(context, ast) {
 		})
 }
 
-function _getValue(ast) {
-	switch(ast.type) {
-		case 'STATIC_VALUE':     return q(ast.value)
-		case 'RUNTIME_ITERATOR': return ast.name
-		default: halt(ast, 'Unknown if statement value type "'+ast.type+'"')
-	}
-}
-
 /*************
  * For loops *
  *************/
@@ -353,15 +356,6 @@ function compileForLoop(context, ast) {
 			iteratorName: iteratorName,
 			emitHookName: loopContext.hookName,
 			loopCode: compile(loopContext, ast.block)
-		})
-}
-
-function compileRuntimeIterator(context, ast) {
-	return code(
-		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ name }}',
-		{
-			parentHook: context.hookName,
-			name: ast.name
 		})
 }
 
