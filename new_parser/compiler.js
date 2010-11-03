@@ -262,7 +262,53 @@ var resolve = function(context, aliasOrValue) {
  * If/Else statements *
  **********************/
 function compileIfStatement(context, ast) {
-	halt(ast, 'TODO compileIfStatement not yet implemented')
+	var left = resolve(context, ast.condition.left),
+		right = resolve(context, ast.condition.right),
+		ifContext = util.shallowCopy(context, { hookName: name('IF_HOOK') }),
+		elseContext = util.shallowCopy(context, { hookName: name('ELSE_HOOK') }),
+		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right.type == 'ITEM_PROPERTY') }
+	
+	return code(
+		'var {{ ifHookName }} = fun.name(),',
+		'	{{ elseHookName }} = fun.name()',
+		';(function(ifBranch, elseBranch) {',
+		'	fun.hook({{ parentHookName }}, {{ ifHookName }})',
+		'	fun.hook({{ parentHookName }}, {{ elseHookName }})',
+		'	var ready = fun.block(evaluate, {fireOnce: false}), lastTime',
+		'	{{ leftIsDynamic }} && fun.observe("BYTES", {{ leftID }}, {{ leftProperty }}, ready.addBlock())',
+		'	{{ rightIsDynamic }} && fun.observe("BYTES", {{ rightID }}, {{ rightProperty }}, ready.addBlock())',
+		'	ready.tryNow()',
+		'	function evaluate() {',
+		'		var thisTime = {{ leftValue }} {{ comparison }} {{ rightValue }}',
+		'		if (lastTime !== undefined && thisTime == lastTime) { return }',
+		'		fun.destroyHook(lastTime ? {{ ifHookName }} : {{ elseHookName }})',
+		'		lastTime = thisTime',
+		'		thisTime ? ifBranch() : elseBranch()',
+		'	}',
+		'})(',
+		'	function() {',
+		'		{{ ifCode }}',
+		'	},',
+		'	function() {',
+		'		{{ elseCode }}',
+		'	}',
+		');',
+		{
+			parentHookName: context.hookName,
+			ifHookName: ifContext.hookName,
+			elseHookName: elseContext.hookName,
+			leftIsDynamic: isDynamic.left,
+			rightIsDynamic: isDynamic.right,
+			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : left.value,
+			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : right.value,
+			comparison: ast.condition.comparison,
+			leftID: isDynamic.left && q(left.item.id),
+			rightID: isDynamic.right && q(right.item.id),
+			leftProperty: isDynamic.left && q(left.property[0]),
+			rightProperty: isDynamic.right && q(right.property[0]),
+			ifCode: compile(ifContext, ast.ifBlock),
+			elseCode: ast.elseBlock && compile(elseContext, ast.elseBlock)
+		})
 }
 
 /*************

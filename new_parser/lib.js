@@ -1,6 +1,6 @@
 // from lib.js
 fun = {}
-jsio('from shared.javascript import bind');
+jsio('from shared.javascript import bind, blockCallback');
 ;(function() {
 	
 	var doc = document
@@ -29,6 +29,10 @@ jsio('from shared.javascript import bind');
 		// 	delete hookCallbacks[hookID]
 		// }
 		return hook
+	}
+	fun.destroyHook = function(hookName) {
+		if (!_hooks[hookName]) { return }
+		_hooks[hookName].innerHTML = ''
 	}
 
 /* Mutations
@@ -78,4 +82,8 @@ jsio('from shared.javascript import bind');
 			element.attachEvent("on"+eventName, handler)
 		}
 	}
+
+/* Utility functions
+ *******************/
+	fun.block = blockCallback
 })()

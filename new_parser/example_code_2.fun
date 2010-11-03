@@ -10,6 +10,17 @@ let followMouseStyle = { position:'absolute', top:Mouse.y, left:Mouse.x }
 	<br />"Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
 	<br />"Mouse.isDown: " Mouse.isDown
 </div>
+
+if (Mouse.y < 100) {
+	if (50 < Mouse.y) {
+		"50 < Mouse.y < 100"
+	} else {
+		"Mouse.y < 50"
+	}
+} else {
+	"Mouse.y >= 100"
+}
+
 // <span>
 // 	<br />"Global.foo: " Global.foo
 // </span>
