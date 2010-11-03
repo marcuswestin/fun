@@ -48,18 +48,18 @@ function compile(context, ast) {
 
 function compileStatement(context, ast) {
 	switch (ast.type) {
-		case 'STATIC_VALUE':    return compileStaticValue(context, ast)
-		case 'ALIAS':           return compileStatement(context, resolve(context, ast))
-		case 'ITEM_PROPERTY':   return compileItemProperty(context, ast)
-		case 'XML':             return compileXML(context, ast)
-		case 'DECLARATION':     return handleDeclaration(context, ast)
-		case 'IF_STATEMENT':    return compileIfStatement(context, ast)
-		case 'FOR_LOOP':        return compileForLoop(context, ast)
-		case 'INVOCATION':      return compileInvocation(context, ast)
-		case 'IMPORT_MODULE':   return compileModuleImport(context, ast)
-		case 'IMPORT_FILE':     return compileFileImport(context, ast)
-		case 'RUNTIME_ITERATOR':return compileRuntimeIterator(context, ast)
-		default:                halt(ast, 'Unknown AST type ' + ast.type)
+		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
+		case 'ALIAS':            return compileStatement(context, resolve(context, ast))
+		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
+		case 'XML':              return compileXML(context, ast)
+		case 'DECLARATION':      return handleDeclaration(context, ast)
+		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
+		case 'FOR_LOOP':         return compileForLoop(context, ast)
+		case 'INVOCATION':       return compileInvocation(context, ast)
+		case 'IMPORT_MODULE':    return compileModuleImport(context, ast)
+		case 'IMPORT_FILE':      return compileFileImport(context, ast)
+		case 'RUNTIME_ITERATOR': return compileRuntimeIterator(context, ast)
+		default:                 halt(ast, 'Unknown AST type ' + ast.type)
 	}
 }
 
