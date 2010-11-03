@@ -53,9 +53,8 @@ util.map = function(arr, fn) {
 }
 
 var repeat = util.repeat = function(str, times) {
-	var arr = []
-	arr.length = times + 1
-	return arr.join(str)
+	if (times < 0) { return '' }
+	return new Array(times + 1).join(str)
 }
 
 util.boxComment = function(msg) {
