@@ -394,7 +394,7 @@ function parseCondition() {
 	var left = parseStatement()
 	
 	var comparison, right
-	if (isAhead('symbol', ['<','<=','>','>=','=='])) {
+	if (isAhead('symbol', '<,<=,>,>=,==,!='.split(','))) {
 		advance('symbol')
 		comparison = gToken.value
 		advance(['string', 'number', 'name'])
