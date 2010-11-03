@@ -48,7 +48,13 @@ jsio('from shared.javascript import bind, blockCallback');
 		if (id == 'LOCAL') { doObserve() }
 		else { fin.connect(doObserve) }
 	}
-
+	fun.splitListMutation = function(callback, mutation) {
+		var args = mutation.args
+		for (var i=0, arg; arg = args[i]; i++) {
+			callback(arg)
+		}
+	}
+	
 /* DOM
  *****/
 	fun.attr = function(name, key, value) {

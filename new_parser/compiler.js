@@ -58,6 +58,7 @@ function compileStatement(context, ast) {
 		case 'INVOCATION':      return compileInvocation(context, ast)
 		case 'IMPORT_MODULE':   return compileModuleImport(context, ast)
 		case 'IMPORT_FILE':     return compileFileImport(context, ast)
+		case 'RUNTIME_ITERATOR':return compileRuntimeIterator(context, ast)
 		default:                halt(ast, 'Unknown AST type ' + ast.type)
 	}
 }
@@ -300,8 +301,8 @@ function compileIfStatement(context, ast) {
 			elseHookName: elseContext.hookName,
 			leftIsDynamic: isDynamic.left,
 			rightIsDynamic: isDynamic.right,
-			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : left.value,
-			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : right.value,
+			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : _getValue(left),
+			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : _getValue(right),
 			comparison: ast.condition.comparison,
 			leftID: isDynamic.left && q(left.item.id),
 			rightID: isDynamic.right && q(right.item.id),
@@ -312,11 +313,56 @@ function compileIfStatement(context, ast) {
 		})
 }
 
+function _getValue(ast) {
+	switch(ast.type) {
+		case 'STATIC_VALUE':     return q(ast.value)
+		case 'RUNTIME_ITERATOR': return ast.name
+		default: halt(ast, 'Unknown if statement value type "'+ast.type+'"')
+	}
+}
+
 /*************
  * For loops *
  *************/
 function compileForLoop(context, ast) {
-	halt(ast, 'TODO compileForLoop not yet implemented')
+	var iterable = resolve(context, ast.iterable),
+		iteratorName = name('FOR_LOOP_ITERATOR_VALUE'),
+		loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
+	
+	assert(iterable.property.length == 1, ast, 'TODO: Handle nested item property references')
+	
+	// construct a scope block for the for loop and declare the iterator alias
+	loopContext.referenceTable = util.create(context.referenceTable)
+	ast.iterator.value.name = iteratorName
+	handleDeclaration(loopContext, ast.iterator)
+	
+	return code(
+		'var {{ loopHookName }} = fun.name()',
+		'fun.hook({{ parentHookName }}, {{ loopHookName }})',
+		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
+		'function onMutation({{ iteratorName }}) {',
+		'	var {{ emitHookName }} = fun.name()',
+		'	fun.hook({{ loopHookName }}, {{ emitHookName }})',
+		'	{{ loopCode }}',
+		'}',
+		{
+			parentHookName: context.hookName,
+			loopHookName: name('FOR_LOOP_HOOK'),
+			itemID: q(iterable.item.id),
+			propertyName: q(iterable.property[0]),
+			iteratorName: iteratorName,
+			emitHookName: loopContext.hookName,
+			loopCode: compile(loopContext, ast.block)
+		})
+}
+
+function compileRuntimeIterator(context, ast) {
+	return code(
+		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ name }}',
+		{
+			parentHook: context.hookName,
+			name: ast.name
+		})
 }
 
 /****************************************

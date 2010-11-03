@@ -21,6 +21,12 @@ if (Mouse.y < 100) {
 	"Mouse.y >= 100"
 }
 
+for (item in Global.items) {
+	if (item != "And let's do it again") {
+		<div> "Item: " item </div>
+	}
+}
+
 // <span>
 // 	<br />"Global.foo: " Global.foo
 // </span>

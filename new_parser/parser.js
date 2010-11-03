@@ -157,7 +157,7 @@ function parseValueOrAlias() {
 	advance()
 	switch(gToken.type) {
 		case 'name':
-		    return parseAliasOrInvocation()
+		    return parseAlias()
 		case 'string':
 		case 'number':
 			return getStaticValue()
@@ -205,17 +205,20 @@ function parseKeywordValue() {
 	}
 }
 
+var parseAlias = astGenerator(function() {
+	return { type: 'ALIAS', namespace: _parseNamespace() }
+})
+
 var parseAliasOrInvocation = astGenerator(function() {
 	debug('parseAliasOrInvocation')
-	var namespace = parseNamespace()
+	var alias = parseAlias()
 	if (isAhead('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
 		var args = parseValueList(R_PAREN)
 		advance('symbol', R_PAREN)
-		return { type:'INVOCATION', namespace:namespace, args:args }
-	} else {
-		return { type:'ALIAS', namespace:namespace }
+		return { type:'INVOCATION', alias:alias, args:args }
 	}
+	return alias
 })
 
 var getStaticValue = astGenerator(function() {
@@ -224,7 +227,8 @@ var getStaticValue = astGenerator(function() {
 	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
 })
 
-function parseNamespace() {
+// Note: _parseNamespace expects the current token to be a name (the first in name.foo.bar)
+function _parseNamespace() {
 	var namespace = []
 	while(true) {
 		assert(gToken.type == 'name')
@@ -283,7 +287,7 @@ function parseAssignment(acceptDotNotation, msg) {
 	debug('parseAssignment')
 	var namespace
 	advance('name', null, msg)
-	if (acceptDotNotation) { namespace = parseNamespace() }
+	if (acceptDotNotation) { namespace = _parseNamespace() }
 	else { namespace = gToken.value }
 	advance('symbol', '=', msg)
 	var value = parseValueOrAlias()
@@ -293,10 +297,14 @@ function parseAssignment(acceptDotNotation, msg) {
 /****************
  * Declarations *
  ****************/
-var parseDeclaration = astGenerator(function() {
+function parseDeclaration() {
 	debug('parseDeclaration')
 	var assignment = parseAssignment('declaration')
-	return { type:'DECLARATION', namespace:assignment[0], value:assignment[1] }
+	return _createDeclaration(assignment[0], assignment[1])
+}
+
+var _createDeclaration = astGenerator(function(namespace, value) {
+	return { type:'DECLARATION', namespace:namespace, value:value }
 })
 
 /********
@@ -350,17 +358,21 @@ var parseForLoop = astGenerator(function() {
 	
 	// parse "(item in Global.items)"
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
-	advance('name', null, 'for_loop\'s iterator')
-	var iterator = gToken.value
+	advance('name', null, 'for_loop\'s iterator alias')
+	var iterator = _createDeclaration([gToken.value], _createRuntimeIterator())
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	advance('name', null, 'for_loop\'s iterable value')
-	var iterable = gToken.value
+	var iterable = parseAlias()
 	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	
 	// parse "{ ... for loop statements ... }"
 	var block = parseBlock('for_loop')
 	
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
+})
+
+var _createRuntimeIterator = astGenerator(function() {
+	return { type:'RUNTIME_ITERATOR' }
 })
 
 /****************
