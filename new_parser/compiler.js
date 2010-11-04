@@ -48,9 +48,9 @@ function compile(context, ast) {
 
 function compileStatement(context, ast) {
 	switch (ast.type) {
-		case 'RUNTIME_ITERATOR': // fall through to STATIC_VALUE
-		                         // TODO Give types to the runtime iterator values,
+		case 'RUNTIME_ITERATOR': // TODO Give types to the runtime iterator values,
 		                         // so that list iterators can take other things than static
+		                         // for now, fall through to STATIC_VALUE
 		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
 		case 'ALIAS':            return compileStatement(context, resolve(context, ast))
 		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
