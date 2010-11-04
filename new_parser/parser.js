@@ -195,7 +195,7 @@ var parseItem = astGenerator(function() {
 	return { type:'ITEM', id: itemID }
 })
 
-function parseKeywordValue() {
+function parseKeyword() {
 	switch(gToken.value) {
 		case 'import': return parseImport()
 		case 'template': return parseTemplate()
