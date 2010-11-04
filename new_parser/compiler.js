@@ -55,7 +55,7 @@ function compileStatement(context, ast) {
 		case 'ALIAS':            return compileStatement(context, resolve(context, ast))
 		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
 		case 'XML':              return compileXML(context, ast)
-		case 'DECLARATION':      return handleDeclaration(context, ast)
+		case 'DECLARATION':      return compileDeclaration(context, ast)
 		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
 		case 'FOR_LOOP':         return compileForLoop(context, ast)
 		case 'INVOCATION':       return compileInvocation(context, ast)
@@ -220,7 +220,7 @@ function _importFile(path, context) {
  * Alias Declarations *
  **********************/
 
-function handleDeclaration(context, ast) {
+function compileDeclaration(context, ast) {
 	assert(ast.type == 'DECLARATION', ast)
 	_storeAlias(context, ast)
 	if (resolve(context, ast.value).type == 'TEMPLATE') {
@@ -340,7 +340,7 @@ function compileForLoop(context, ast) {
 	// construct a scope block for the for loop and declare the iterator alias
 	loopContext.referenceTable = util.create(context.referenceTable)
 	ast.iterator.value.name = iteratorName
-	handleDeclaration(loopContext, ast.iterator)
+	compileDeclaration(loopContext, ast.iterator)
 	
 	return code(
 		'var {{ loopHookName }} = fun.name()',
