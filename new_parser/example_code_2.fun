@@ -6,6 +6,10 @@ import "example_import"
 let classAlias = 'classValue'
 let followMouseStyle = { position:'absolute', top:Mouse.y, left:Mouse.x }
 
+let aTemplate = template() {
+	<div>"Hello from a template!"</div>
+}
+
 <div class=classAlias style=followMouseStyle>
 	<br />"Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
 	<br />"Mouse.isDown: " Mouse.isDown

@@ -223,8 +223,9 @@ function _importFile(path, context) {
 function compileDeclaration(context, ast) {
 	assert(ast.type == 'DECLARATION', ast)
 	_storeAlias(context, ast)
-	if (resolve(context, ast.value).type == 'TEMPLATE') {
-		return compileTemplate(context, ast)
+	var value = resolve(context, ast.value)
+	if (value.type == 'TEMPLATE') {
+		return compileTemplate(context, value)
 	}
 	return ''
 }
@@ -367,7 +368,18 @@ function compileForLoop(context, ast) {
  *************/
 
 function compileTemplate(context, ast) {
-	halt(ast, 'TODO compileTemplate not yet implemented')
+	ast.templateName = name('TEMPLATE_FUNCTION')
+	templateContext = util.shallowCopy(context, { hookName:name('TEMPLATE_INVOCATION_HOOK') })
+	
+	return code(
+		'function {{ templateFunctionName }}({{ templateInvocationHook }}) {',
+		'	{{ code }}',
+		'}',
+		{
+			templateFunctionName: ast.templateName,
+			templateInvocationHook: templateContext.hookName,
+			code: compile(templateContext, ast.block)
+		})
 }
 
 /****************************************
