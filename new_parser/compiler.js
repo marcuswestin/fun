@@ -368,7 +368,7 @@ function compileForLoop(context, ast) {
  *************/
 
 function compileTemplate(context, ast) {
-	ast.templateName = name('TEMPLATE_FUNCTION')
+	ast._compiledFunctionName = name('TEMPLATE_FUNCTION')
 	templateContext = util.shallowCopy(context, { hookName:name('TEMPLATE_INVOCATION_HOOK') })
 	
 	return code(
@@ -376,7 +376,7 @@ function compileTemplate(context, ast) {
 		'	{{ code }}',
 		'}',
 		{
-			templateFunctionName: ast.templateName,
+			templateFunctionName: ast._compiledFunctionName,
 			templateInvocationHook: templateContext.hookName,
 			code: compile(templateContext, ast.block)
 		})
@@ -386,7 +386,15 @@ function compileTemplate(context, ast) {
  * Invocations (handlers and templates) *
  ****************************************/
 function compileInvocation(context, ast) {
-	halt(ast, 'TODO compileInvocation not yet implemented')
+	var template = resolve(context, ast.alias)
+	assert(ast.args.length == 0, ast, 'TODO Handle invocation arguments (ast.args is a list of invocation values/aliases)')
+	assert(template.args.length == 0, ast, 'TODO Handle template signature of arguments')
+	return code(
+		'{{ templateFunctionName }}({{ hookName }})',
+		{
+			templateFunctionName: template._compiledFunctionName,
+			hookName: context.hookName
+		})
 }
 
 /*********************

@@ -10,10 +10,17 @@ let aTemplate = template() {
 	<div>"Hello from a template!"</div>
 }
 
-<div class=classAlias style=followMouseStyle>
-	<br />"Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
-	<br />"Mouse.isDown: " Mouse.isDown
-</div>
+// TODO Implement if (Mouse.x > 0 && Mouse.y > 0) { ... }
+if (Mouse.x > 0) {
+	if (Mouse.y > 0) {
+		<div class=classAlias style=followMouseStyle>
+			<br />"Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
+			<br />"Mouse.isDown: " Mouse.isDown
+		</div>
+	}
+}
+
+aTemplate()
 
 if (Mouse.y < 100) {
 	if (50 < Mouse.y) {
