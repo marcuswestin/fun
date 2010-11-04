@@ -223,6 +223,9 @@ function _importFile(path, context) {
 function handleDeclaration(context, ast) {
 	assert(ast.type == 'DECLARATION', ast)
 	_storeAlias(context, ast)
+	if (resolve(context, ast.value).type == 'TEMPLATE') {
+		return compileTemplate(context, ast)
+	}
 	return ''
 }
 
@@ -357,6 +360,14 @@ function compileForLoop(context, ast) {
 			emitHookName: loopContext.hookName,
 			loopCode: compile(loopContext, ast.block)
 		})
+}
+
+/*************
+ * Templates *
+ *************/
+
+function compileTemplate(context, ast) {
+	halt(ast, 'TODO compileTemplate not yet implemented')
 }
 
 /****************************************
