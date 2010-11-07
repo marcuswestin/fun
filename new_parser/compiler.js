@@ -111,10 +111,10 @@ function compileItemProperty(context, ast) {
  * XML *
  *******/
 function compileXML(context, ast) {
-	var hookName = name('XML_HOOK'),
-		newContext = util.shallowCopy(context, { hookName:hookName })
+	var nodeHookName = name('XML_HOOK'),
+		newContext = util.shallowCopy(context, { hookName:nodeHookName })
 	
-	var attributes = _handleXMLAttributes(context, ast, hookName)
+	var attributes = _handleXMLAttributes(context, ast, nodeHookName)
 	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ hookName }}, {{ tagName }}, {{ staticAttributes }})',
@@ -122,7 +122,7 @@ function compileXML(context, ast) {
 		'{{ childCode }}',
 		{
 			parentHook: context.hookName,
-			hookName: hookName,
+			hookName: nodeHookName,
 			tagName: q(ast.tag),
 			staticAttributes: q(attributes.staticAttributes),
 			dynamicAttributesCode: attributes.dynamicCode,
@@ -130,7 +130,7 @@ function compileXML(context, ast) {
 		})
 }
 
-function _handleXMLAttributes(context, ast, hookName) {
+function _handleXMLAttributes(context, ast, nodeHookName) {
 	var staticAttributes = {},
 		dynamicCode = []
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
@@ -140,34 +140,34 @@ function _handleXMLAttributes(context, ast, hookName) {
 			match
 		if (name == 'style') {
 			assert(value.type == 'NESTED_ALIAS', ast, 'You can only assign the style attribute to a JSON object literal, e.g. <div style={ width:100, height:100, background:"red" }/>')
-			_handleStyleAttribute(staticAttributes, dynamicCode, context, ast, hookName, value.content)
+			_handleStyleAttribute(staticAttributes, dynamicCode, context, ast, nodeHookName, value.content)
 		} else if (match = name.match(/^on(\w+)$/)) {
-			halt('TODO Handle on* xml attributes')
+			_handleHandlerAttribute(dynamicCode, context, ast, nodeHookName, match[1], value)
 		} else if (value.type == 'STATIC_VALUE') {
 			staticAttributes[name] = value.value
 		} else {
 			assert(value.type != 'NESTED_ALIAS', ast, 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
-			_handleDynamicAttribute(dynamicCode, context, ast, hookName, name, value)
+			_handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, name, value)
 		}
 	}
 	return { staticAttributes: staticAttributes, dynamicCode: dynamicCode.join('\n') }
 }
 
 // add static attributes to staticAttrs object
-function _handleStyleAttribute(staticAttrs, dynamicCode, context, ast, hookName, styles) {
+function _handleStyleAttribute(staticAttrs, dynamicCode, context, ast, nodeHookName, styles) {
 	var styleAttribute = staticAttrs['style'] = {}
 	for (var i=0, style; style = styles[i]; i++) {
 		var value = resolve(context, style.value)
 		if (value.type == 'STATIC_VALUE') {
 			styleAttribute[style.name] = value.value
 		} else {
-			_handleDynamicAttribute(dynamicCode, context, ast, hookName, 'style.' + style.name, value)
+			_handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, 'style.' + style.name, value)
 		}
 	}
 }
 
-// add code for dynamic properties to dynamicCode
-function _handleDynamicAttribute(dynamicCode, context, ast, hookName, attrName, value) {
+// adds code for dynamic properties to dynamicCode
+function _handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, attrName, value) {
 	assert(value.property.length == 1, ast, 'TODO: Handle nested item property references')
 	dynamicCode.push(code(
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
@@ -178,7 +178,7 @@ function _handleDynamicAttribute(dynamicCode, context, ast, hookName, attrName, 
 			id: q(value.item.id),
 			property: q(value.property[0]),
 			attr: q(attrName),
-			hookName: hookName
+			hookName: nodeHookName
 		}))
 }
 
