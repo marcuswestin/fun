@@ -44,17 +44,17 @@ var parseStatement = function() {
 			switch(gToken.value) {
 				case '<': return parseXML()
 				case '=': halt('Unexpected symbol "=". Did you forget a "let" at the beginning of the line?')
-				default: halt('Unexpected symbol "'+gToken.value+'"')
+				default:  halt('Unexpected symbol "'+gToken.value+'"')
 			}
 		case 'name':
 			return parseAliasOrInvocation()
 		case 'keyword':
 			switch (gToken.value) {
 				case 'import': return parseImport()
-				case 'let': return parseDeclaration()
-				case 'for': return parseForLoop()
-				case 'if': return parseIfStatement()
-				default: halt('Unexpected keyword "'+gToken.value+'" at the beginning of a statement')
+				case 'let':    return parseDeclaration()
+				case 'for':    return parseForLoop()
+				case 'if':     return parseIfStatement()
+				default:       halt('Unexpected keyword "'+gToken.value+'" at the beginning of a statement')
 			}
 		default:
 			halt('Unknown parse statement token: ' + gToken.type)
