@@ -240,14 +240,14 @@ var getStaticValue = astGenerator(function() {
 })
 
 // Note: _parseNamespace expects the current token to be a name (the first in name.foo.bar)
-function _parseNamespace() {
+function _parseNamespace(msg) {
 	var namespace = []
 	while(true) {
 		assert(gToken.type == 'name')
 		namespace.push(gToken.value)
 		if (!isAhead('symbol', '.')) { break }
-		advance('symbol', '.')
-		advance('name')
+		advance('symbol', '.', msg)
+		advance('name', null, msg)
 	}
 	return namespace
 }
