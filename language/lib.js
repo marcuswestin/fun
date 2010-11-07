@@ -17,10 +17,18 @@
 		return 'funHook' + (++_uniqueID)
 	}
 	
-	fun.getDOMHook = function(parentHookID, hookID, tag, attrs) {
+	function addElement(parent, el, prepend) {
+		if (!prepend || !parent.children[0]) {
+			parent.appendChild(el)
+		} else {
+			parent.insertBefore(el, parent.children[0])
+		}
+		return el
+	}
+	fun.getDOMHook = function(parentHookID, hookID, tag, attrs, prepend) {
 		if (hooks[hookID]) { return hooks[hookID] }
 		var parent = hooks[parentHookID]
-		var hook = hooks[hookID] = parent.appendChild(doc.createElement(tag||'span'))
+		var hook = hooks[hookID] = addElement(parent, doc.createElement(tag || 'span'), prepend)
 		for (var key in attrs) {
 			hook.setAttribute(key, attrs[key])
 		}
@@ -63,8 +71,14 @@
 	
 	fun.handleListMutation = function(mutation, callback) {
 		var args = mutation.args
-		for (var i=0, arg; arg = args[i]; i++) {
-			callback(arg)
+		if (mutation.op == 'listAppend') {
+			for (var i=0, arg; arg = args[i]; i++) {
+				callback(arg)
+			}
+		} else if (mutation.op == 'listPrepend') {
+			for (var i=args.length-1, arg; arg = args[i]; i--) {
+				callback(arg)
+			}
 		}
 	} 
 	

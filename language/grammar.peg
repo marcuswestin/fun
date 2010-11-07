@@ -176,6 +176,8 @@ MutationStatement
    { return {type:'MUTATION', mutationType:'SET', target:target, source:source}; }
  / target:Mutables '.push(' _ source:MutationValue _ ')' _T
    { return {type:'MUTATION', mutationType:'APPEND', target:target, source:source}; }
+ / target:Mutables '.unshift(' _ source:MutationValue _ ')' _T
+   { return {type:'MUTATION', mutationType:'PREPEND', target:target, source:source}; }
 
 MutationValue
  = Reference

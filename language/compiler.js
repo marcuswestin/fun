@@ -162,6 +162,10 @@ function getDeclarationCode(context, ast) {
 
 function getReferenceCode(context, ast) {
 	if (ast.referenceType == "ALIAS") {
+		if (ast.name == 'import') { return '' }
+		if (ast.name == 'Local') { return '' }
+		if (ast.name == 'Global') { return '' }
+		if (ast.name == 'Mouse') { return '' }
 		var ref = util.getReference(context, ast.name),
 			nameOrStr = ref.name ? ref.name : util.q(ref.value)
 		return getInlineValueCode(context, nameOrStr)
@@ -312,7 +316,7 @@ function getForLoopCode(context, ast) {
 			.functionStart('onMutation', 'mutation')
 				.code('fun.handleListMutation(mutation, function('+iteratorName+') {')
 					.declareHook(emitHookName)
-					.callFunction('fun.getDOMHook', loopHookName, emitHookName)
+					.callFunction('fun.getDOMHook', loopHookName, emitHookName, false, false, true)
 					.code(compile(loopContext, codeAST))
 				.code('})')
 			.functionEnd()
