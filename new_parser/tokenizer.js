@@ -32,7 +32,7 @@ var TokenizeError = function(file, line, column, msg) {
 }
 TokenizeError.prototype = Error.prototype
 
-var keywords = ['import', 'let','for','in','if','else','template','handler']
+var keywords = 'import,let,set,for,in,if,else,template,handler'.split(',')
 function doTokenize (inputFile) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.
