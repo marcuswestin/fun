@@ -44,7 +44,7 @@ function doTokenize (inputFile) {
     var n;                      // The number value.
     var q;                      // The quote character.
     var str;                    // The string value.
-    var prefix = '!=<>';
+    var prefix = '+!=<>';
     var suffix = '=';
 
     var result = [];            // An array to hold the results.
@@ -75,16 +75,6 @@ function doTokenize (inputFile) {
     for (var kWord, keyI=0; kWord = keywords[keyI]; keyI++) {
         keywords[kWord] = true;
     }
-
-// If prefix and suffix strings are not provided, supply defaults.
-
-    if (typeof prefix !== 'string') {
-        prefix = '<>+-&';
-    }
-    if (typeof suffix !== 'string') {
-        suffix = '=>&:';
-    }
-
 
 // Loop through the text, one character at a time.
 
