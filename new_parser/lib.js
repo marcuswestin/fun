@@ -10,7 +10,8 @@ jsio('from shared.javascript import bind, blockCallback');
 
 /* Hooks
  *******/
-	var _hooks = {}
+	var _hooks = {},
+		_hookCallbacks = {}
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
 	fun.getHook = function(name) { return _hooks[name] }
 	fun.hook = function(parentName, name, tag, attrs) {
@@ -21,11 +22,21 @@ jsio('from shared.javascript import bind, blockCallback');
 			if (key == 'style') { fun.style(name, attrs[key]) }
 			else { hook.setAttribute(key, attrs[key]) }
 		}
+		if (_hookCallbacks[name]) {
+			for (var i=0, callback; callback = _hookCallbacks[name][i]; i++) {
+				callback(hook)
+			}
+		}
 		return hook
 	}
 	fun.destroyHook = function(hookName) {
 		if (!_hooks[hookName]) { return }
 		_hooks[hookName].innerHTML = ''
+	}
+	fun.withHook = function(hookName, callback) {
+		if (_hooks[hookName]) { return callback(_hooks[hookName]) }
+		else if (_hookCallbacks[hookName]) { _hookCallbacks[hookName].push(callback) }
+		else { _hookCallbacks[hookName] = [callback] }
 	}
 
 /* Mutations

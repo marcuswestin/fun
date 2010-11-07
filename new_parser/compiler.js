@@ -182,6 +182,20 @@ function _handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, attrNa
 		}))
 }
 
+// adds code for event handlers to dynamicCode (e.g. onClick, onMouseOver, etc)
+function _handleHandlerAttribute(dynamicCode, context, ast, nodeHookName, handlerName, handler) {
+	dynamicCode.push(code(
+		'fun.withHook({{ hookName }}, function(hook) {',
+		'	fun.on(hook, "{{ handlerName }}", function() {',
+		'		console.log("TODO _handleHandlerAttribute - add mutationCode")',
+		'	})',
+		'})',
+		{
+			hookName: nodeHookName,
+			handlerName: handlerName.toLowerCase()
+		}))
+}
+
 /*************************
  * Module & File Imports *
  *************************/
@@ -224,10 +238,11 @@ function compileDeclaration(context, ast) {
 	assert(ast.type == 'DECLARATION', ast)
 	_storeAlias(context, ast)
 	var value = resolve(context, ast.value)
-	if (value.type == 'TEMPLATE') {
-		return compileTemplate(context, value)
+	switch (value.type) {
+		case 'TEMPLATE': return compileTemplateDeclaration(context, value)
+		case 'HANDLER':  return compileHandlerDeclaration(context, value)
+		default:         return ''
 	}
-	return ''
 }
 
 var _storeAlias = function(context, ast) {
@@ -366,11 +381,9 @@ function compileForLoop(context, ast) {
 /*************
  * Templates *
  *************/
-
-function compileTemplate(context, ast) {
+function compileTemplateDeclaration(context, ast) {
 	ast._compiledFunctionName = name('TEMPLATE_FUNCTION')
 	templateContext = util.shallowCopy(context, { hookName:name('TEMPLATE_INVOCATION_HOOK') })
-	
 	return code(
 		'function {{ templateFunctionName }}({{ templateInvocationHook }}) {',
 		'	{{ code }}',
@@ -382,19 +395,43 @@ function compileTemplate(context, ast) {
 		})
 }
 
+function _compileTemplateInvocation(context, invocationAST, templateAST) {
+	// ast.args is a list of invocation values/aliases
+	assert(invocationAST.args.length == 0, invocationAST, 'TODO Handle template invocation arguments')
+	assert(templateAST.signature.length == 0, templateAST, 'TODO Handle template signature')
+	return code(
+		'{{ templateFunctionName }}({{ hookName }})',
+		{
+			templateFunctionName: templateAST._compiledFunctionName,
+			hookName: context.hookName
+		})
+}
+
+/************
+ * Handlers *
+ ************/
+function compileHandlerDeclaration(context, ast) {
+	return map(ast.block, bind(this, _compileMutationStatement, context)).join('\n')
+}
+
+function _compileMutationStatement(context, statementAST) {
+	halt(statementAST, 'TODO Compile mutation statements')
+}
+
+function _compileHandlerInvocation(context, invocationAST, handlerAST) {
+	halt(statementAST, 'TODO Compile handler invocation')
+}
+
 /****************************************
  * Invocations (handlers and templates) *
  ****************************************/
 function compileInvocation(context, ast) {
-	var template = resolve(context, ast.alias)
-	assert(ast.args.length == 0, ast, 'TODO Handle invocation arguments (ast.args is a list of invocation values/aliases)')
-	assert(template.args.length == 0, ast, 'TODO Handle template signature of arguments')
-	return code(
-		'{{ templateFunctionName }}({{ hookName }})',
-		{
-			templateFunctionName: template._compiledFunctionName,
-			hookName: context.hookName
-		})
+	var invocable = resolve(context, ast.alias)
+	switch(invocable.type) {
+		case 'TEMPLATE': return _compileTemplateInvocation(context, ast, invocable)
+		case 'HANDLER':  return _compileHandlerInvocation(context, ast, invocable)
+		default:         halt(ast, 'Couldn\'t invoce the value of type "'+invocable.type+'". Expected a template or a handler.')
+	}
 }
 
 /*********************

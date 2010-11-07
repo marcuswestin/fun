@@ -61,16 +61,27 @@ var parseStatement = function() {
 	}
 }
 
-function parseBlock(statementType) {
+function parseBlock(statementType, statementParseFn) {
 	advance('symbol', L_CURLY, 'beginning of the '+statementType+'\'s block')
 	var block = []
 	while(!isAhead('symbol', R_CURLY)) {
 		advance()
-		block.push(parseStatement())
+		block.push(statementParseFn())
 	}
 	advance('symbol', R_CURLY, 'end of the '+statementType+' statement\'s block')
 	return block
 }
+
+/***********************
+ * Mutation statements *
+ ***********************/
+var parseMutationStatement = astGenerator(function() {
+	var namespace = parseAlias('Object to mutate'),
+		operator = advance('symbol', ['=', '+=']).value,
+		value = parseValueOrAlias()
+	
+	return {type: 'MUTATION', namespace:namespace, value:value, operator:operator}
+})
 
 
 /*******************
@@ -95,6 +106,7 @@ var advance = function(type, value, expressionType) {
 	if (type) { check(findInArray(type, nextToken.type), nextToken.type) }
 	if (value) { check(findInArray(value, nextToken.value), nextToken.value) }
 	gToken = nextToken
+	return gToken
 }
 var isAhead = function(type, value, steps) {
 	var token = gTokens[gIndex + (steps || 1)]
@@ -205,8 +217,8 @@ function parseKeyword() {
 	}
 }
 
-var parseAlias = astGenerator(function() {
-	return { type: 'ALIAS', namespace: _parseNamespace() }
+var parseAlias = astGenerator(function(msg) {
+	return { type: 'ALIAS', namespace: _parseNamespace(msg) }
 })
 
 var parseAliasOrInvocation = astGenerator(function() {
@@ -366,7 +378,7 @@ var parseForLoop = astGenerator(function() {
 	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	
 	// parse "{ ... for loop statements ... }"
-	var block = parseBlock('for_loop')
+	var block = parseBlock('for_loop', parseStatement)
 	
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 })
@@ -385,17 +397,17 @@ var parseIfStatement = astGenerator(function() {
 	var condition = parseCondition()
 	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
 	
-	var ifBlock = parseBlock('if statement')
+	var ifBlock = parseBlock('if statement', parseStatement)
 	
 	var elseBlock = null
 	if (isAhead('keyword', 'else')) {
 		advance('keyword', 'else')
-		elseBlock = parseBlock('else statement')
+		elseBlock = parseBlock('else statement', parseStatement)
 	}
 	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 })
-function parseCondition() {
+var parseCondition = astGenerator(function() {
 	debug('parseCondition')
 	// TODO Parse compond statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
 	var type = gToken.type,
@@ -414,28 +426,28 @@ function parseCondition() {
 	}
 	
 	return { left:left, comparison:comparison, right:right }
-}
+})
 
 /************************
  * Templates & Handlers *
  ************************/
 var parseTemplate = astGenerator(function() {
 	debug('parseTemplate')
-	var callable = parseCallable('template')
-	return { type:'TEMPLATE', args:callable[0], block:callable[1] }
+	var callable = parseCallable('template', parseStatement)
+	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 
 var parseHandler = astGenerator(function() {
 	debug('parseHandler')
-	var callable = parseCallable('handler')
-	return { type:'HANDLER', args:callable[0], block:callable[1] }
+	var callable = parseCallable('handler', parseMutationStatement)
+	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
 
-function parseCallable(msg) {
+function parseCallable(msg, statementParseFn) {
 	advance('symbol', L_PAREN)
 	var args = parseArgumentList()
 	advance('symbol', R_PAREN)
-	var block = parseBlock(msg)
+	var block = parseBlock(msg, statementParseFn)
 	return [args, block]
 }
 
