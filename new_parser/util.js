@@ -88,10 +88,19 @@ util.indent = function(code) {
 	return result.join('\n')
 }
 
-util.grabLine = function(file, line, column, length) {
+util.replace = function(haystack, needle, replacement) {
+	while (haystack.match(needle)) {
+		haystack = haystack.replace(needle, replacement)
+	}
+	return haystack
+}
+
+util.grabLine = function(file, lineNumber, column, length) {
 	length = length || 1
 	var code = fs.readFileSync(file).toString(),
-		lines = code.split('\n')
-	return '\n' + lines[line - 1] + '\n'
+		lines = code.split('\n'),
+		line = util.replace(lines[lineNumber - 1], '\t', ' ')
+	
+	return '\n' + line + '\n'
 		+ repeat(' ', column - 1) + repeat('^', length)
 }
