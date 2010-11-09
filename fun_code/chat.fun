@@ -15,7 +15,7 @@ import Global
 	<div class="messages">
 		for (message in Global.messages) {
 			<div class="message">
-				"Message: " message
+				message
 			</div>
 		}
 	</div>
