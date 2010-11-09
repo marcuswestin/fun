@@ -10,7 +10,7 @@ var fs = require('fs'),
 exports.compile = util.intercept('CompileError', function (ast, modules, declarations) {
 	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
 	var context = { hookName: name('ROOT_HOOK') } // root context
-	return code(
+	return code(ast,
 		';(function funApp() {',
 		'	var {{ hookName }} = fun.name("rootHook")',
 		'	fun.setHook({{ hookName }}, document.body)',
@@ -64,7 +64,7 @@ function compileStatement(context, ast) {
  *****************/
 // TODO This should be using Types[ast.value.type].emit(ast.value)
 function compileStaticValue(context, ast) {
-	return code(
+	return code(ast,
 		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
 		{
 			parentHook: context.hookName,
@@ -88,7 +88,7 @@ function compileItemProperty(context, ast) {
 	assert(ast.property.length > 0, ast, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
 	assert(ast.property.length == 1, ast, 'TODO: Handle nested property references')
 	var hookName = name('ITEM_PROPERTY_HOOK')
-	return code(
+	return code(ast,
 		'fun.hook({{ parentHook }}, {{ hookName }})',
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.getHook({{ hookName }}).innerHTML = value',
@@ -110,7 +110,7 @@ function compileXML(context, ast) {
 		newContext = util.shallowCopy(context, { hookName:nodeHookName })
 	
 	var attributes = _handleXMLAttributes(nodeHookName, ast)
-	return code(
+	return code(ast,
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ hookName }}, {{ tagName }}, {{ staticAttributes }})',
 		'{{ dynamicAttributesCode }}',
@@ -162,7 +162,7 @@ function _handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name
 // modifies dynamicCode
 function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value) {
 	assert(value.property.length == 1, ast, 'TODO: Handle nested item property references')
-	dynamicCode.push(code(
+	dynamicCode.push(code(ast,
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.attr({{ hookName }}, {{ attr }}, value)',
 		'})',
@@ -177,7 +177,7 @@ function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value
 
 // modifies dynamicCode
 function _handleHandlerAttribute(dynamicCode, ast, nodeHookName, handlerName, handler) {
-	dynamicCode.push(code(
+	dynamicCode.push(code(ast,
 		'fun.withHook({{ hookName }}, function(hook) {',
 		'	fun.on(hook, "{{ handlerName }}", function() {',
 		'		console.log("TODO _handleHandlerAttribute - add mutationCode")',
@@ -198,7 +198,7 @@ function compileIfStatement(context, ast) {
 		elseContext = util.shallowCopy(context, { hookName: name('ELSE_HOOK') }),
 		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right.type == 'ITEM_PROPERTY') }
 	
-	return code(
+	return code(ast,
 		'var {{ ifHookName }} = fun.name(),',
 		'	{{ elseHookName }} = fun.name()',
 		';(function(ifBranch, elseBranch) {',
@@ -250,7 +250,7 @@ function compileForLoop(context, ast) {
 	
 	ast.iterator.value.name = iteratorName
 	
-	return code(
+	return code(ast,
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ parentHookName }}, {{ loopHookName }})',
 		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
@@ -284,7 +284,7 @@ function compileDeclaration(declaration) {
 function compileTemplateDeclaration(ast) {
 	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
 	var hookName = name('TEMPLATE_HOOK')
-	return code(
+	return code(ast,
 		'function {{ templateFunctionName }}({{ hookName }}) {',
 		'	{{ code }}',
 		'}',
@@ -299,7 +299,7 @@ function _compileTemplateInvocation(context, invocationAST, templateAST) {
 	// ast.args is a list of invocation values/aliases
 	assert(invocationAST.args.length == 0, invocationAST, 'TODO Handle template invocation arguments')
 	assert(templateAST.signature.length == 0, templateAST, 'TODO Handle template signature')
-	return code(
+	return code(templateAST,
 		'{{ templateFunctionName }}({{ hookName }})',
 		{
 			templateFunctionName: templateAST.compiledFunctionName,
@@ -340,11 +340,11 @@ function name(readable) { return '_' + (readable || '') + '$' + (name._uniqueId+
 name._uniqueId = 0
 
 var emitReplaceRegex = /{{\s*(\w+)\s*}}/
-function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
+function code(ast, /* line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
 		lastArg = arguments[argsLen - 1],
 		injectObj = (typeof lastArg == 'string' ? null : lastArg),
-		snippets = Array.prototype.slice.call(arguments, 0, injectObj ? argsLen - 1 : argsLen),
+		snippets = Array.prototype.slice.call(arguments, 1, injectObj ? argsLen - 1 : argsLen),
 		code = '\n' + snippets.join('\n'),
 		match
 	
@@ -352,7 +352,8 @@ function code(/* line1, line2, line3, ..., lineN, optionalValues */) {
 		var wholeMatch = match[0],
 			nameMatch = match[1],
 			value = injectObj[nameMatch]
-		code = code.replace(wholeMatch, typeof value == 'undefined' ? 'MISSING INJECT VALUE' : value)
+		assert(typeof value != 'undefined', ast, 'Missing inject value "'+nameMatch+'"')
+		code = code.replace(wholeMatch, value)
 	}
 	return code
 }
