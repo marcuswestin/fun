@@ -71,15 +71,15 @@ var lookup = function(context, aliasOrValue) {
 /* XML
  ******/
 var resolveXML = function(context, ast) {
-	ast.attributes = map(ast.attributes, bind(this, _resolveAttributes, context, ast))
+	ast.attributes = map(ast.attributes, bind(this, _resolveAttributes, context))
 	ast.block = resolve(context, ast.block)
 	return ast
 }
 
-var _resolveAttributes = function(context, ast, attribute) {
-	assert(attribute.namespace.length == 1, attribute, 'TODO Handle dot notation XML attribute namespace (for e.g. style.width=100)')
-	attribute.value = resolve(context, attribute.value)
-	return attribute
+var _resolveAttributes = function(context, ast) {
+	assert(ast, ast.namespace.length == 1, 'TODO Handle dot notation XML attribute namespace (for e.g. style.width=100)')
+	ast.value = resolve(context, ast.value)
+	return ast
 }
 
 /* Imports (modules and files)
@@ -87,7 +87,7 @@ var _resolveAttributes = function(context, ast, attribute) {
 var handleModuleImport = function(context, ast) {
 	if (gModules[ast.name]) { return }
 	var module = gModules[ast.name] = { name: ast.name, path: __dirname + '/modules/' + ast.name + '/' }
-	assert(fs.statSync(module.path).isDirectory(), ast, 'Could not find the module at ' + module.path)
+	assert(ast, fs.statSync(module.path).isDirectory(), 'Could not find the module at ' + module.path)
 	
 	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
 	if (fs.statSync(module.path + 'lib.fun').isFile()) { _importFile(module.path + 'lib.fun', context) }
@@ -98,7 +98,7 @@ var handleModuleImport = function(context, ast) {
 
 var handleFileImport = function(context, ast) {
 	var filePath = __dirname + '/' + ast.path + '.fun'
-	assert(path.existsSync(filePath), ast, 'Could not find file for import: "'+filePath+'"')
+	assert(ast, path.existsSync(filePath), 'Could not find file for import: "'+filePath+'"')
 	_importFile(filePath, context)
 }
 
@@ -111,8 +111,8 @@ var _importFile = function(path, context) {
 /* Invocations
  **************/
 var resolveInvocation = function(context, ast) {
-	assert(ast.alias || ast.invocable, ast, 'An invocation should have an alias or an invocable')
 	if (ast.alias) { ast.invocable = lookup(context, ast.alias) }
+	assert(ast, ast.invocable, 'Found an invocation without a reference to a invocable')
 	return ast
 }
 
@@ -120,7 +120,7 @@ var resolveInvocation = function(context, ast) {
  ************/
 var resolveForLoop = function(context, ast) {
 	ast.iterable = lookup(context, ast.iterable)
-	assert(ast.iterable.property.length == 1, ast, 'TODO: Handle nested item property references')
+	assert(ast, ast.iterable.property.length == 1, 'TODO: Handle nested item property references')
 	var loopContext = _createScope(context)
 	handleDeclaration(loopContext, ast.iterator)
 	ast.block = resolve(loopContext, ast.block)
@@ -151,7 +151,7 @@ var _storeAlias = function(context, ast) {
 		name = namespace[namespace.length - 1],
 		value = ast.value
 	
-	assert(!baseValue['__alias__' + name], ast, 'Repeat declaration')
+	assert(ast, !baseValue['__alias__' + name], 'Repeat declaration')
 	if (value.type == 'NESTED_ALIAS') {
 		// store the nested alias, and then create a child-alias for each nested property
 		// e.g. let foo = { width: 1 } allows you to reference foo.width as well as do e.g. style=foo
@@ -173,7 +173,7 @@ var _getAlias = function(context, ast, skipLast) {
 	
 	for (var i=0; i < len; i++) {
 		value = value['__alias__' + namespace[i]]
-		assert(value, ast, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
+		assert(ast, value, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
 		if (value.type == 'ITEM') {
 			return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
 		}
@@ -204,7 +204,7 @@ function _requireDir(path) {
 	})
 }
 
-var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
+var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
 	if (ast.file) { sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span)) }
 	throw new ResolveError(ast.file, ast, msg)

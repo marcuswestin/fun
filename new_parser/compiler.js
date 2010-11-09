@@ -31,7 +31,7 @@ exports.compile = util.intercept('CompileError', function (ast, modules, declara
  * Top level statements *
  ************************/
 function compile(context, ast) {
-	assert(context && context.hookName, ast, "compile called with invalid context")
+	assert(ast, context && context.hookName, "compile called with invalid context")
 	if (ast instanceof Array) {
 		return map(ast, bind(this, compileStatement, context)).join('\n') + '\n'
 	} else {
@@ -85,8 +85,8 @@ function _getValue(ast) {
  * Item Property values *
  ************************/
 function compileItemProperty(context, ast) {
-	assert(ast.property.length > 0, ast, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
-	assert(ast.property.length == 1, ast, 'TODO: Handle nested property references')
+	assert(ast, ast.property.length > 0, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
+	assert(ast, ast.property.length == 1, 'TODO: Handle nested property references')
 	var hookName = name('ITEM_PROPERTY_HOOK')
 	return code(ast,
 		'fun.hook({{ parentHook }}, {{ hookName }})',
@@ -128,7 +128,7 @@ function compileXML(context, ast) {
 function _handleXMLAttributes(nodeHookName, ast) {
 	var staticAttrs = {}, dynamicCode = []
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
-		assert(attribute.namespace.length == 1, attribute, 'TODO Handle dot notation attributes')
+		assert(attribute, attribute.namespace.length == 1, 'TODO Handle dot notation attributes')
 		var name = attribute.namespace[0],
 			value = attribute.value
 		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
@@ -146,14 +146,14 @@ function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, 
 	} else if (value.type == 'STATIC_VALUE') {
 		staticAttrs[name] = value.value
 	} else {
-		assert(value.type != 'NESTED_ALIAS', ast, 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+		assert(ast, value.type != 'NESTED_ALIAS', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
 		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
 	}
 }
 
 // modifies staticAttrs and dynamicCode
 function _handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value) {
-	assert(value.type == 'NESTED_ALIAS', ast, 'You should assign the style tag to a JSON object, e.g. <div style={width:100,height:100} />')
+	assert(ast, value.type == 'NESTED_ALIAS', 'You should assign the style tag to a JSON object, e.g. <div style={width:100,height:100} />')
 	for (var i=0, prop; prop = value.content[i]; i++) {
 		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, 'style.'+prop.name, prop.value)
 	}
@@ -161,7 +161,7 @@ function _handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name
 
 // modifies dynamicCode
 function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value) {
-	assert(value.property.length == 1, ast, 'TODO: Handle nested item property references')
+	assert(ast, value.property.length == 1, 'TODO: Handle nested item property references')
 	dynamicCode.push(code(ast,
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.attr({{ hookName }}, {{ attr }}, value)',
@@ -297,8 +297,8 @@ function compileTemplateDeclaration(ast) {
 
 function _compileTemplateInvocation(context, invocationAST, templateAST) {
 	// ast.args is a list of invocation values/aliases
-	assert(invocationAST.args.length == 0, invocationAST, 'TODO Handle template invocation arguments')
-	assert(templateAST.signature.length == 0, templateAST, 'TODO Handle template signature')
+	assert(invocationAST, invocationAST.args.length == 0, 'TODO Handle template invocation arguments')
+	assert(templateAST, templateAST.signature.length == 0, 'TODO Handle template signature')
 	return code(templateAST,
 		'{{ templateFunctionName }}({{ hookName }})',
 		{
@@ -340,7 +340,7 @@ function name(readable) { return '_' + (readable || '') + '$' + (name._uniqueId+
 name._uniqueId = 0
 
 var emitReplaceRegex = /{{\s*(\w+)\s*}}/
-function code(ast, /* line1, line2, line3, ..., lineN, optionalValues */) {
+function code(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
 		lastArg = arguments[argsLen - 1],
 		injectObj = (typeof lastArg == 'string' ? null : lastArg),
@@ -352,7 +352,7 @@ function code(ast, /* line1, line2, line3, ..., lineN, optionalValues */) {
 		var wholeMatch = match[0],
 			nameMatch = match[1],
 			value = injectObj[nameMatch]
-		assert(typeof value != 'undefined', ast, 'Missing inject value "'+nameMatch+'"')
+		assert(ast, typeof value != 'undefined', 'Missing inject value "'+nameMatch+'"')
 		code = code.replace(wholeMatch, value)
 	}
 	return code
@@ -364,7 +364,7 @@ var CompileError = function(file, ast, msg) {
 }
 CompileError.prototype = Error.prototype
 
-var assert = function(ok, ast, msg) { if (!ok) halt(ast, msg) }
+var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
 	if (ast.file) { sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span)) }
 	throw new CompileError(ast.file, ast, msg)
