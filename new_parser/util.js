@@ -45,7 +45,7 @@ util.intercept = function(errorName, fn) {
 util.map = function(arr, fn) {
 	var result = []
 	if (arr instanceof Array) {
-		for (var i=0, item; item = arr[i]; i++) { result.push(fn(item, i)) }
+		for (var i=0; i < arr.length; i++) { result.push(fn(arr[i], i)) }
 	} else {
 		for (var key in arr) { result.push(fn(arr[key], key)) }
 	}

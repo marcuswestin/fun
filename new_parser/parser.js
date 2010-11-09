@@ -285,15 +285,15 @@ var parseXML = astGenerator(function() {
 })
 var parseXMLAttributes = function() {
 	debug('parseXMLAttributes')
-	
 	var XMLAttributes = []
-	while (isAhead('name')) {
-		var assignment = parseAssignment('XML_attribute')
-		XMLAttributes.push({ namespace:assignment[0], value:assignment[1] })
-	}
-	
+	while (isAhead('name')) { XMLAttributes.push(_parseXMLAttribute()) }
 	return XMLAttributes
 }
+
+var _parseXMLAttribute = astGenerator(function() {
+	var assignment = parseAssignment('XML_attribute')
+	return {namespace:assignment[0], value:assignment[1]}
+})
 
 function parseAssignment(acceptDotNotation, msg) {
 	debug('parseAssignment')
@@ -463,3 +463,4 @@ function parseArgumentList() {
 	}
 	return args
 }
+

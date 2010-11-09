@@ -4,41 +4,34 @@ var fs = require('fs'),
 	util = require('./util'),
 	bind = util.bind,
 	map = util.map,
-	repeat = util.repeat,
 	boxComment = util.boxComment,
-	q = util.q,
-	tokenizer = require('./tokenizer'),
-	parser = require('./parser'),
-	compiler = exports,
-	gModules = {}
+	q = util.q
 
-exports.compile = util.intercept('CompileError', function (ast, context) {
-	
-	context = context || { hookName: name('ROOT_HOOK'), referenceTable: {} } // root context
-	
+exports.compile = util.intercept('CompileError', function (ast, modules, declarations) {
+	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
+	var context = { hookName: name('ROOT_HOOK') } // root context
 	return code(
 		';(function funApp() {',
 		'	var {{ hookName }} = fun.name("rootHook")',
 		'	fun.setHook({{ hookName }}, document.body)',
+		'	{{ declarationsCode }}',
 		'	{{ code }}',
 		'	{{ modules }}',
 		'})(); // let\'s kick it',
 		{
 			hookName: context.hookName,
+			declarationsCode: map(declarations, compileDeclaration).join('\n'),
 			code: compile(context, ast),
-			modules: map(gModules, function(module, name) {
+			modules: map(modules, function(module, name) {
 				return boxComment('Module: ' + name) + '\n' + module.jsCode }).join('\n\n\n')
 		})
 })
-
-
-
 
 /************************
  * Top level statements *
  ************************/
 function compile(context, ast) {
-	assert(context && context.hookName && context.referenceTable, ast, "compile called with invalid context")
+	assert(context && context.hookName, ast, "compile called with invalid context")
 	if (ast instanceof Array) {
 		return map(ast, bind(this, compileStatement, context)).join('\n') + '\n'
 	} else {
@@ -47,20 +40,21 @@ function compile(context, ast) {
 }
 
 function compileStatement(context, ast) {
+	if (!ast) { return '' }
 	switch (ast.type) {
 		case 'RUNTIME_ITERATOR': // TODO Give types to the runtime iterator values,
 		                         // so that list iterators can take other things than static
 		                         // for now, fall through to STATIC_VALUE
 		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
-		case 'ALIAS':            return compileStatement(context, resolve(context, ast))
 		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
 		case 'XML':              return compileXML(context, ast)
-		case 'DECLARATION':      return compileDeclaration(context, ast)
 		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
 		case 'FOR_LOOP':         return compileForLoop(context, ast)
 		case 'INVOCATION':       return compileInvocation(context, ast)
-		case 'IMPORT_MODULE':    return compileModuleImport(context, ast)
-		case 'IMPORT_FILE':      return compileFileImport(context, ast)
+		
+		case 'ALIAS':            halt(ast, 'Should no longer have alias references in compile stages')
+		case 'IMPORT_MODULE':    halt(ast, 'Should no longer have import references in compile stage')
+		case 'IMPORT_FILE':      halt(ast, 'Should no longer have import references in compile stage')
 		default:                 halt(ast, 'Unknown AST type ' + ast.type)
 	}
 }
@@ -68,6 +62,7 @@ function compileStatement(context, ast) {
 /*****************
  * Static values *
  *****************/
+// TODO This should be using Types[ast.value.type].emit(ast.value)
 function compileStaticValue(context, ast) {
 	return code(
 		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
@@ -114,7 +109,7 @@ function compileXML(context, ast) {
 	var nodeHookName = name('XML_HOOK'),
 		newContext = util.shallowCopy(context, { hookName:nodeHookName })
 	
-	var attributes = _handleXMLAttributes(context, ast, nodeHookName)
+	var attributes = _handleXMLAttributes(nodeHookName, ast)
 	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ hookName }}, {{ tagName }}, {{ staticAttributes }})',
@@ -124,50 +119,48 @@ function compileXML(context, ast) {
 			parentHook: context.hookName,
 			hookName: nodeHookName,
 			tagName: q(ast.tag),
-			staticAttributes: q(attributes.staticAttributes),
+			staticAttributes: q(attributes.staticAttrs),
 			dynamicAttributesCode: attributes.dynamicCode,
 			childCode: ast.block ? compile(newContext, ast.block) : ''
 		})
 }
 
-function _handleXMLAttributes(context, ast, nodeHookName) {
-	var staticAttributes = {},
-		dynamicCode = []
+function _handleXMLAttributes(nodeHookName, ast) {
+	var staticAttrs = {}, dynamicCode = []
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
-		assert(attribute.namespace.length == 1, ast, 'TODO Handle dot notation XML attribute namespace (for e.g. style.width=100)')
+		assert(attribute.namespace.length == 1, attribute, 'TODO Handle dot notation attributes')
 		var name = attribute.namespace[0],
-			value = resolve(context, attribute.value),
-			match
-		if (name == 'style') {
-			assert(value.type == 'NESTED_ALIAS', ast, 'You can only assign the style attribute to a JSON object literal, e.g. <div style={ width:100, height:100, background:"red" }/>')
-			_handleStyleAttribute(staticAttributes, dynamicCode, context, ast, nodeHookName, value.content)
-		} else if (match = name.match(/^on(\w+)$/)) {
-			_handleHandlerAttribute(dynamicCode, context, ast, nodeHookName, match[1], value)
-		} else if (value.type == 'STATIC_VALUE') {
-			staticAttributes[name] = value.value
-		} else {
-			assert(value.type != 'NESTED_ALIAS', ast, 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
-			_handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, name, value)
-		}
+			value = attribute.value
+		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
 	}
-	return { staticAttributes: staticAttributes, dynamicCode: dynamicCode.join('\n') }
+	return { staticAttrs: staticAttrs, dynamicCode: dynamicCode.join('\n') }
 }
 
-// add static attributes to staticAttrs object
-function _handleStyleAttribute(staticAttrs, dynamicCode, context, ast, nodeHookName, styles) {
-	var styleAttribute = staticAttrs['style'] = {}
-	for (var i=0, style; style = styles[i]; i++) {
-		var value = resolve(context, style.value)
-		if (value.type == 'STATIC_VALUE') {
-			styleAttribute[style.name] = value.value
-		} else {
-			_handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, 'style.' + style.name, value)
-		}
+// modifies staticAttrs and, dynamicCode
+function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value) {
+	var match
+	if (name == 'style') {
+		_handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
+	} else if (match = name.match(/^on(\w+)$/)) {
+		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
+	} else if (value.type == 'STATIC_VALUE') {
+		staticAttrs[name] = value.value
+	} else {
+		assert(value.type != 'NESTED_ALIAS', ast, 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
 	}
 }
 
-// adds code for dynamic properties to dynamicCode
-function _handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, attrName, value) {
+// modifies staticAttrs and dynamicCode
+function _handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value) {
+	assert(value.type == 'NESTED_ALIAS', ast, 'You should assign the style tag to a JSON object, e.g. <div style={width:100,height:100} />')
+	for (var i=0, prop; prop = value.content[i]; i++) {
+		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, 'style.'+prop.name, prop.value)
+	}
+}
+
+// modifies dynamicCode
+function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value) {
 	assert(value.property.length == 1, ast, 'TODO: Handle nested item property references')
 	dynamicCode.push(code(
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
@@ -182,8 +175,8 @@ function _handleDynamicAttribute(dynamicCode, context, ast, nodeHookName, attrNa
 		}))
 }
 
-// adds code for event handlers to dynamicCode (e.g. onClick, onMouseOver, etc)
-function _handleHandlerAttribute(dynamicCode, context, ast, nodeHookName, handlerName, handler) {
+// modifies dynamicCode
+function _handleHandlerAttribute(dynamicCode, ast, nodeHookName, handlerName, handler) {
 	dynamicCode.push(code(
 		'fun.withHook({{ hookName }}, function(hook) {',
 		'	fun.on(hook, "{{ handlerName }}", function() {',
@@ -195,107 +188,12 @@ function _handleHandlerAttribute(dynamicCode, context, ast, nodeHookName, handle
 			handlerName: handlerName.toLowerCase()
 		}))
 }
-
-/*************************
- * Module & File Imports *
- *************************/
-function compileModuleImport(context, ast) {
-	if (gModules[ast.name]) { return }
-	var module = gModules[ast.name] = {
-		name: ast.name,
-		path: __dirname + '/modules/' + ast.name + '/'
-	}
-	assert(fs.statSync(module.path).isDirectory(), ast, 'Could not find the module at ' + module.path)
-	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
-	if (fs.statSync(module.path + 'lib.fun').isFile()) {
-		var result = _importFile(module.path + 'lib.fun', context)
-	}
-	if (path.existsSync(module.path + 'lib.js')) {
-		module.jsCode = fs.readFileSync(module.path + 'lib.js')
-	} else {
-		module.jsCode = '// No JS code for ' + module.name
-	}
-	return result
-}
-
-function compileFileImport(context, ast) {
-	var filePath = __dirname + '/' + ast.path + '.fun'
-	assert(path.existsSync(filePath), ast, 'Could not find file for import: "'+filePath+'"')
-	return _importFile(filePath, context)
-}
-
-function _importFile(path, context) {
-	var tokens = tokenizer.tokenize(path)
-	var newAST = parser.parse(tokens)
-	return compile(context, newAST)
-}
-
-/**********************
- * Alias Declarations *
- **********************/
-
-function compileDeclaration(context, ast) {
-	assert(ast.type == 'DECLARATION', ast)
-	_storeAlias(context, ast)
-	var value = resolve(context, ast.value)
-	switch (value.type) {
-		case 'TEMPLATE': return compileTemplateDeclaration(context, value)
-		case 'HANDLER':  return compileHandlerDeclaration(context, value)
-		default:         return ''
-	}
-}
-
-var _storeAlias = function(context, ast) {
-	var baseValue = _getAlias(context, ast, true),
-		namespace = ast.namespace,
-		name = namespace[namespace.length - 1],
-		value = ast.value
-	
-	assert(!baseValue['__alias__' + name], ast, 'Repeat declaration')
-	if (value.type == 'NESTED_ALIAS') {
-		// store the nested alias, and then create a child-alias for each nested property
-		// e.g. let foo = { width: 1 } allows you to reference foo.width as well as do e.g. style=foo
-		baseValue['__alias__' + name] = value
-		for (var i=0, content; content = value.content[i]; i++) {
-			var newNamespace = util.copyArray(ast.namespace).concat(content.name),
-				newAST = util.shallowCopy(ast, { type: 'ALIAS', value: content.value, namespace: newNamespace })
-			
-			_storeAlias(context, newAST)
-		}
-	} else {
-		baseValue['__alias__' + name] = ast.value
-	}
-}
-var _getAlias = function(context, ast, skipLast) {
-	var referenceTable = context.referenceTable,
-		value = referenceTable,
-		namespace = ast.namespace,
-		len = namespace.length - (skipLast ? 1 : 0)
-	
-	for (var i=0; i < len; i++) {
-		value = value['__alias__' + namespace[i]]
-		if (!value) {
-			halt(ast, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
-		}
-		if (value.type == 'ITEM') {
-			return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
-		}
-	}
-	
-	return value
-}
-
-var resolve = function(context, aliasOrValue) {
-	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
-	else { return resolve(context, _getAlias(context, aliasOrValue)) }
-}
-
 /**********************
  * If/Else statements *
  **********************/
 function compileIfStatement(context, ast) {
-	var left = resolve(context, ast.condition.left),
-		right = resolve(context, ast.condition.right),
+	var left = ast.condition.left,
+		right = ast.condition.right,
 		ifContext = util.shallowCopy(context, { hookName: name('IF_HOOK') }),
 		elseContext = util.shallowCopy(context, { hookName: name('ELSE_HOOK') }),
 		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right.type == 'ITEM_PROPERTY') }
@@ -347,16 +245,10 @@ function compileIfStatement(context, ast) {
  * For loops *
  *************/
 function compileForLoop(context, ast) {
-	var iterable = resolve(context, ast.iterable),
-		iteratorName = name('FOR_LOOP_ITERATOR_VALUE'),
+	var iteratorName = name('FOR_LOOP_ITERATOR_VALUE'),
 		loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	
-	assert(iterable.property.length == 1, ast, 'TODO: Handle nested item property references')
-	
-	// construct a scope block for the for loop and declare the iterator alias
-	loopContext.referenceTable = util.create(context.referenceTable)
 	ast.iterator.value.name = iteratorName
-	compileDeclaration(loopContext, ast.iterator)
 	
 	return code(
 		'var {{ loopHookName }} = fun.name()',
@@ -370,8 +262,8 @@ function compileForLoop(context, ast) {
 		{
 			parentHookName: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
-			itemID: q(iterable.item.id),
-			propertyName: q(iterable.property[0]),
+			itemID: q(ast.iterable.item.id),
+			propertyName: q(ast.iterable.property[0]),
 			iteratorName: iteratorName,
 			emitHookName: loopContext.hookName,
 			loopCode: compile(loopContext, ast.block)
@@ -381,17 +273,25 @@ function compileForLoop(context, ast) {
 /*************
  * Templates *
  *************/
-function compileTemplateDeclaration(context, ast) {
-	ast._compiledFunctionName = name('TEMPLATE_FUNCTION')
-	templateContext = util.shallowCopy(context, { hookName:name('TEMPLATE_INVOCATION_HOOK') })
+function compileDeclaration(declaration) {
+	switch (declaration.type) {
+		case 'TEMPLATE':  return compileTemplateDeclaration(declaration)
+		case 'HANDLER':   return compileHandlerDeclaration(declaration)
+		default:          return ''
+	}
+}
+
+function compileTemplateDeclaration(ast) {
+	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
+	var hookName = name('TEMPLATE_HOOK')
 	return code(
-		'function {{ templateFunctionName }}({{ templateInvocationHook }}) {',
+		'function {{ templateFunctionName }}({{ hookName }}) {',
 		'	{{ code }}',
 		'}',
 		{
-			templateFunctionName: ast._compiledFunctionName,
-			templateInvocationHook: templateContext.hookName,
-			code: compile(templateContext, ast.block)
+			templateFunctionName: ast.compiledFunctionName,
+			hookName: hookName,
+			code: compile({hookName:hookName}, ast.block)
 		})
 }
 
@@ -402,7 +302,7 @@ function _compileTemplateInvocation(context, invocationAST, templateAST) {
 	return code(
 		'{{ templateFunctionName }}({{ hookName }})',
 		{
-			templateFunctionName: templateAST._compiledFunctionName,
+			templateFunctionName: templateAST.compiledFunctionName,
 			hookName: context.hookName
 		})
 }
@@ -426,11 +326,10 @@ function _compileHandlerInvocation(context, invocationAST, handlerAST) {
  * Invocations (handlers and templates) *
  ****************************************/
 function compileInvocation(context, ast) {
-	var invocable = resolve(context, ast.alias)
-	switch(invocable.type) {
-		case 'TEMPLATE': return _compileTemplateInvocation(context, ast, invocable)
-		case 'HANDLER':  return _compileHandlerInvocation(context, ast, invocable)
-		default:         halt(ast, 'Couldn\'t invoce the value of type "'+invocable.type+'". Expected a template or a handler.')
+	switch(ast.invocable.type) {
+		case 'TEMPLATE': return _compileTemplateInvocation(context, ast, ast.invocable)
+		case 'HANDLER':  return _compileHandlerInvocation(context, ast, ast.invocable)
+		default:         halt(ast, 'Couldn\'t invoce the value of type "'+ast.type+'". Expected a template or a handler.')
 	}
 }
 
