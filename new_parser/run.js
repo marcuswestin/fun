@@ -5,7 +5,7 @@ var sys = require('sys'),
 	resolver = require('./resolver'),
 	compiler = require('./compiler')
 
-var tokens = tokenizer.tokenize(process.cwd() + '/example_code_2.fun')
+var tokens = tokenizer.tokenize(process.cwd() + '/example.fun')
 var ast = parser.parse(tokens)
 var resolved = resolver.resolve(ast)
 var output = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
