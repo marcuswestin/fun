@@ -17,7 +17,7 @@ jsio('from shared.javascript import bind, blockCallback');
 	fun.hook = function(parentName, name, tag, attrs) {
 		if (_hooks[name]) { return _hooks[name] }
 		var parent = _hooks[parentName],
-			hook = _hooks[name] = parent.appendChild(doc.createElement(tag || 'fun'))
+			hook = _hooks[name] = doc.createElement(tag || 'fun')
 		
 		for (var key in attrs) { fun.attr(name, key, attrs[key]) }
 		
@@ -26,6 +26,8 @@ jsio('from shared.javascript import bind, blockCallback');
 				callback(hook)
 			}
 		}
+		
+		parent.appendChild(hook)
 		return hook
 	}
 	fun.destroyHook = function(hookName) {
