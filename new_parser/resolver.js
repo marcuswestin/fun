@@ -16,8 +16,8 @@ var util = require('./util'),
 
 // TODO Read types from types
 // TODO read tags from tags
-var gTypes = _requireDir('./types/'),
-	gTags = _requireDir('./tags'),
+var gTypes = _requireDir('./Types/'),
+	gTags = _requireDir('./Tags'),
 	gModules = {},
 	gDeclarations = []
 
