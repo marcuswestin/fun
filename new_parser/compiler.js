@@ -52,9 +52,6 @@ function compileStatement(context, ast) {
 		case 'FOR_LOOP':         return compileForLoop(context, ast)
 		case 'INVOCATION':       return compileInvocation(context, ast)
 		
-		case 'ALIAS':            halt(ast, 'Should no longer have alias references in compile stages')
-		case 'IMPORT_MODULE':    halt(ast, 'Should no longer have import references in compile stage')
-		case 'IMPORT_FILE':      halt(ast, 'Should no longer have import references in compile stage')
 		default:                 halt(ast, 'Unknown AST type ' + ast.type)
 	}
 }
