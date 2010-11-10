@@ -86,13 +86,14 @@ function compileItemProperty(context, ast) {
 	assert(ast, ast.property.length == 1, 'TODO: Handle nested property references')
 	var hookName = name('ITEM_PROPERTY_HOOK')
 	return code(ast,
+		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ hookName }})',
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.getHook({{ hookName }}).innerHTML = value',
 		'})',
 		{
 			parentHook: context.hookName,
-			hookName: q(hookName),
+			hookName: hookName,
 			id: q(ast.item.id),
 			property: q(ast.property[0]),
 			type: q('BYTES')
