@@ -16,8 +16,8 @@ var util = require('./util'),
 
 // TODO Read types from types
 // TODO read tags from tags
-var gTypes = _requireDir('./Types/'),
-	gTags = _requireDir('./Tags'),
+var gTags = util.requireDir('./Tags'),
+	gTypeList = util.requireDir('./Types/'),
 	gModules = {},
 	gDeclarations = []
 
@@ -38,21 +38,24 @@ var resolve = function(context, ast) {
 
 var resolveStatement = function(context, ast) {
 	switch(ast.type) {
-		case 'IMPORT_MODULE':    return handleModuleImport(context, ast)
-		case 'IMPORT_FILE':      return handleFileImport(context, ast)
-		case 'DECLARATION':      return handleDeclaration(context, ast)
+		case 'IMPORT_MODULE':    handleModuleImport(context, ast)      ;break
+		case 'IMPORT_FILE':      handleFileImport(context, ast)        ;break
+		case 'DECLARATION':      handleDeclaration(context, ast)       ;break
+		
+		case 'HANDLER':          return resolveHandler(context, ast)
 		
 		case 'XML':              return resolveXML(context, ast)
 		case 'IF_STATEMENT':     return resolveIfStatement(context, ast)
 		case 'FOR_LOOP':         return resolveForLoop(context, ast)
 		case 'INVOCATION':       return resolveInvocation(context, ast)
+		case 'MUTATION':         return resolveMutation(context, ast)
 		
-		case 'NESTED_ALIAS':     // fall through
-		case 'ALIAS':            return lookup(context, ast)
+		case 'NESTED_ALIAS':     return lookup(context, ast)
+		case 'ALIAS':            return resolveStatement(context, lookup(context, ast))
 		
-		case 'RUNTIME_ITERATOR': // fall through TODO: Give types to runtime iterator values so that list iterators can take lists of complex values (not just statics)
-		case 'ITEM_PROPERTY':    // fall through
-		case 'STATIC_VALUE':     return ast
+		case 'RUNTIME_ITERATOR': return resolveRuntimeIterator(context, ast)
+		case 'ITEM_PROPERTY':    return resolveItemProperty(context, ast)
+		case 'STATIC_VALUE':     return resolveStaticValue(context, ast)
 		
 		default:                 halt(ast, 'Unknoen AST type "'+ast.type+'"')
 	}
@@ -66,6 +69,24 @@ var lookup = function(context, aliasOrValue) {
 	}
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
 	else { return lookup(context, _getAlias(context, aliasOrValue)) }
+}
+
+/* Item Properties
+ ******************/
+var resolveItemProperty = function(context, ast) {
+	// TODO Can we infer the type of item properties?
+	return inferType(ast, [])
+}
+
+/* Static values
+ ****************/
+
+var resolveStaticValue = function(context, ast) {
+	switch(ast.valueType) {
+		case 'string': return inferType(ast, ['Text'])
+		case 'number': return inferType(ast, ['Number'])
+		default:       halt('Unknown static value type "'+ast.valueType+'"')
+	}
 }
 
 /* XML
@@ -99,10 +120,10 @@ var handleModuleImport = function(context, ast) {
 var handleFileImport = function(context, ast) {
 	var filePath = __dirname + '/' + ast.path + '.fun'
 	assert(ast, path.existsSync(filePath), 'Could not find file for import: "'+filePath+'"')
-	_importFile(filePath, context)
+	_importFile(filePath, context, true)
 }
 
-var _importFile = function(path, context) {
+var _importFile = function(path, context, a) {
 	var tokens = tokenizer.tokenize(path)
 	var newAST = parser.parse(tokens)
 	resolve(context, newAST)
@@ -116,6 +137,20 @@ var resolveInvocation = function(context, ast) {
 	return ast
 }
 
+/* Mutations
+ ************/
+var resolveMutation = function(context, ast) {
+	ast.value = lookup(context, ast.alias)
+	var possibleTypes = []
+	for (var i=0, type; type = gTypeList[i]; i++) {
+		if (ast.method in type.mutations) {
+			possibleTypes.push(type.name)
+		}
+	}
+	inferType(ast.value, possibleTypes)
+	return ast
+}
+
 /* For loops
  ************/
 var resolveForLoop = function(context, ast) {
@@ -125,6 +160,12 @@ var resolveForLoop = function(context, ast) {
 	handleDeclaration(loopContext, ast.iterator)
 	ast.block = resolve(loopContext, ast.block)
 	return ast
+}
+
+var resolveRuntimeIterator = function(context, ast) {
+	// TODO give types to runtime iterators, so that you can have complex items in lists
+	// TODO Infer type of iterator from the iterable
+	return inferType(ast, ['Text'])
 }
 
 /* If statements
@@ -141,8 +182,17 @@ var resolveIfStatement = function(context, ast) {
  ***************/
 var handleDeclaration = function(context, ast) {
 	ast.value = lookup(context, ast.value)
-	gDeclarations.push(ast.value)
 	_storeAlias(context, ast)
+	if (ast.value.type == 'TEMPLATE') {
+		gDeclarations.push(ast.value)
+		resolve(_createScope(context), ast.value.block)
+	}
+}
+
+var resolveHandler = function(context, ast) {
+	gDeclarations.push(ast)
+	resolve(_createScope(context), ast.block)
+	return ast
 }
 
 var _storeAlias = function(context, ast) {
@@ -197,15 +247,22 @@ function _createScope(context) {
 	return util.create(context) 
 }
 
-function _requireDir(path) {
-	map(fs.readdirSync(path), function(path) {
-		var jsFileMatch = path.match(/^(.*)\.js$/)
-		return jsFileMatch && require(jsFileMatch[1])
-	})
-}
-
 var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
 	if (ast.file) { sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span)) }
 	throw new ResolveError(ast.file, ast, msg)
+}
+
+var inferType = function(ast, possibleTypes) {
+	if (!ast.possibleTypes) { ast.possibleTypes = possibleTypes }
+	else { ast.possibleTypes = _intersect(ast.possibleTypes, possibleTypes) }
+	return ast
+}
+
+var _intersect = function(a, b) {
+	var result = []
+	for (var i=0; i<a.length; i++) {
+		if (b.indexOf(a[i]) >= 0) { result.push(a[i]) }
+	}
+	return result
 }

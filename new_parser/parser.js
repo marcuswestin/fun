@@ -76,11 +76,14 @@ function parseBlock(statementType, statementParseFn) {
  * Mutation statements *
  ***********************/
 var parseMutationStatement = astGenerator(function() {
-	var namespace = parseAlias('Object to mutate'),
-		operator = advance('symbol', ['=', '+=']).value,
-		value = parseValueOrAlias()
+	var alias = parseAlias('Object mutation'),
+		method = alias.namespace.pop() // e.g. task.title.set() -> namespace ['task','title'], method 'set'
 	
-	return {type: 'MUTATION', namespace:namespace, value:value, operator:operator}
+	advance('symbol', L_PAREN)
+	var args = parseList(['name','number','string'])
+	advance('symbol', R_PAREN)
+	
+	return {type: 'MUTATION', alias:alias, method:method, args:args}
 })
 
 
@@ -445,22 +448,21 @@ var parseHandler = astGenerator(function() {
 
 function parseCallable(msg, statementParseFn) {
 	advance('symbol', L_PAREN)
-	var args = parseArgumentList()
+	var args = parseList('name')
 	advance('symbol', R_PAREN)
 	var block = parseBlock(msg, statementParseFn)
 	return [args, block]
 }
 
-function parseArgumentList() {
-	debug('parseArgumentList')
+function parseList(type) {
+	debug('parseSignature')
 	var args = []
 	while (true) {
 		if (isAhead('symbol', R_PAREN)) { break }
-		advance('name')
+		advance(type)
 		args.push(gToken.value)
 		if (!isAhead('symbol', ',')) { break }
 		advance('symbol', ',')
 	}
 	return args
 }
-

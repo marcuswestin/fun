@@ -6,19 +6,27 @@ import "example_import"
 let classAlias = 'classValue'
 let followMouseStyle = { position:'absolute', top:Mouse.y, left:Mouse.x }
 
+let incr = handler(){ Global.counter.increment() }
+'Counter: ' Global.counter
+<button>"+"</button onclick=incr>
+<button>"-"</button onclick=handler(){ Global.counter.decrement() }>
+<button>"+5"</button onclick=handler(){ Global.counter.add(5) }>
+<button>"-3"</button onclick=handler(){ Global.counter.subtract(3) }>
+
+
 let aTemplate = template() {
 	<div>"Hello from a template!"</div>
 }
 
 // TODO Implement if (Mouse.x > 0 && Mouse.y > 0) { ... }
-if (Mouse.x > 0) {
-	if (Mouse.y > 0) {
-		<div class=classAlias style=followMouseStyle>
-			<br />"Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
-			<br />"Mouse.isDown: " Mouse.isDown
-		</div>
-	}
-}
+// if (Mouse.x > 0) {
+// 	if (Mouse.y > 0) {
+// 		<div class=classAlias style=followMouseStyle>
+// 			<br />"Mouse.x: " Mouse.x " Mouse.y: " Mouse.y
+// 			<br />"Mouse.isDown: " Mouse.isDown
+// 		</div>
+// 	}
+// }
 
 aTemplate()
 

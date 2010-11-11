@@ -5,7 +5,15 @@ var fs = require('fs'),
 	bind = util.bind,
 	map = util.map,
 	boxComment = util.boxComment,
-	q = util.q
+	q = util.q,
+	gTypes = {}
+
+;(function() {
+	var types = util.requireDir('./Types/')
+	for (var i=0, type; type = types[i]; i++) {
+		gTypes[type.name] = type
+	}
+})();
 
 exports.compile = util.intercept('CompileError', function (ast, modules, declarations) {
 	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
@@ -174,16 +182,15 @@ function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value
 }
 
 // modifies dynamicCode
-function _handleHandlerAttribute(dynamicCode, ast, nodeHookName, handlerName, handler) {
+function _handleHandlerAttribute(nodeHookName, ast, dynamicCode, handlerName, handlerAST) {
 	dynamicCode.push(code(ast,
 		'fun.withHook({{ hookName }}, function(hook) {',
-		'	fun.on(hook, "{{ handlerName }}", function() {',
-		'		console.log("TODO _handleHandlerAttribute - add mutationCode")',
-		'	})',
+		'	fun.on(hook, "{{ handlerName }}", {{ compiledFunctionName }})',
 		'})',
 		{
 			hookName: nodeHookName,
-			handlerName: handlerName.toLowerCase()
+			handlerName: handlerName.toLowerCase(),
+			compiledFunctionName: handlerAST.compiledFunctionName
 		}))
 }
 /**********************
@@ -250,7 +257,7 @@ function compileForLoop(context, ast) {
 	
 	return code(ast,
 		'var {{ loopHookName }} = fun.name()',
-		'fun.hook({{ parentHookName }}, {{ loopHookName }})',
+		'fun.hook({{ parentHook }}, {{ loopHookName }})',
 		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
 		'function onMutation({{ iteratorName }}) {',
 		'	var {{ emitHookName }} = fun.name()',
@@ -258,7 +265,7 @@ function compileForLoop(context, ast) {
 		'	{{ loopCode }}',
 		'}',
 		{
-			parentHookName: context.hookName,
+			parentHook: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
 			itemID: q(ast.iterable.item.id),
 			propertyName: q(ast.iterable.property[0]),
@@ -280,6 +287,7 @@ function compileDeclaration(declaration) {
 }
 
 function compileTemplateDeclaration(ast) {
+	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same template twice')
 	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
 	var hookName = name('TEMPLATE_HOOK')
 	return code(ast,
@@ -308,12 +316,31 @@ function _compileTemplateInvocation(context, invocationAST, templateAST) {
 /************
  * Handlers *
  ************/
-function compileHandlerDeclaration(context, ast) {
-	return map(ast.block, bind(this, _compileMutationStatement, context)).join('\n')
+function compileHandlerDeclaration(ast) {
+	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same handler twice')
+	ast.compiledFunctionName = name('HANDLER_FUNCTION')
+	var hookName = name('HANDLER_HOOK')
+	return code(ast,
+		'function {{ handlerFunctionName }}({{ hookName }}) {',
+		'	{{ code }}',
+		'}',
+		{
+			handlerFunctionName: ast.compiledFunctionName,
+			hookName: hookName,
+			code: map(ast.block, bind(this, _compileMutationStatement, {hookName:hookName})).join('\n')
+		})
 }
 
-function _compileMutationStatement(context, statementAST) {
-	halt(statementAST, 'TODO Compile mutation statements')
+function _compileMutationStatement(context, ast) {
+	assert(ast, ast.value.possibleTypes.length == 1, 'Found a value with '+ast.value.possibleTypes.length+' possible types')
+	return code(ast,
+		'fun.mutate({{ operation }}, {{ id }}, {{ prop }}, {{ args }})',
+		{
+			operation: q(ast.method),
+			id: q(ast.value.item.id),
+			prop: q(ast.value.property[0]),
+			args: q(ast.args)
+		})
 }
 
 function _compileHandlerInvocation(context, invocationAST, handlerAST) {

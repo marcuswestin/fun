@@ -42,8 +42,8 @@ jsio('from shared.javascript import bind, blockCallback');
 
 /* Mutations
  ***********/
-	fun.mutate = function(op, id, propName, arg) {
-		var doMutate = bind(fin, op.toLowerCase(), id, propName, arg)
+	fun.mutate = function(op, id, propName, args) {
+		var doMutate = bind(fin, 'mutate', op.toLowerCase(), id, propName, args)
 		if (id == 'LOCAL') { doMutate() }
 		else { fin.connect(doMutate) }
 	}

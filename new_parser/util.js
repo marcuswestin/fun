@@ -104,3 +104,10 @@ util.grabLine = function(file, lineNumber, column, length) {
 	return '\n' + line + '\n'
 		+ repeat(' ', column - 1) + repeat('^', length)
 }
+
+util.requireDir = function(path) {
+	return util.map(fs.readdirSync(path), function(item) {
+		var jsFileMatch = item.match(/^(.*)\.js$/)
+		return jsFileMatch && require(path + jsFileMatch[1])
+	})
+}
