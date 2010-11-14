@@ -17,13 +17,19 @@ var util = require('./util'),
 // TODO Read types from types
 // TODO read tags from tags
 var Tags = require('./Tags'),
-	Types = require('./Types'),
-	gModules = {},
-	gDeclarations = []
+	Types = require('./Types')
 
 exports.resolve = util.intercept('ResolveError', function (ast, context) {
-	if (!context) { context = {} }
-	return {ast:resolve(context, ast), modules:gModules, declarations:gDeclarations}
+	if (!context) {
+		context = { modules:{}, declarations:[], fileDependencies:[] }
+	}
+	var ast = resolve(context, ast)
+	return {
+		ast: ast,
+		modules: context.modules,
+		declarations: context.declarations,
+		dependencies: context.dependencies
+	}
 })
 
 var resolve = function(context, ast) {
@@ -106,8 +112,8 @@ var _resolveAttributes = function(context, ast) {
 /* Imports (modules and files)
  ******************************/
 var handleModuleImport = function(context, ast) {
-	if (gModules[ast.name]) { return }
-	var module = gModules[ast.name] = { name: ast.name, path: __dirname + '/modules/' + ast.name + '/' }
+	if (context.modules[ast.name]) { return }
+	var module = context.modules[ast.name] = { name: ast.name, path: __dirname + '/modules/' + ast.name + '/' }
 	assert(ast, fs.statSync(module.path).isDirectory(), 'Could not find the module at ' + module.path)
 	
 	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
@@ -120,6 +126,7 @@ var handleModuleImport = function(context, ast) {
 var handleFileImport = function(context, ast) {
 	var filePath = __dirname + '/' + ast.path + '.fun'
 	assert(ast, path.existsSync(filePath), 'Could not find file for import: "'+filePath+'"')
+	context.fileDependencies.push(filePath)
 	_importFile(filePath, context, true)
 }
 
@@ -182,13 +189,13 @@ var handleDeclaration = function(context, ast) {
 	ast.value = lookup(context, ast.value)
 	_storeAlias(context, ast)
 	if (ast.value.type == 'TEMPLATE') {
-		gDeclarations.push(ast.value)
+		context.declarations.push(ast.value)
 		resolve(_createScope(context), ast.value.block)
 	}
 }
 
 var resolveHandler = function(context, ast) {
-	gDeclarations.push(ast)
+	context.declarations.push(ast)
 	resolve(_createScope(context), ast.block)
 	return ast
 }
