@@ -1,0 +1,2 @@
+- Create a server to serve fun apps, and remove parse_and_run.[php/js] and index.php
+- Create a redis-replacement so that you can get started with only node
