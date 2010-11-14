@@ -80,7 +80,7 @@ var parseMutationStatement = astGenerator(function() {
 		method = alias.namespace.pop() // e.g. task.title.set() -> namespace ['task','title'], method 'set'
 	
 	advance('symbol', L_PAREN)
-	var args = parseList(['name','number','string'])
+	var args = parseList(parseValueOrAlias)
 	advance('symbol', R_PAREN)
 	
 	return {type: 'MUTATION', alias:alias, method:method, args:args}
@@ -267,7 +267,7 @@ var parseXML = astGenerator(function() {
 	advance('symbol', ['>', '/'], 'end of XML tag')
 	if (gToken.value == '/') {
 		advance('symbol', '>', 'self-closing XML tag')
-		return { type:'XML', tag:tagName, attributes:attributes, content:[] }
+		return { type:'XML', tagName:tagName, attributes:attributes, content:[] }
 	} else {
 		var statements = []
 		while(true) {
@@ -283,7 +283,7 @@ var parseXML = astGenerator(function() {
 		attributes = attributes.concat(parseXMLAttributes())
 		advance('symbol', '>')
 		
-		return { type:'XML', tag:tagName, attributes:attributes, block:statements }
+		return { type:'XML', tagName:tagName, attributes:attributes, block:statements }
 	}
 })
 var parseXMLAttributes = function() {
@@ -448,19 +448,21 @@ var parseHandler = astGenerator(function() {
 
 function parseCallable(msg, statementParseFn) {
 	advance('symbol', L_PAREN)
-	var args = parseList('name')
+	var args = parseList(function() {
+		advance('name')
+		return gToken.value
+	})
 	advance('symbol', R_PAREN)
 	var block = parseBlock(msg, statementParseFn)
 	return [args, block]
 }
 
-function parseList(type) {
+function parseList(itemParseFn) {
 	debug('parseSignature')
 	var args = []
 	while (true) {
 		if (isAhead('symbol', R_PAREN)) { break }
-		advance(type)
-		args.push(gToken.value)
+		args.push(itemParseFn())
 		if (!isAhead('symbol', ',')) { break }
 		advance('symbol', ',')
 	}

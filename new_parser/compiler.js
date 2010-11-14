@@ -2,18 +2,12 @@ var fs = require('fs'),
 	sys = require('sys'),
 	path = require('path'),
 	util = require('./util'),
+	Types = require('./Types'),
+	Tags = require('./Tags'),
 	bind = util.bind,
 	map = util.map,
 	boxComment = util.boxComment,
-	q = util.q,
-	gTypes = {}
-
-;(function() {
-	var types = util.requireDir('./Types/')
-	for (var i=0, type; type = types[i]; i++) {
-		gTypes[type.name] = type
-	}
-})();
+	q = util.q
 
 exports.compile = util.intercept('CompileError', function (ast, modules, declarations) {
 	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
@@ -118,13 +112,13 @@ function compileXML(context, ast) {
 	var attributes = _handleXMLAttributes(nodeHookName, ast)
 	return code(ast,
 		'var {{ hookName }} = fun.name()',
-		'fun.hook({{ parentHook }}, {{ hookName }}, {{ tagName }}, {{ staticAttributes }})',
+		'fun.hook({{ parentHook }}, {{ hookName }}, { tagName:{{ tagName }}, attrs:{{ staticAttributes }} })',
 		'{{ dynamicAttributesCode }}',
 		'{{ childCode }}',
 		{
 			parentHook: context.hookName,
 			hookName: nodeHookName,
-			tagName: q(ast.tag),
+			tagName: q(ast.tagName),
 			staticAttributes: q(attributes.staticAttrs),
 			dynamicAttributesCode: attributes.dynamicCode,
 			childCode: ast.block ? compile(newContext, ast.block) : ''
@@ -147,6 +141,8 @@ function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, 
 	var match
 	if (name == 'style') {
 		_handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
+	} else if (name == 'data') {
+		_handleDataAttribute(nodeHookName, ast, dynamicCode, value)
 	} else if (match = name.match(/^on(\w+)$/)) {
 		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
 	} else if (value.type == 'STATIC_VALUE') {
@@ -163,6 +159,26 @@ function _handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name
 	for (var i=0, prop; prop = value.content[i]; i++) {
 		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, 'style.'+prop.name, prop.value)
 	}
+}
+
+// modifies dynamicCode
+function _handleDataAttribute(nodeHookName, ast, dynamicCode, value) {
+	dynamicCode.push(code(ast,
+		'fun.withHook({{ hookName }}, function(hook) {',
+		'	fun.on(hook, "keypress", function() {',
+		'		setTimeout(function() {',
+		'			fun.mutate("set", {{ itemID }}, {{ property }}, [hook.value])',
+		'		}, 0)',
+		'	})',
+		'	fun.observe("BYTES", {{ itemID }}, {{ property }}, function(mutation, value) {',
+		'		hook.value = value',
+		'	})',
+		'})',
+		{
+			hookName: nodeHookName,
+			itemID: q(value.item.id),
+			property: q(value.property[0])
+		}))
 }
 
 // modifies dynamicCode
@@ -259,9 +275,9 @@ function compileForLoop(context, ast) {
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ loopHookName }})',
 		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
-		'function onMutation({{ iteratorName }}) {',
+		'function onMutation({{ iteratorName }}, op) {',
 		'	var {{ emitHookName }} = fun.name()',
-		'	fun.hook({{ loopHookName }}, {{ emitHookName }})',
+		'	fun.hook({{ loopHookName }}, {{ emitHookName }}, { prepend: (op=="unshift") })',
 		'	{{ loopCode }}',
 		'}',
 		{
@@ -332,15 +348,28 @@ function compileHandlerDeclaration(ast) {
 }
 
 function _compileMutationStatement(context, ast) {
-	assert(ast, ast.value.possibleTypes.length == 1, 'Found a value with '+ast.value.possibleTypes.length+' possible types')
+	var type = Types.decide(ast.value)
 	return code(ast,
-		'fun.mutate({{ operation }}, {{ id }}, {{ prop }}, {{ args }})',
+		'fun.mutate({{ operation }}, {{ id }}, {{ prop }}, [{{ args }}])',
 		{
 			operation: q(ast.method),
 			id: q(ast.value.item.id),
 			prop: q(ast.value.property[0]),
-			args: q(ast.args)
+			args: _cachedValueCode(ast.args)
 		})
+}
+
+function _cachedValueCode(args) {
+	return map(args, function(arg) {
+		if (arg.type == 'STATIC_VALUE') { return q(arg.value) }
+		else { return code(arg,
+			'fun.cachedValue({{ itemID }}, {{ property }})',
+			{
+				itemID: q(arg.item.id),
+				property: q(arg.property[0])
+			})
+		}
+	}).join(',')
 }
 
 function _compileHandlerInvocation(context, invocationAST, handlerAST) {

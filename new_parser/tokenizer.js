@@ -32,7 +32,7 @@ var TokenizeError = function(file, line, column, msg) {
 }
 TokenizeError.prototype = Error.prototype
 
-var keywords = 'import,let,set,for,in,if,else,template,handler'.split(',')
+var keywords = 'import,let,for,in,if,else,template,handler'.split(',')
 function doTokenize (inputFile) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.
@@ -115,7 +115,7 @@ function doTokenize (inputFile) {
                     break;
                 }
             }
-            result.push(make(str in keywords ? 'keyword' : 'name', str));
+            result.push(make(keywords.hasOwnProperty(str) ? 'keyword' : 'name', str));
 
 // number.
 

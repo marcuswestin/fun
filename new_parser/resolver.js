@@ -16,8 +16,8 @@ var util = require('./util'),
 
 // TODO Read types from types
 // TODO read tags from tags
-var gTags = util.requireDir('./Tags'),
-	gTypeList = util.requireDir('./Types/'),
+var Tags = require('./Tags'),
+	Types = require('./Types'),
 	gModules = {},
 	gDeclarations = []
 
@@ -75,7 +75,7 @@ var lookup = function(context, aliasOrValue) {
  ******************/
 var resolveItemProperty = function(context, ast) {
 	// TODO Can we infer the type of item properties?
-	return inferType(ast, [])
+	return Types.infer(ast, [])
 }
 
 /* Static values
@@ -83,8 +83,8 @@ var resolveItemProperty = function(context, ast) {
 
 var resolveStaticValue = function(context, ast) {
 	switch(ast.valueType) {
-		case 'string': return inferType(ast, ['Text'])
-		case 'number': return inferType(ast, ['Number'])
+		case 'string': return Types.infer(ast, [Types.byName.Text])
+		case 'number': return Types.infer(ast, [types.byName.Number])
 		default:       halt('Unknown static value type "'+ast.valueType+'"')
 	}
 }
@@ -141,13 +141,8 @@ var resolveInvocation = function(context, ast) {
  ************/
 var resolveMutation = function(context, ast) {
 	ast.value = lookup(context, ast.alias)
-	var possibleTypes = []
-	for (var i=0, type; type = gTypeList[i]; i++) {
-		if (ast.method in type.mutations) {
-			possibleTypes.push(type.name)
-		}
-	}
-	inferType(ast.value, possibleTypes)
+	ast.args = map(ast.args, bind(this, lookup, context))
+	Types.inferByMethod(ast.value, ast.method)
 	return ast
 }
 
@@ -156,8 +151,11 @@ var resolveMutation = function(context, ast) {
 var resolveForLoop = function(context, ast) {
 	ast.iterable = lookup(context, ast.iterable)
 	assert(ast, ast.iterable.property.length == 1, 'TODO: Handle nested item property references')
+	Types.infer(ast.iterable, [Types.byName.List.of(ast.iterator)])
 	var loopContext = _createScope(context)
 	handleDeclaration(loopContext, ast.iterator)
+	// The iterator needs a reference to the iterable for type inference (Types/index.js)
+	ast.iterator.value.iterable = ast.iterable
 	ast.block = resolve(loopContext, ast.block)
 	return ast
 }
@@ -165,7 +163,7 @@ var resolveForLoop = function(context, ast) {
 var resolveRuntimeIterator = function(context, ast) {
 	// TODO give types to runtime iterators, so that you can have complex items in lists
 	// TODO Infer type of iterator from the iterable
-	return inferType(ast, ['Text'])
+	return Types.infer(ast, [Types.Text])
 }
 
 /* If statements
@@ -251,18 +249,4 @@ var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
 	if (ast.file) { sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span)) }
 	throw new ResolveError(ast.file, ast, msg)
-}
-
-var inferType = function(ast, possibleTypes) {
-	if (!ast.possibleTypes) { ast.possibleTypes = possibleTypes }
-	else { ast.possibleTypes = _intersect(ast.possibleTypes, possibleTypes) }
-	return ast
-}
-
-var _intersect = function(a, b) {
-	var result = []
-	for (var i=0; i<a.length; i++) {
-		if (b.indexOf(a[i]) >= 0) { result.push(a[i]) }
-	}
-	return result
 }

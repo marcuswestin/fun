@@ -14,12 +14,13 @@ jsio('from shared.javascript import bind, blockCallback');
 		_hookCallbacks = {}
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
 	fun.getHook = function(name) { return _hooks[name] }
-	fun.hook = function(parentName, name, tag, attrs) {
+	fun.hook = function(parentName, name, opts) {
 		if (_hooks[name]) { return _hooks[name] }
+		opts = opts || {}
 		var parent = _hooks[parentName],
-			hook = _hooks[name] = doc.createElement(tag || 'fun')
+			hook = _hooks[name] = doc.createElement(opts.tagName || 'fun')
 		
-		for (var key in attrs) { fun.attr(name, key, attrs[key]) }
+		for (var key in opts.attrs) { fun.attr(name, key, opts.attrs[key]) }
 		
 		if (_hookCallbacks[name]) {
 			for (var i=0, callback; callback = _hookCallbacks[name][i]; i++) {
@@ -27,7 +28,9 @@ jsio('from shared.javascript import bind, blockCallback');
 			}
 		}
 		
-		parent.appendChild(hook)
+		if (!parent.childNodes.length || !opts.prepend) { parent.appendChild(hook) }
+		else { parent.insertBefore(hook, parent.childNodes[0]) }
+		
 		return hook
 	}
 	fun.destroyHook = function(hookName) {
@@ -63,7 +66,7 @@ jsio('from shared.javascript import bind, blockCallback');
 	fun.splitListMutation = function(callback, mutation) {
 		var args = mutation.args
 		for (var i=0, arg; arg = args[i]; i++) {
-			callback(arg)
+			callback(arg, mutation.op)
 		}
 	}
 	

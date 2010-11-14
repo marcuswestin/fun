@@ -1,0 +1,60 @@
+var Types = exports,
+	fs = require('fs'),
+	util = require('../util')
+
+/* List type definitions
+ ***********************/
+Types.definitions = util.mapTruthy(fs.readdirSync(__dirname), function(item) {
+	var jsFileMatch = item != 'index.js' && item.match(/^(.*)\.js$/)
+	return jsFileMatch && require(__dirname+'/'+jsFileMatch[1])
+})
+
+Types.byName = {}
+util.each(Types.definitions, function(definition) {
+	Types.byName[definition.name] = definition
+})
+
+/* Infer/reduce possible types
+ *****************************/
+var inferredTypes = {}
+function getValueID(valueAST) {
+	switch(valueAST.type) {
+		case 'STATIC_VALUE':     return valueAST.valueType + ':' + valueAST.value
+		case 'ITEM_PROPERTY':    return 'item:' + valueAST.item.id
+		case 'RUNTIME_ITERATOR': return 'iterator:' + getValueID(valueAST.iterable)
+		default:                 UNDEFINED_VALUEAST
+	}
+}
+
+Types.infer = function(ast, possibleTypes) {
+	var valueID = getValueID(ast)
+	if (!inferredTypes[valueID]) { inferredTypes[valueID] = possibleTypes }
+	else { inferredTypes[valueID] = intersection(inferredTypes[valueID], possibleTypes) }
+	return ast
+}
+Types.inferByMethod = function(ast, method) {
+	return util.mapTruthy(Types.definitions, function(definition) {
+		if (ast.method in definition.mutations) {
+			return definition.name
+		}
+	})
+}
+function intersection(a, b) {
+	var result = []
+	for (var i=0; i<a.length; i++) {
+		if (b.indexOf(a[i]) >= 0) { result.push(a[i]) }
+	}
+	return result
+}
+
+/* Determine a type based on inferred possible types
+ ***************************************************/
+var inferenceOrder = ['Text', 'Number']
+Types.decide = function(ast) {
+	var possibleTypes = inferredTypes[getValueID(ast)]
+	if (possibleTypes.length > 1) { suggest() }
+	return util.pick(inferenceOrder, function(inferedType) {
+		var index = possibleTypes.indexOf(inferedType)
+		if (index != -1) { return orderedType }
+	}) || possibleTypes.sort()[0]
+}

@@ -44,10 +44,24 @@ util.intercept = function(errorName, fn) {
 
 util.map = function(arr, fn) {
 	var result = []
-	if (arr instanceof Array) {
-		for (var i=0; i < arr.length; i++) { result.push(fn(arr[i], i)) }
-	} else {
-		for (var key in arr) { result.push(fn(arr[key], key)) }
+	if (arr instanceof Array) { for (var i=0; i < arr.length; i++) result.push(fn(arr[i], i)) }
+	else { for (var key in arr) result.push(fn(arr[key], key)) }
+	return result
+}
+util.each = function(arr, fn) {
+	for (var i=0; i < arr.length; i++) fn(arr[i], i)
+}
+util.pick = function(arr, fn) {
+	for (var res, i=0; i < arr.length; i++) {
+		res = fn(arr[i], i)
+		if (res) { return res }
+	}
+}
+util.mapTruthy = function(arr, fn) {
+	var result = []
+	for (var i=0, value; i < arr.length; i++) {
+		value = fn(arr[i])
+		if (value) { result.push(value) }
 	}
 	return result
 }
@@ -105,9 +119,3 @@ util.grabLine = function(file, lineNumber, column, length) {
 		+ repeat(' ', column - 1) + repeat('^', length)
 }
 
-util.requireDir = function(path) {
-	return util.map(fs.readdirSync(path), function(item) {
-		var jsFileMatch = item.match(/^(.*)\.js$/)
-		return jsFileMatch && require(path + jsFileMatch[1])
-	})
-}
