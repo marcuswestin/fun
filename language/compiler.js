@@ -1,325 +1,425 @@
 var fs = require('fs'),
-	util = require('./compile_util'),
-	compiler = exports
+	sys = require('sys'),
+	path = require('path'),
+	util = require('./util'),
+	Types = require('./Types'),
+	Tags = require('./Tags'),
+	bind = util.bind,
+	map = util.map,
+	boxComment = util.boxComment,
+	q = util.q
 
-compiler.compile = function(ast) {
-	var libraryPath = __dirname + '/lib.js',
-		libraryCode,
-		codeOutput
-	
-	try { libraryCode = fs.readFileSync(libraryPath).toString() }
-	catch(e) { return {error: "Could not read library file", path: libraryPath, e: e} }
-	
-	var rootContext = {
-		hookName: util.getName('ROOT_HOOK'),
-		referenceTable: {}
-	}
-	
-	try { codeOutput = compile(rootContext, ast) }
-	catch(e) { return {error: "Could not compile", e: e} }
-	
-	return new util.CodeGenerator()
-		.newline(2)
-			.boxComment("Fun compiled at " + new Date().getTime())
-		.newline(2)
-			.boxComment("lib.js")
-			.code(libraryCode)
-		.newline(2)
-			.boxComment("Compiled output: ")
-			.declareHook(rootContext.hookName)
-			.code('fun.setDOMHook('+rootContext.hookName+', document.body)')
-			.code(codeOutput)
-}
+exports.compile = util.intercept('CompileError', function (ast, modules, declarations) {
+	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
+	var context = { hookName: name('ROOT_HOOK') } // root context
+	return code(ast,
+		';(function funApp() {',
+		'	var {{ hookName }} = fun.name("rootHook")',
+		'	fun.setHook({{ hookName }}, document.body)',
+		'	{{ declarationsCode }}',
+		'	{{ code }}',
+		'	{{ modules }}',
+		'})(); // let\'s kick it',
+		{
+			hookName: context.hookName,
+			declarationsCode: map(declarations, compileDeclaration).join('\n'),
+			code: compile(context, ast),
+			modules: map(modules, function(module, name) {
+				return boxComment('Module: ' + name) + '\n' + module.jsCode }).join('\n\n\n')
+		})
+})
 
+/************************
+ * Top level statements *
+ ************************/
 function compile(context, ast) {
-	util.assert(context && context.hookName && context.referenceTable,
-		"compile called with invalid context", {context:context})
+	assert(ast, context && context.hookName, "compile called with invalid context")
 	if (ast instanceof Array) {
-		var result = []
-		for (var i=0; i<ast.length; i++) {
-			result.push(compile(context, ast[i]) + "\n")
-		}
-		return result.join("")
-	} else if (typeof ast == 'object') {
-		return compileFunStatement(context, ast) + "\n"
+		return map(ast, bind(this, compileStatement, context)).join('\n') + '\n'
+	} else {
+		return compileStatement(context, ast) + '\n'
 	}
 }
 
-function compileFunStatement(context, ast) {
+function compileStatement(context, ast) {
+	if (!ast) { return '' }
 	switch (ast.type) {
-		case 'STRING':
-			return util.q(ast.value)
-		case 'NUMBER':
-			return ast.value
-		case 'DECLARATION':
-			util.setReference(context, ast.name, ast.value)
-			return getDeclarationCode(context, ast.value)
-		case 'INLINE_VALUE':
-			return getInlineValueCode(context, compileFunStatement(context, ast.value))
-		case 'REFERENCE':
-			return getReferenceCode(context, ast)
-		case 'IF_ELSE':
-			return getIfElseCode(context, ast)
-		case 'FOR_LOOP':
-			return getForLoopCode(context, ast)
-		case 'XML_NODE':
-			return getXMLCode(context, ast)
-		case 'TEMPLATE_INVOCATION':
-			return getTemplateInvocationCode(context, ast)
-		default:
-			throw util.error("UNDEFINED AST TYPE: " + ast.type, ast)
-	}
-}
-
-/**************
- * Inline XML *
- **************/
-function getXMLCode(context, ast) {
-	var tagName = ast.name,
-		attrList = ast.attributes,
-		content = ast.content
-	
-	var hookName = util.getName('XML_HOOK'),
-		result = new util.CodeGenerator(),
-		newContext = util.copy(context, {hookName: hookName}),
-		attrs = {}
-	
-	result.declareHook(hookName)
-
-	for (var i=0, attr; attr = attrList[i]; i++) {
-		var value = getRefered(context, attr.value) // e.g. STRING, NUMBER
-		if (attr.name == 'data') {
-			if (tagName == 'input') { result.reflectInput(hookName, value) }
-			else if (tagName == 'checkbox') { } // TODO
-		} else if (attr.name == 'style') {
-			util.assert(value.type == 'JSON_OBJECT', 'Style attribute must be JSON', {type: value.type})
-			handleXMLStyle(newContext, value.content, attrs, result)
-		} else if (attr.name == 'onClick') {
-			util.assert(value.type == 'HANDLER', 'Handler attribute must be a HANDLER', {type: value})
-			handleXMLOnClick(newContext, value.args, value.code, result)
-		} else if (attr.value.type == 'REFERENCE') {
-			result.bindAttribute(hookName, attr.name, attr.value)
-		} else {
-			attrs[attr.name] = value.value
-		}
-	}
-	
-	return result
-		.createHook(context.hookName, hookName, tagName, attrs)
-		.code(compile(newContext, content))
-}
-
-function handleXMLOnClick(context, args, mutationStatements, result) {
-	var hookName = context.hookName,
-		mutationCode = new util.CodeGenerator()
-	for (var i=0, statement; statement = mutationStatements[i]; i++) {
-		var target = statement.target
+		case 'RUNTIME_ITERATOR': // TODO Give types to the runtime iterator values,
+		                         // so that list iterators can take other things than static
+		                         // for now, fall through to STATIC_VALUE
+		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
+		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
+		case 'XML':              return compileXML(context, ast)
+		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
+		case 'FOR_LOOP':         return compileForLoop(context, ast)
+		case 'INVOCATION':       return compileInvocation(context, ast)
 		
-		if (statement.type == 'DEBUGGER') {
-			mutationCode.code('debugger')
-			continue
-		}
-		
-		util.assert(statement.type == 'MUTATION', 
-			'Handler code should be mutation statements',{code:mutationStatements})
-		util.assert(target.type == 'REFERENCE' && target.referenceType != 'ALIAS',
-			'Target in mutation should be a local or a global data object', {target: target})
-		mutationCode.mutate(statement.mutationType, target, getRefered(context, statement.source))
+		default:                 halt(ast, 'Unknown AST type ' + ast.type)
 	}
+}
+
+/*****************
+ * Static values *
+ *****************/
+// TODO This should be using Types[ast.value.type].emit(ast.value)
+function compileStaticValue(context, ast) {
+	return code(ast,
+		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
+		{
+			parentHook: context.hookName,
+			value: _getValue(ast)
+		})
+}
+
+function _getValue(ast) {
+	switch(ast.type) {
+		case 'STATIC_VALUE':     return q(ast.value)
+		case 'RUNTIME_ITERATOR': return ast.name
+		default: halt(ast, 'Unknown value type "'+ast.type+'"')
+	}
+}
+
+
+/************************
+ * Item Property values *
+ ************************/
+function compileItemProperty(context, ast) {
+	assert(ast, ast.property.length > 0, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
+	assert(ast, ast.property.length == 1, 'TODO: Handle nested property references')
+	var hookName = name('ITEM_PROPERTY_HOOK')
+	return code(ast,
+		'var {{ hookName }} = fun.name()',
+		'fun.hook({{ parentHook }}, {{ hookName }})',
+		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
+		'	fun.getHook({{ hookName }}).innerHTML = value',
+		'})',
+		{
+			parentHook: context.hookName,
+			hookName: hookName,
+			id: q(ast.item.id),
+			property: q(ast.property[0]),
+			type: q('BYTES')
+		})
+}
+
+/*******
+ * XML *
+ *******/
+function compileXML(context, ast) {
+	var nodeHookName = name('XML_HOOK'),
+		newContext = util.shallowCopy(context, { hookName:nodeHookName })
 	
-	result
-		.withHookStart(hookName, 'hook')
-			.assign('hook.onclick', 'function(){')
-				.code(mutationCode)
-			.code('}')
-		.withHookEnd()
+	var attributes = _handleXMLAttributes(nodeHookName, ast)
+	return code(ast,
+		'var {{ hookName }} = fun.name()',
+		'fun.hook({{ parentHook }}, {{ hookName }}, { tagName:{{ tagName }}, attrs:{{ staticAttributes }} })',
+		'{{ dynamicAttributesCode }}',
+		'{{ childCode }}',
+		{
+			parentHook: context.hookName,
+			hookName: nodeHookName,
+			tagName: q(ast.tagName),
+			staticAttributes: q(attributes.staticAttrs),
+			dynamicAttributesCode: attributes.dynamicCode,
+			childCode: ast.block ? compile(newContext, ast.block) : ''
+		})
 }
 
-function handleXMLStyle(context, styles, targetAttrs, result) {
-	var hookName = context.hookName
-	targetAttrs.style = ''
-	for (var key in styles) {
-		var styleRule = styles[key],
-			styleValue = styleRule.value,
-			styleType = styleRule.type
-		
-		if (styleType == 'REFERENCE') {
-			result.bindStyle(hookName, key, styleRule)
-		} else {
-			var postfix = (styleType == 'NUMBER' ? 'px' : '')
-			targetAttrs.style += key+':'+styleValue + postfix+'; '
-		}
+function _handleXMLAttributes(nodeHookName, ast) {
+	var staticAttrs = {}, dynamicCode = []
+	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
+		assert(attribute, attribute.namespace.length == 1, 'TODO Handle dot notation attributes')
+		var name = attribute.namespace[0],
+			value = attribute.value
+		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
 	}
+	return { staticAttrs: staticAttrs, dynamicCode: dynamicCode.join('\n') }
 }
 
-/*************************
- * Values and References *
- *************************/
-function getDeclarationCode(context, ast) {
-	if (ast.type == 'TEMPLATE') { return getTemplateDeclarationCode(context, ast) }
-	else { return '' } // no need to output code for other declarations
-}
-
-function getReferenceCode(context, ast) {
-	if (ast.referenceType == "ALIAS") {
-		if (ast.name == 'import') { return '' }
-		if (ast.name == 'Local') { return '' }
-		if (ast.name == 'Global') { return '' }
-		if (ast.name == 'Mouse') { return '' }
-		var ref = util.getReference(context, ast.name),
-			nameOrStr = ref.name ? ref.name : util.q(ref.value)
-		return getInlineValueCode(context, nameOrStr)
+// modifies staticAttrs and, dynamicCode
+function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value) {
+	var match
+	if (name == 'style') {
+		_handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
+	} else if (name == 'data') {
+		_handleDataAttribute(nodeHookName, ast, dynamicCode, value)
+	} else if (match = name.match(/^on(\w+)$/)) {
+		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
+	} else if (value.type == 'STATIC_VALUE') {
+		staticAttrs[name] = value.value
 	} else {
-		return getObservationCode(context, ast)
+		assert(ast, value.type != 'NESTED_ALIAS', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
 	}
 }
 
-function getInlineValueCode(context, val) {
-	var hookName = util.getName('INLINE_HOOK')
-	return new util.CodeGenerator()
-		.declareHook(hookName)
-		.code(util.getHookCode(context.hookName, hookName), '.innerHTML=', val)
-}
-
-function getRefered(context, value) {
-	if (value.type == 'REFERENCE' && value.referenceType == 'ALIAS') {
-		return util.getReference(context, value.name)
-	} else {
-		return value
+// modifies staticAttrs and dynamicCode
+function _handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value) {
+	assert(ast, value.type == 'NESTED_ALIAS', 'You should assign the style tag to a JSON object, e.g. <div style={width:100,height:100} />')
+	for (var i=0, prop; prop = value.content[i]; i++) {
+		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, 'style.'+prop.name, prop.value)
 	}
 }
 
-function getObservationCode(context, reference) {
-	var value = getRefered(context, reference),
-		parentHookName = context.hookName,
-	    hookName = util.getName('OBSERVATION_HOOK')
-	
-	util.assertType(value, util.BYTES)
-	
-	return new util.CodeGenerator()
-		.declareHook(hookName)
-		.closureStart()
-			.assign('hook', util.getHookCode(parentHookName, hookName))
-			.callFunction('fun.observe', 
-				util.q(value.valueType),
-				util.q(value.referenceType), 
-				util.q(value.value), 
-				'function(mut,val){ hook.innerHTML=val }')
-		.closureEnd()
+// modifies dynamicCode
+function _handleDataAttribute(nodeHookName, ast, dynamicCode, value) {
+	dynamicCode.push(code(ast,
+		'fun.withHook({{ hookName }}, function(hook) {',
+		'	fun.on(hook, "keypress", function() {',
+		'		setTimeout(function() {',
+		'			fun.mutate("set", {{ itemID }}, {{ property }}, [hook.value])',
+		'		}, 0)',
+		'	})',
+		'	fun.observe("BYTES", {{ itemID }}, {{ property }}, function(mutation, value) {',
+		'		hook.value = value',
+		'	})',
+		'})',
+		{
+			hookName: nodeHookName,
+			itemID: q(value.item.id),
+			property: q(value.property[0])
+		}))
 }
 
+// modifies dynamicCode
+function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value) {
+	assert(ast, value.property.length == 1, 'TODO: Handle nested item property references')
+	dynamicCode.push(code(ast,
+		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
+		'	fun.attr({{ hookName }}, {{ attr }}, value)',
+		'})',
+		{
+			type: q('BYTES'),
+			id: q(value.item.id),
+			property: q(value.property[0]),
+			attr: q(attrName),
+			hookName: nodeHookName
+		}))
+}
+
+// modifies dynamicCode
+function _handleHandlerAttribute(nodeHookName, ast, dynamicCode, handlerName, handlerAST) {
+	dynamicCode.push(code(ast,
+		'fun.withHook({{ hookName }}, function(hook) {',
+		'	fun.on(hook, "{{ handlerName }}", {{ compiledFunctionName }})',
+		'})',
+		{
+			hookName: nodeHookName,
+			handlerName: handlerName.toLowerCase(),
+			compiledFunctionName: handlerAST.compiledFunctionName
+		}))
+}
+/**********************
+ * If/Else statements *
+ **********************/
+function compileIfStatement(context, ast) {
+	var left = ast.condition.left,
+		right = ast.condition.right,
+		ifContext = util.shallowCopy(context, { hookName: name('IF_HOOK') }),
+		elseContext = util.shallowCopy(context, { hookName: name('ELSE_HOOK') }),
+		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right.type == 'ITEM_PROPERTY') }
+	
+	return code(ast,
+		'var {{ ifHookName }} = fun.name(),',
+		'	{{ elseHookName }} = fun.name()',
+		';(function(ifBranch, elseBranch) {',
+		'	fun.hook({{ parentHookName }}, {{ ifHookName }})',
+		'	fun.hook({{ parentHookName }}, {{ elseHookName }})',
+		'	var ready = fun.block(evaluate, {fireOnce: false}), lastTime',
+		'	{{ leftIsDynamic }} && fun.observe("BYTES", {{ leftID }}, {{ leftProperty }}, ready.addBlock())',
+		'	{{ rightIsDynamic }} && fun.observe("BYTES", {{ rightID }}, {{ rightProperty }}, ready.addBlock())',
+		'	ready.tryNow()',
+		'	function evaluate() {',
+		'		var thisTime = {{ leftValue }} {{ comparison }} {{ rightValue }}',
+		'		if (lastTime !== undefined && thisTime == lastTime) { return }',
+		'		fun.destroyHook(lastTime ? {{ ifHookName }} : {{ elseHookName }})',
+		'		lastTime = thisTime',
+		'		thisTime ? ifBranch() : elseBranch()',
+		'	}',
+		'})(',
+		'	function() {',
+		'		{{ ifCode }}',
+		'	},',
+		'	function() {',
+		'		{{ elseCode }}',
+		'	}',
+		');',
+		{
+			parentHookName: context.hookName,
+			ifHookName: ifContext.hookName,
+			elseHookName: elseContext.hookName,
+			leftIsDynamic: isDynamic.left,
+			rightIsDynamic: isDynamic.right,
+			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : _getValue(left),
+			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : _getValue(right),
+			comparison: ast.condition.comparison,
+			leftID: isDynamic.left && q(left.item.id),
+			rightID: isDynamic.right && q(right.item.id),
+			leftProperty: isDynamic.left && q(left.property[0]),
+			rightProperty: isDynamic.right && q(right.property[0]),
+			ifCode: compile(ifContext, ast.ifBlock),
+			elseCode: ast.elseBlock && compile(elseContext, ast.elseBlock)
+		})
+}
+
+/*************
+ * For loops *
+ *************/
+function compileForLoop(context, ast) {
+	var iteratorName = name('FOR_LOOP_ITERATOR_VALUE'),
+		loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
+	
+	ast.iterator.value.name = iteratorName
+	
+	return code(ast,
+		'var {{ loopHookName }} = fun.name()',
+		'fun.hook({{ parentHook }}, {{ loopHookName }})',
+		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
+		'function onMutation({{ iteratorName }}, op) {',
+		'	var {{ emitHookName }} = fun.name()',
+		'	fun.hook({{ loopHookName }}, {{ emitHookName }}, { prepend: (op=="unshift") })',
+		'	{{ loopCode }}',
+		'}',
+		{
+			parentHook: context.hookName,
+			loopHookName: name('FOR_LOOP_HOOK'),
+			itemID: q(ast.iterable.item.id),
+			propertyName: q(ast.iterable.property[0]),
+			iteratorName: iteratorName,
+			emitHookName: loopContext.hookName,
+			loopCode: compile(loopContext, ast.block)
+		})
+}
 
 /*************
  * Templates *
  *************/
-function getTemplateDeclarationCode(context, ast) {
-	var templateFunctionName = util.getName('TEMPLATE_FUNCTION'),
-		templateHookName = util.getName('TEMPLATE_HOOK_NAME');
-	
-	ast.templateName = templateFunctionName
-	context.hookName = templateHookName
-	
-	return new util.CodeGenerator()
-		.functionStart(templateFunctionName, templateHookName)
-			.code(compile(context, ast.code))
-		.functionEnd()
-}
-
-function getTemplateInvocationCode(context, ast) {
-	var templateAST = util.getReference(context, ast.name)
-	return new util.CodeGenerator()
-		.callFunction(templateAST.templateName, context.hookName)
-}
-
-/************************
- * If/Else control flow *
- ************************/
-function getIfElseCode(context, ast) {
-	var parentHook = context.hookName,
-		cond = ast.condition,
-		trueAST = ast.ifTrue,
-		elseAST = ast.ifFalse
-	
-	util.assert((cond.comparison && cond.left && cond.right) || cond.expression, 'Conditionals must have either an expression or a comparison with left and right parameters')
-	
-	var ifContext = util.copy(context, { hookName: util.getName("IF_HOOK") }),
-		elseContext = util.copy(context, { hookName: util.getName("ELSE_HOOK") }),
-		ifHookCode = util.getHookCode(parentHook, ifContext.hookName),
-		elseHookCode = util.getHookCode(parentHook, elseContext.hookName),
-		compareCode
-	
-	var result = new util.CodeGenerator()
-		.declareHook(ifContext.hookName)
-		.declareHook(elseContext.hookName)
-		.closureStart('ifPath', 'elsePath')
-			.code(ifHookCode) // force creation of the dom hooks for proper ordering
-			.code(elseHookCode)
-	
-	if (cond.comparison) {
-		compareCode = '('+util.getCachedValue(cond.left) + cond.comparison + util.getCachedValue(cond.right)+')'
-		result
-			.assign('blocker', 'fun.getCallbackBlock(evaluate, {fireOnce: false})')
-			.observe(cond.left, 'blocker.addBlock()')
-			.observe(cond.right, 'blocker.addBlock()')
-	} else {
-		compareCode = '(!!'+util.getCachedValue(cond.expression)+')'
-		result
-			.observe(cond.expression, 'evaluate')
+function compileDeclaration(declaration) {
+	switch (declaration.type) {
+		case 'TEMPLATE':  return compileTemplateDeclaration(declaration)
+		case 'HANDLER':   return compileHandlerDeclaration(declaration)
+		default:          return ''
 	}
-	
-	result
-			.assign('lastTime', undefined)
-			.functionStart('togglePath')
-				.code('fun.destroyHook(lastTime ? '+elseContext.hookName+' : '+ifContext.hookName+')')
-				.ifElse('lastTime', 'ifPath()', 'elsePath()')
-			.functionEnd()
-			.functionStart('evaluate')
-				.assign('thisTime', compareCode)
-				.returnIfDefinedAndEqual('thisTime', 'lastTime')
-				.assign('lastTime', 'thisTime')
-				.callFunction('togglePath')
-			.functionEnd()
-			.callFunction('evaluate')
-		.closureEnd(
-			'\nfunction ifPath(){'+compile(ifContext, trueAST)+'}', 
-			'\nfunction elsePath(){'+compile(elseContext, elseAST)+'}'
-		)
-	
-	return result
 }
 
-/*************************
- * For loop control flow *
- *************************/
-
-function getForLoopCode(context, ast) {
-	var parentHookName = context.hookName,
-		list = getRefered(context, ast.list),
-		codeAST = ast.code,
-		loopHookName = util.getName("LOOP_ANCHOR_HOOK"),
-		emitHookName = util.getName("LOOP_EMIT_HOOK"),
-		iteratorName = util.getName("LOOP_ITERATOR"),
-		loopContext = util.copy(context, {hookName: emitHookName})
-	
-	util.assertType(list, 'list')
-	
-	loopContext.referenceTable = {}
-	loopContext.referenceTable.__proto__ = context.referenceTable
-	util.setReference(loopContext, ast.key, {name: iteratorName})
-	
-	// Create new context with referenceTable prototyping the current context's reference table
-	return new util.CodeGenerator()
-		.closureStart()
-			.declareHook(loopHookName)
-			.createHook(parentHookName, loopHookName)
-			.observe(list, 'onMutation')
-			.functionStart('onMutation', 'mutation')
-				.code('fun.handleListMutation(mutation, function('+iteratorName+') {')
-					.declareHook(emitHookName)
-					.callFunction('fun.getDOMHook', loopHookName, emitHookName, false, false, true)
-					.code(compile(loopContext, codeAST))
-				.code('})')
-			.functionEnd()
-		.closureEnd()
+function compileTemplateDeclaration(ast) {
+	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same template twice')
+	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
+	var hookName = name('TEMPLATE_HOOK')
+	return code(ast,
+		'function {{ templateFunctionName }}({{ hookName }}) {',
+		'	{{ code }}',
+		'}',
+		{
+			templateFunctionName: ast.compiledFunctionName,
+			hookName: hookName,
+			code: compile({hookName:hookName}, ast.block)
+		})
 }
 
+function _compileTemplateInvocation(context, invocationAST, templateAST) {
+	// ast.args is a list of invocation values/aliases
+	assert(invocationAST, invocationAST.args.length == 0, 'TODO Handle template invocation arguments')
+	assert(templateAST, templateAST.signature.length == 0, 'TODO Handle template signature')
+	return code(templateAST,
+		'{{ templateFunctionName }}({{ hookName }})',
+		{
+			templateFunctionName: templateAST.compiledFunctionName,
+			hookName: context.hookName
+		})
+}
+
+/************
+ * Handlers *
+ ************/
+function compileHandlerDeclaration(ast) {
+	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same handler twice')
+	ast.compiledFunctionName = name('HANDLER_FUNCTION')
+	var hookName = name('HANDLER_HOOK')
+	return code(ast,
+		'function {{ handlerFunctionName }}({{ hookName }}) {',
+		'	{{ code }}',
+		'}',
+		{
+			handlerFunctionName: ast.compiledFunctionName,
+			hookName: hookName,
+			code: map(ast.block, bind(this, _compileMutationStatement, {hookName:hookName})).join('\n')
+		})
+}
+
+function _compileMutationStatement(context, ast) {
+	var type = Types.decide(ast.value)
+	return code(ast,
+		'fun.mutate({{ operation }}, {{ id }}, {{ prop }}, [{{ args }}])',
+		{
+			operation: q(ast.method),
+			id: q(ast.value.item.id),
+			prop: q(ast.value.property[0]),
+			args: _cachedValueCode(ast.args)
+		})
+}
+
+function _cachedValueCode(args) {
+	return map(args, function(arg) {
+		if (arg.type == 'STATIC_VALUE') { return q(arg.value) }
+		else { return code(arg,
+			'fun.cachedValue({{ itemID }}, {{ property }})',
+			{
+				itemID: q(arg.item.id),
+				property: q(arg.property[0])
+			})
+		}
+	}).join(',')
+}
+
+function _compileHandlerInvocation(context, invocationAST, handlerAST) {
+	halt(statementAST, 'TODO Compile handler invocation')
+}
+
+/****************************************
+ * Invocations (handlers and templates) *
+ ****************************************/
+function compileInvocation(context, ast) {
+	switch(ast.invocable.type) {
+		case 'TEMPLATE': return _compileTemplateInvocation(context, ast, ast.invocable)
+		case 'HANDLER':  return _compileHandlerInvocation(context, ast, ast.invocable)
+		default:         halt(ast, 'Couldn\'t invoce the value of type "'+ast.type+'". Expected a template or a handler.')
+	}
+}
+
+/*********************
+ * Utility functions *
+ *********************/
+function name(readable) { return '_' + (readable || '') + '$' + (name._uniqueId++) }
+name._uniqueId = 0
+
+var emitReplaceRegex = /{{\s*(\w+)\s*}}/
+function code(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
+	var argsLen = arguments.length,
+		lastArg = arguments[argsLen - 1],
+		injectObj = (typeof lastArg == 'string' ? null : lastArg),
+		snippets = Array.prototype.slice.call(arguments, 1, injectObj ? argsLen - 1 : argsLen),
+		code = '\n' + snippets.join('\n'),
+		match
+	
+	while (match = code.match(emitReplaceRegex)) {
+		var wholeMatch = match[0],
+			nameMatch = match[1],
+			value = injectObj[nameMatch]
+		assert(ast, typeof value != 'undefined', 'Missing inject value "'+nameMatch+'"')
+		code = code.replace(wholeMatch, value)
+	}
+	return code
+}
+
+var CompileError = function(file, ast, msg) {
+	this.name = "CompileError"
+	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
+}
+CompileError.prototype = Error.prototype
+
+var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
+var halt = function(ast, msg) {
+	if (ast.file) { sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span)) }
+	throw new CompileError(ast.file, ast, msg)
+}

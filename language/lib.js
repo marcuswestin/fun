@@ -1,123 +1,94 @@
-(function() {
-	jsio('from shared.javascript import bind, blockCallback')
+// from lib.js
+fun = {}
+jsio('from shared.javascript import bind, blockCallback');
+;(function() {
 	
-	var fun = window.fun = {},
-		doc = document,
-		hooks = fun.hooks = {},
-		hookCallbacks = {}
+	var doc = document
 	
-	var BYTES = 'bytes',
-		LIST = 'list',
-		_typeMethods = {}
-	_typeMethods[BYTES] = 'observe'
-	_typeMethods[LIST] = 'observeList'
-	
-	var _uniqueID = 0
-	fun.getHookID = function() {
-		return 'funHook' + (++_uniqueID)
-	}
-	
-	function addElement(parent, el, prepend) {
-		if (!prepend || !parent.children[0]) {
-			parent.appendChild(el)
-		} else {
-			parent.insertBefore(el, parent.children[0])
+	var _unique = 0
+	fun.name = function(readable) { return '_' + (readable || '') + '$' + (_unique++) }
+
+/* Hooks
+ *******/
+	var _hooks = {},
+		_hookCallbacks = {}
+	fun.setHook = function(name, dom) { _hooks[name] = dom }
+	fun.getHook = function(name) { return _hooks[name] }
+	fun.hook = function(parentName, name, opts) {
+		if (_hooks[name]) { return _hooks[name] }
+		opts = opts || {}
+		var parent = _hooks[parentName],
+			hook = _hooks[name] = doc.createElement(opts.tagName || 'fun')
+		
+		for (var key in opts.attrs) { fun.attr(name, key, opts.attrs[key]) }
+		
+		if (_hookCallbacks[name]) {
+			for (var i=0, callback; callback = _hookCallbacks[name][i]; i++) {
+				callback(hook)
+			}
 		}
-		return el
-	}
-	fun.getDOMHook = function(parentHookID, hookID, tag, attrs, prepend) {
-		if (hooks[hookID]) { return hooks[hookID] }
-		var parent = hooks[parentHookID]
-		var hook = hooks[hookID] = addElement(parent, doc.createElement(tag || 'span'), prepend)
-		for (var key in attrs) {
-			hook.setAttribute(key, attrs[key])
-		}
-		var callbacks = hookCallbacks[hookID]
-		if (callbacks) {
-			for (var i=0, callback; callback = callbacks[i]; i++) { callback(hook) }
-			delete hookCallbacks[hookID]
-		}
+		
+		if (!parent.childNodes.length || !opts.prepend) { parent.appendChild(hook) }
+		else { parent.insertBefore(hook, parent.childNodes[0]) }
+		
 		return hook
 	}
-	
-	fun.destroyHook = function(hookID) {
-		var hook = hooks[hookID]
-		if (!hooks[hookID]) { return }
-		hook.innerHTML = ''
+	fun.destroyHook = function(hookName) {
+		if (!_hooks[hookName]) { return }
+		_hooks[hookName].innerHTML = ''
 	}
-	
-	fun.hook = function(hookID) { return hooks[hookID] }
-	
-	fun.value = function(hookID, value) {
-		hooks[hookID].value = value
+	fun.withHook = function(hookName, callback) {
+		if (_hooks[hookName]) { return callback(_hooks[hookName]) }
+		else if (_hookCallbacks[hookName]) { _hookCallbacks[hookName].push(callback) }
+		else { _hookCallbacks[hookName] = [callback] }
 	}
-	
-	fun.setDOMHook = function(hookID, domNode) {
-		hooks[hookID] = domNode
-	}
-	
-	fun.mutate = function(op, id, propName, arg) {
-		var doMutate = bind(fin, op.toLowerCase(), id, propName, arg)
+
+/* Mutations
+ ***********/
+	fun.mutate = function(op, id, propName, args) {
+		var doMutate = bind(fin, 'mutate', op.toLowerCase(), id, propName, args)
 		if (id == 'LOCAL') { doMutate() }
 		else { fin.connect(doMutate) }
 	}
+	fun.cachedValue = function(id, propName) {
+		var mutation = fin.getCachedMutation(id, propName)
+		return mutation && mutation.value
+	}
 	
+/* Observations
+ **************/
 	fun.observe = function(type, id, propName, callback) {
-		var methodName = _typeMethods[type],
+		var methodName = (type == 'BYTES' ? 'observe' : type == 'LIST' ? 'observeList' : null),
 			doObserve = bind(fin, methodName, id, propName, callback)
 		if (id == 'LOCAL') { doObserve() }
 		else { fin.connect(doObserve) }
 	}
-	
-	fun.handleListMutation = function(mutation, callback) {
+	fun.splitListMutation = function(callback, mutation) {
 		var args = mutation.args
-		if (mutation.op == 'listAppend') {
-			for (var i=0, arg; arg = args[i]; i++) {
-				callback(arg)
-			}
-		} else if (mutation.op == 'listPrepend') {
-			for (var i=args.length-1, arg; arg = args[i]; i--) {
-				callback(arg)
-			}
+		for (var i=0, arg; arg = args[i]; i++) {
+			callback(arg, mutation.op)
 		}
-	} 
-	
-	fun.getCachedValue = function(type, prop) {
-		var mutation = fin.getCachedMutation(type, prop)
-		return mutation && mutation.value
 	}
 	
-	fun.withHook = function(hookID, callback) {
-		var hook = hooks[hookID]
-		if (hook) {
-			callback(hook)
-		} else if (hookCallbacks[hookID]) {
-			hookCallbacks[hookID].push(callback)
+/* DOM
+ *****/
+	fun.attr = function(name, key, value) {
+		var match
+		if (match = key.match(/^style\.(\w+)$/)) {
+			fun.style(name, match[1], value)
 		} else {
-			hookCallbacks[hookID] = [callback]
+			_hooks[name].setAttribute(key, value)
 		}
 	}
 	
-	fun.reflectInput = function(hook, id, prop) {
-		fun.withHook(hook, function(input) {
-			fun.observe(BYTES, id, prop, function(mutation, value){ input.value = value })
-			input.onkeypress = function() { setTimeout(function() {
-				fun.mutate('SET', id, prop, input.value)
-			}, 0)}
-		})
-	}
-	
-	fun.getStyleHandler = function(hook, styleProp) {
-		return function(mutation, value) {
-			if (!hooks[hook]) { return }
-			hooks[hook].style[styleProp] = (typeof value == 'number' ? value + 'px' : value);
-		}
-	}
-
-	fun.getAttributeHandler = function(hook, attrName) {
-		return function(mutation, value) {
-			if (!hooks[hook]) { return }
-			hooks[hook][attrName] = value;
+	// fun.style(hook, 'color', '#fff') or fun.style(hook, { color:'#fff', width:100 })
+	fun.style = function(name, key, value) {
+		if (typeof key == 'object') {
+			for (var styleKey in key) { fun.style(name, styleKey, key[styleKey]) }
+		} else {
+			if (typeof value == 'number') { value = value + 'px' }
+			if (key == 'float') { key = 'cssFloat' }
+			_hooks[name].style[key] = value
 		}
 	}
 	
@@ -128,13 +99,8 @@
 			element.attachEvent("on"+eventName, handler)
 		}
 	}
-	
-	fun.getCallbackBlock = blockCallback
-	
-	fun.on(document, 'mousemove', function(e) {
-		fun.mutate('SET', 'LOCAL', 'mouseX', e.clientX)
-		fun.mutate('SET', 'LOCAL', 'mouseY', e.clientY)
-	})
-	fun.mutate('SET', 'LOCAL', 'mouseX', 0)
-	fun.mutate('SET', 'LOCAL', 'mouseY', 0)
-})();
+
+/* Utility functions
+ *******************/
+	fun.block = blockCallback
+})()
