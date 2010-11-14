@@ -91,8 +91,10 @@ function compile() {
 }
 
 fs.watchFile(sourceFile, function(currStat, prevStat) {
-	console.log('recompiling after change detected to ' + sourceFile)
+	if (currStat.mtime.getTime() == prevStat.mtime.getTime()) { return }
+	console.log('detected change to ' + sourceFile + ' - recompiling')
 	compile()
+	console.log('done recompiling')
 })
 
 compile()
