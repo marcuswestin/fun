@@ -1,4 +1,4 @@
-all: lib/fin
+all: lib/fin lib/node-optimist
 
 run: lib/fin
 	redis-server &> running-redis-server.out &
@@ -25,3 +25,9 @@ clean:
 lib/fin:
 	git clone git://github.com/marcuswestin/fin.git lib/fin
 	cd lib/fin; make
+
+lib/node-optimist:
+	curl -L https://github.com/substack/node-optimist/zipball/56b2b1de8d11f8a2b91979d8ae2d6db02d8fe64d > /tmp/node-optimist.zip
+	unzip /tmp/node-optimist.zip -d lib/
+	mv lib/substack-node-optimist-56b2b1d lib/node-optimist
+	rm /tmp/node-optimist.zip
