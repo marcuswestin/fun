@@ -9,4 +9,4 @@ input { margin: 5px; width: 200px; padding: 5px;
 .message { margin: 4px; padding: 5px; background: #fff;
 	border: 1px solid #a4c9eb; -moz-border-radius: 4px; -webkit-border-radius: 4px; }
 
-.messageInput { width: 340px; margin-bottom: 20px; }
+.messageInput { width: 330px; margin-bottom: 20px; }
