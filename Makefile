@@ -1,6 +1,6 @@
 all: lib/fin
 
-run: lib/pegjs lib/fin
+run: lib/fin
 	redis-server &> running-redis-server.out &
 	cd lib/fin; node run_server.js &> ../../running_node_fin_server.out &
 	echo "\nFin server running"
