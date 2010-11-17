@@ -14,6 +14,8 @@ var sourceFile = argv._[0],
 	port = argv.port || 1764, // sum('fun', function(letter) { return letter.charCodeAt(0) - 'a'.charCodeAt(0) + 1 }
 	host = argv.host || '127.0.0.1'
 
+fs.writeFileSync('index.html', '<script>document.location="//'+host+':'+port+'"</script>')
+
 /* HTTP server
  *************/
 void(function() {
