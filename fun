@@ -6,13 +6,14 @@ var fs = require('fs'),
 /* Commandline options
  *********************/
 var argv = require('./lib/node-optimist')
-	.usage('Usage: $0 app.fun [--host=127.0.0.1 --port=]')
+	.usage('Usage: $0 app.fun [--host=127.0.0.1 --port=1764 --store=[node,redis]]')
 	.demandCount(1)
 	.argv
 
 var sourceFile = argv._[0],
 	port = argv.port || 1764, // sum('fun', function(letter) { return letter.charCodeAt(0) - 'a'.charCodeAt(0) + 1 }
-	host = argv.host || '127.0.0.1'
+	host = argv.host || '127.0.0.1',
+	store = argv.store || 'redis'
 
 fs.writeFileSync('index.html', '<script>document.location="//'+host+':'+port+'"</script>')
 
@@ -53,11 +54,20 @@ void(function() {
 	jsio('import server.Server')
 	jsio('import server.Connection')
 	
-	var redis = require('./lib/fin/lib/redis-node-client/lib/redis-client')
-	var finServer = new server.Server(server.Connection, redis)
+	var storageEngine
+	switch (store) {
+		case 'node':
+			storageEngine = require('./lib/fin/engines/node')
+			break
+		case 'redis':
+			storageEngine = require('./lib/fin/engines/redis')
+			break
+		default:
+			throw new Error('Unkown store "'+store+'"')
+	}
+	var finServer = new server.Server(server.Connection, storageEngine)
 	
 	// for browser clients
-	console.log("Starting fin server - make sure redis-server is running")
 	finServer.listen('csp', { port: 5555 }) 
 	
 	// // for robots
