@@ -13,7 +13,7 @@ var argv = require('./lib/node-optimist')
 var sourceFile = argv._[0],
 	port = argv.port || 1764, // sum('fun', function(letter) { return letter.charCodeAt(0) - 'a'.charCodeAt(0) + 1 }
 	host = argv.host || '127.0.0.1',
-	store = argv.store || 'redis'
+	store = argv.store || 'node'
 
 fs.writeFileSync('index.html', '<script>document.location="//'+host+':'+port+'"</script>')
 
