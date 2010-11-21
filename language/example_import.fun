@@ -1,1 +1,0 @@
-'HELLO from example_import.fun'
