@@ -281,6 +281,7 @@ function doTokenize (inputFile) {
                 i += 1;
             }
             result.push(make('symbol', str));
+            c = inputString.charAt(i);
 
 // single-character symbol
 
