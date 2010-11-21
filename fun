@@ -84,9 +84,13 @@ var tokenizer = require('./language/tokenizer'),
 
 var compiledJS, htmlOutput
 function compile() {
-	var tokens = tokenizer.tokenize(sourceFile),
-		ast = parser.parse(tokens),
-		resolved = resolver.resolve(ast)
+	sys.puts('tokenize...')
+	var tokens = tokenizer.tokenize(sourceFile)
+	sys.puts('parse...')
+	var ast = parser.parse(tokens)
+	sys.puts('resolve...')
+	var resolved = resolver.resolve(ast)
+	sys.puts('compile...')
 	
 	compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
 	htmlOutput = [
