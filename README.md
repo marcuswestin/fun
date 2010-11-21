@@ -1,27 +1,30 @@
 fun
 ===
-A declarative webapp programming language with global realtime synchronization of state
+A declarative programming language for realtime web applications
 
-Getting started
----------------
+Getting up and running
+----------------------
 Grab dependencies
-	
+
 	make
 
-If you don't have redis or node installed, fin can help you with that:
+If you don't have node.js installed, you'll need to install it
 
-	cd lib/fin
-	sudo make install-node
+	sudo make -f lib/fin/Makefile install-node
 
-	cd lib/fin
-	sudo make install-redis
+Now run the example chat app!
 
-Run chat.fun
-------------
-In your terminal
+	./fun chat.app
 
-	make run
+Production vs development environments
+--------------------------------------
 
-In your browser
+Fun compiles down to javascript which gets runs on top of fin, a realtime datastore. Fin requires two "engine components", a pubsub component and a persistence component.
 
-	http://localhost/path_to_fun/parse_and_run.php?code=chat.fun
+By default, fin uses the "developer" engine. While the developer engine is well suited for development work, you would not want to deploy it in production. For production I recommend you use the redis engine, or roll your own (see lib/fin/engines/redis.js):
+
+	./fun chat.app --engine=redis
+
+If you don't have redis installed, you'll need to install it to use the redis engine
+
+	sudo make -f lib/fin/Makefile install-redis
