@@ -18,7 +18,6 @@ Now run the example chat app!
 
 Production vs development environments
 --------------------------------------
-
 Fun compiles down to javascript which gets runs on top of fin, a realtime datastore. Fin requires two "engine components", a pubsub component and a persistence component.
 
 By default, fin uses the "developer" engine. While the developer engine is well suited for development work, you would not want to deploy it in production. For production I recommend you use the redis engine, or roll your own (see lib/fin/engines/redis.js):
