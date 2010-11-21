@@ -1,3 +1,5 @@
+Hooks
+=====
 A Hook is a node in the DOM that corresponds to an emitting Fun statement.
 
 Each hook has a an ID and a name. The ID is unique for each hook and gets assigned either statically at compile time, or dynamically at run time. A for loop can generate any number of dom hooks at runtime, and each hook will be assigned a unique ID.
