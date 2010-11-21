@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 
 var fs = require('fs'),
+	sys = require('sys'),
 	http = require('http')
 
 /* Commandline options
  *********************/
 var argv = require('./lib/node-optimist')
-	.usage('Usage: $0 app.fun [--host=127.0.0.1 --port=1764 --store=[node,redis]]')
+	.usage('Usage: $0 app.fun [--host=127.0.0.1 --port=1764 --engine=[development,redis]]')
 	.demandCount(1)
 	.argv
 
 var sourceFile = argv._[0],
 	port = argv.port || 1764, // sum('fun', function(letter) { return letter.charCodeAt(0) - 'a'.charCodeAt(0) + 1 }
 	host = argv.host || '127.0.0.1',
-	store = argv.store || 'node'
+	engine = argv.engine || 'development'
 
 fs.writeFileSync('index.html', '<script>document.location="//'+host+':'+port+'"</script>')
 
@@ -55,9 +56,9 @@ void(function() {
 	jsio('import server.Connection')
 	
 	var storageEngine
-	switch (store) {
-		case 'node':
-			storageEngine = require('./lib/fin/engines/node')
+	switch (engine) {
+		case 'development':
+			storageEngine = require('./lib/fin/engines/development')
 			break
 		case 'redis':
 			storageEngine = require('./lib/fin/engines/redis')
@@ -104,9 +105,11 @@ function compile() {
 
 fs.watchFile(sourceFile, function(currStat, prevStat) {
 	if (currStat.mtime.getTime() == prevStat.mtime.getTime()) { return }
-	console.log('detected change to ' + sourceFile + ' - recompiling')
+	sys.puts('detected change to ' + sourceFile + ' - recompiling')
 	compile()
-	console.log('done recompiling')
+	sys.puts('done recompiling')
 })
 
 compile()
+
+sys.puts('\nWoot!! ' + sourceFile + ' is running using the '+engine+' engine. Now point your browser to ' + host + ':' + port)
