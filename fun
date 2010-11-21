@@ -16,8 +16,6 @@ var sourceFile = argv._[0],
 	host = argv.host || '127.0.0.1',
 	engine = argv.engine || 'development'
 
-fs.writeFileSync('index.html', '<script>document.location="//'+host+':'+port+'"</script>')
-
 /* HTTP server
  *************/
 void(function() {
