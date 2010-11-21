@@ -1,19 +1,5 @@
 all: lib/fin lib/node-optimist
 
-run: lib/fin
-	redis-server &> running-redis-server.out &
-	cd lib/fin; node run_server.js &> ../../running_node_fin_server.out &
-	echo "\nFin server running"
-
-.PHONY: stop
-stop:
-	killall node
-	killall redis-server
-	echo "\nFin server stopped"
-
-.PHONY: restart
-restart: stop run
-
 ################
 # Dependencies #
 ################
