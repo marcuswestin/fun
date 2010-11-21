@@ -1,10 +1,13 @@
+import Global
+import Mouse
+
 "Global.x: " Global.x
 <br />
-"Local.mouseX: " Local.mouseX
+"Mouse.x: " Mouse.x
 
 <div>
-	if (Local.mouseX >= Global.x) { "Local.mouseX >= Global.x" }
-	else { "Local.mouseX < Global.x" }
+	if (Mouse.x >= Global.x) { "Mouse.x >= Global.x" }
+	else { "Mouse.x < Global.x" }
 </div>
 
 "Global.x:" <input data=Global.x />

@@ -29,3 +29,4 @@ language completeness
 - template arguments
 - handler currying (arguments)
 - creating new items
+- file imports are relative to the process directory but should be relative to the file's directory

@@ -1,6 +1,8 @@
+import Global
+
 let renderHello = template(name) {
 	<em> "Hello dude" </em>
-	// <div> "Hello" name
+	<div> "Hello" name
 }
 
 for (item in Global.items) {

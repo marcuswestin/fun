@@ -90,7 +90,7 @@ var resolveItemProperty = function(context, ast) {
 var resolveStaticValue = function(context, ast) {
 	switch(ast.valueType) {
 		case 'string': return Types.infer(ast, [Types.byName.Text])
-		case 'number': return Types.infer(ast, [types.byName.Number])
+		case 'number': return Types.infer(ast, [Types.byName.Number])
 		default:       halt('Unknown static value type "'+ast.valueType+'"')
 	}
 }

@@ -1,3 +1,6 @@
+import Global
+import Local
+
 let addItem = handler() { Global.items.push(Local.text) }
 let containerStyle = { padding: 5, margin: 5, border: '1px solid' }
 

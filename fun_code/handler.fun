@@ -1,13 +1,16 @@
+import Local
+import Global
+
 let test = 'test'
 
 let handleClick1 = handler() {
-	set Global.x = 1
-	set Local.handlerTest = test
+	Global.x.set(1)
+	Local.handlerTest.set(test)
 }
 
 let handleClick2 = handler() {
-	set Global.x = 100
-	set Local.handlerTest = 'foo'
+	Global.x.set(100)
+	Global.x.set('foo')
 }
 
 <div> "Global.x = " Global.x </div>

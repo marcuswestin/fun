@@ -1,17 +1,20 @@
+import Global
+import Mouse
+
 <div>
-	"mouse: (" Local.mouseX "," Local.mouseY ")"
+	"mouse: (" Mouse.x "," Mouse.y ")"
 </div>
 
 <div>
-	if (Local.mouseX >= 100) { "mouse.x >= 100" }
+	if (Mouse.x >= 100) { "mouse.x >= 100" }
 	else { "mouse.x < 100" }
 </div>
 
 <div>
-	if (100 >= Local.mouseY) {
+	if (100 >= Mouse.y) {
 		"mouse.y < 100"
 	} else {
-		if (Local.mouseY <= 200) {
+		if (Mouse.y <= 200) {
 			"100 < mouse.y <= 200"
 		} else {
 			"100 < 200 < mouse.y"
@@ -20,6 +23,6 @@
 </div>
 
 <div>
-	if (Local.mouseY <= Local.mouseX) { "mouse.y <= mouse.x" }
+	if (Mouse.y <= Mouse.x) { "mouse.y <= mouse.x" }
 	else { "mouse.y > mouse.x" }
 </div>
