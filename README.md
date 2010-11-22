@@ -14,7 +14,7 @@ If you don't have node.js installed, you'll need to install it
 
 Now run the example chat app!
 
-	./fun chat.fun
+	./fun examples/chat.fun
 
 Production vs development environments
 --------------------------------------
