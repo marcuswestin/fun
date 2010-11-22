@@ -1,8 +1,9 @@
 TODOs
 -----
 - thefunlangage.com
-- Run server in browser
+- run server in browser
 - separate engines into pubsub/persistence
+- use less instead of css by default
 
 proofs of concept apps
 ----------------------
