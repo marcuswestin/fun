@@ -64,7 +64,7 @@ var parseStatement = function() {
 function parseBlock(statementType, statementParseFn) {
 	advance('symbol', L_CURLY, 'beginning of the '+statementType+'\'s block')
 	var block = []
-	while(!isAhead('symbol', R_CURLY)) {
+	while(!peek('symbol', R_CURLY)) {
 		advance()
 		block.push(statementParseFn())
 	}
@@ -111,7 +111,7 @@ var advance = function(type, value, expressionType) {
 	gToken = nextToken
 	return gToken
 }
-var isAhead = function(type, value, steps) {
+var peek = function(type, value, steps) {
 	var token = gTokens[gIndex + (steps || 1)]
 	if (!token) { return false }
 	if (type && findInArray(type, token.type) != token.type) { return false }
@@ -204,7 +204,7 @@ var parseItem = astGenerator(function() {
 	assert(gToken.type == 'symbol' && gToken.value == '@')
 	advance(['name', 'number'])
 	var itemID = gToken.value
-	if (isAhead('symbol', '.')) {
+	if (peek('symbol', '.')) {
 		// TODO parse property
 	}
 	return { type:'ITEM', id: itemID }
@@ -227,7 +227,7 @@ var parseAlias = astGenerator(function(msg) {
 var parseAliasOrInvocation = astGenerator(function() {
 	debug('parseAliasOrInvocation')
 	var alias = parseAlias()
-	if (isAhead('symbol', L_PAREN)) {
+	if (peek('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
 		var args = parseValueList(R_PAREN)
 		advance('symbol', R_PAREN)
@@ -248,7 +248,7 @@ function _parseNamespace(msg) {
 	while(true) {
 		assert(gToken.type == 'name')
 		namespace.push(gToken.value)
-		if (!isAhead('symbol', '.')) { break }
+		if (!peek('symbol', '.')) { break }
 		advance('symbol', '.', msg)
 		advance('name', null, msg)
 	}
@@ -271,7 +271,7 @@ var parseXML = astGenerator(function() {
 	} else {
 		var statements = []
 		while(true) {
-			if (isAhead('symbol', '<') && isAhead('symbol', '/', 2)) { break }
+			if (peek('symbol', '<') && peek('symbol', '/', 2)) { break }
 			advance()
 			statements.push(parseStatement())
 		}
@@ -289,7 +289,7 @@ var parseXML = astGenerator(function() {
 var parseXMLAttributes = function() {
 	debug('parseXMLAttributes')
 	var XMLAttributes = []
-	while (isAhead('name')) { XMLAttributes.push(_parseXMLAttribute()) }
+	while (peek('name')) { XMLAttributes.push(_parseXMLAttribute()) }
 	return XMLAttributes
 }
 
@@ -334,14 +334,14 @@ var parseAliasLiteral = astGenerator(function() {
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
 	var content = []
 	while (true) {
-		if (isAhead('symbol', R_CURLY)) { break }
+		if (peek('symbol', R_CURLY)) { break }
 		var nameValuePair = {}
 		advance(['name','string'])
 		nameValuePair.name = gToken.value
 		advance('symbol', ':')
 		nameValuePair.value = parseValueOrAlias()
 		content.push(nameValuePair)
-		if (!isAhead('symbol', ',')) { break }
+		if (!peek('symbol', ',')) { break }
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
@@ -357,9 +357,9 @@ var parseArrayLiteral = astGenerator(function() {
 function parseValueList(breakSymbol) {
 	var list = []
 	while (true) {
-		if (isAhead('symbol', breakSymbol)) { break }
+		if (peek('symbol', breakSymbol)) { break }
 		list.push(parseValueOrAlias())
-		if (!isAhead('symbol', ',')) { break }
+		if (!peek('symbol', ',')) { break }
 		advance('symbol', ',')
 	}
 	return list
@@ -403,7 +403,7 @@ var parseIfStatement = astGenerator(function() {
 	var ifBlock = parseBlock('if statement', parseStatement)
 	
 	var elseBlock = null
-	if (isAhead('keyword', 'else')) {
+	if (peek('keyword', 'else')) {
 		advance('keyword', 'else')
 		elseBlock = parseBlock('else statement', parseStatement)
 	}
@@ -421,7 +421,7 @@ var parseCondition = astGenerator(function() {
 	var left = parseStatement()
 	
 	var comparison, right
-	if (isAhead('symbol', '<,<=,>,>=,==,!='.split(','))) {
+	if (peek('symbol', '<,<=,>,>=,==,!='.split(','))) {
 		advance('symbol')
 		comparison = gToken.value
 		advance(['string', 'number', 'name'])
@@ -461,9 +461,9 @@ function parseList(itemParseFn) {
 	debug('parseSignature')
 	var args = []
 	while (true) {
-		if (isAhead('symbol', R_PAREN)) { break }
+		if (peek('symbol', R_PAREN)) { break }
 		args.push(itemParseFn())
-		if (!isAhead('symbol', ',')) { break }
+		if (!peek('symbol', ',')) { break }
 		advance('symbol', ',')
 	}
 	return args
