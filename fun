@@ -18,7 +18,7 @@ var sourceFile = argv._[0],
 
 /* HTTP server
  *************/
-void(function() {
+function startHTTPServer() {
 	var funJS = fs.readFileSync(__dirname + '/language/lib.js')
 	http.createServer(function(req, res) {
 		var match
@@ -40,11 +40,11 @@ void(function() {
 			res.end(htmlOutput)
 		}
 	}).listen(port, host)
-})();
+}
 
 /* Fin/js.io server
  ******************/
-void(function() {
+function startFinServer() {
 	require('./lib/fin/lib/js.io/packages/jsio')
 	
 	jsio.addPath('lib/fin/js', 'shared')
@@ -71,7 +71,7 @@ void(function() {
 	
 	// // for robots
 	// finServer.listen('tcp', { port: 5556, timeout: 0 }) 
-})();
+}
 
 /* Compilation
  *************/
@@ -81,7 +81,7 @@ var tokenizer = require('./language/tokenizer'),
 	compiler = require('./language/compiler')
 
 var compiledJS, htmlOutput
-function compile() {
+function compileFunCode() {
 	sys.puts('tokenize...')
 	var tokens = tokenizer.tokenize(sourceFile)
 	sys.puts('parse...')
@@ -108,10 +108,12 @@ function compile() {
 fs.watchFile(sourceFile, function(currStat, prevStat) {
 	if (currStat.mtime.getTime() == prevStat.mtime.getTime()) { return }
 	sys.puts('detected change to ' + sourceFile + ' - recompiling')
-	compile()
+	compileFunCode()
 	sys.puts('done recompiling')
 })
 
-compile()
+compileFunCode()
+startHTTPServer()
+startFinServer()
 
 sys.puts('\nWoot!! ' + sourceFile + ' is running using the '+engine+' engine. Now point your browser to ' + host + ':' + port)
