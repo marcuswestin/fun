@@ -78,7 +78,8 @@ function startFinServer() {
 var tokenizer = require('./language/tokenizer'),
 	parser = require('./language/parser'),
 	resolver = require('./language/resolver'),
-	compiler = require('./language/compiler')
+	compiler = require('./language/compiler'),
+	util = require('./language/util')
 
 var compiledJS, htmlOutput
 function compileFunCode() {
@@ -91,6 +92,7 @@ function compileFunCode() {
 	sys.puts('compile...')
 	
 	compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
+	compiledJS = util.indent(compiledJS)
 	htmlOutput = [
 		'<!doctype html>',
 		'<html>',
