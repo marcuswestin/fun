@@ -23,17 +23,17 @@ function startHTTPServer() {
 	http.createServer(function(req, res) {
 		var match
 		if (match = req.url.match(/\/fin\/(.*)/)) {
-			res.writeHead(200, {'Content-Type':'application/javascript'})
 			fs.readFile(__dirname + '/lib/fin/' + match[1], function(err, text) {
-				res.end(text)
+				res.writeHead(err ? 404 : 200, {'Content-Type':'application/javascript'})
+				res.end(text || '')
 			})
 		} else if (req.url == '/fun/fun.js') {
 			res.writeHead(200, {'Content-Type':'application/javascript'})
 			res.end(funJS)
 		} else if (match = req.url.match(/(.*\.css)$/)) {
-			res.writeHead(200, {})
 			fs.readFile(__dirname + match[1], function(err, text) {
-				res.end(text)
+				res.writeHead(err ? 404 : 200, {})
+				res.end(text || '')
 			})
 		} else {
 			res.writeHead(200, {'Content-Type':'text/html'})
