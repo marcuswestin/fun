@@ -51,13 +51,13 @@ util.map = function(arr, fn) {
 util.each = function(arr, fn) {
 	for (var i=0; i < arr.length; i++) fn(arr[i], i)
 }
-util.pick = function(arr, fn) {
+util.pickOne = function(arr, fn) {
 	for (var res, i=0; i < arr.length; i++) {
 		res = fn(arr[i], i)
-		if (res) { return res }
+		if (typeof res != 'undefined') { return res }
 	}
 }
-util.mapTruthy = function(arr, fn) {
+util.pick = function(arr, fn) {
 	var result = []
 	for (var i=0, value; i < arr.length; i++) {
 		value = fn(arr[i])

@@ -4,7 +4,7 @@ var Types = exports,
 
 /* List type definitions
  ***********************/
-Types.definitions = util.mapTruthy(fs.readdirSync(__dirname), function(item) {
+Types.definitions = util.pick(fs.readdirSync(__dirname), function(item) {
 	var jsFileMatch = item != 'index.js' && item.match(/^(.*)\.js$/)
 	return jsFileMatch && require(__dirname+'/'+jsFileMatch[1])
 })
@@ -33,7 +33,7 @@ Types.infer = function(ast, possibleTypes) {
 	return ast
 }
 Types.inferByMethod = function(ast, method) {
-	return util.mapTruthy(Types.definitions, function(definition) {
+	return util.pick(Types.definitions, function(definition) {
 		if (ast.method in definition.mutations) {
 			return definition.name
 		}
@@ -53,8 +53,7 @@ var inferenceOrder = ['Text', 'Number']
 Types.decide = function(ast) {
 	var possibleTypes = inferredTypes[getValueID(ast)]
 	if (possibleTypes.length > 1) { suggest() }
-	return util.pick(inferenceOrder, function(inferedType) {
-		var index = possibleTypes.indexOf(inferedType)
-		if (index != -1) { return orderedType }
+	return util.pickOne(inferenceOrder, function(inferedType) {
+		if (possibleTypes.indexOf(inferedType) != -1) { return orderedType }
 	}) || possibleTypes.sort()[0]
 }
