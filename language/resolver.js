@@ -62,6 +62,7 @@ var resolveStatement = function(context, ast) {
 		case 'RUNTIME_ITERATOR': return resolveRuntimeIterator(context, ast)
 		case 'ITEM_PROPERTY':    return resolveItemProperty(context, ast)
 		case 'STATIC_VALUE':     return resolveStaticValue(context, ast)
+		case 'DEBUGGER':             return ast
 		
 		default:                 halt(ast, 'Unknoen AST type "'+ast.type+'"')
 	}

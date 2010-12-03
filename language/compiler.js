@@ -53,6 +53,7 @@ function compileStatement(context, ast) {
 		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
 		case 'FOR_LOOP':         return compileForLoop(context, ast)
 		case 'INVOCATION':       return compileInvocation(context, ast)
+		case 'DEBUGGER':         return 'debugger'
 		
 		default:                 halt(ast, 'Unknown AST type ' + ast.type)
 	}
@@ -354,6 +355,7 @@ function compileHandlerDeclaration(ast) {
 
 function _compileMutationStatement(context, ast) {
 	var type = Types.decide(ast.value)
+	if (ast.type == 'DEBUGGER') { return 'debugger' }
 	return code(ast,
 		'fun.mutate({{ operation }}, {{ id }}, {{ prop }}, [{{ args }}])',
 		{

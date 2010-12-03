@@ -50,10 +50,11 @@ var parseStatement = function() {
 			return parseAliasOrInvocation()
 		case 'keyword':
 			switch (gToken.value) {
-				case 'import': return parseImport()
-				case 'let':    return parseDeclaration()
-				case 'for':    return parseForLoop()
-				case 'if':     return parseIfStatement()
+				case 'import':   return parseImport()
+				case 'let':      return parseDeclaration()
+				case 'for':      return parseForLoop()
+				case 'if':       return parseIfStatement()
+				case 'debugger': return parseDebuggerStatement()
 				default:       halt('Unexpected keyword "'+gToken.value+'" at the beginning of a statement')
 			}
 		default:
@@ -72,10 +73,15 @@ function parseBlock(statementType, statementParseFn) {
 	return block
 }
 
+var parseDebuggerStatement = astGenerator(function() {
+	return {type:'DEBUGGER'}
+})
+
 /***********************
  * Mutation statements *
  ***********************/
 var parseMutationStatement = astGenerator(function() {
+	if (gToken.type == 'symbol' && gToken.value == 'debugger') { return parseDebuggerStatement() }
 	var alias = parseAlias('Object mutation'),
 		method = alias.namespace.pop() // e.g. task.title.set() -> namespace ['task','title'], method 'set'
 	
