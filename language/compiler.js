@@ -298,7 +298,7 @@ function compileDeclaration(declaration) {
 	switch (declaration.type) {
 		case 'TEMPLATE':  return compileTemplateDeclaration(declaration)
 		case 'HANDLER':   return compileHandlerDeclaration(declaration)
-		default:          return ''
+		default:          halt(declaration, 'Found declaration that requires compilation of unknown type')
 	}
 }
 
