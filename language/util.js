@@ -5,6 +5,11 @@ var sys = require('sys'),
 
 var q = util.q = function(val) { return JSON.stringify(val) }
 
+var _uniqueId = 0
+util.name = function(readable) {
+	return '_' + (readable || '') + '$' + (_uniqueId++)
+}
+
 util.debug = function(msg) {
 	// console.log(msg)
 }

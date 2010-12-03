@@ -80,18 +80,48 @@ var parseDebuggerStatement = astGenerator(function() {
 /***********************
  * Mutation statements *
  ***********************/
-var parseMutationStatement = astGenerator(function() {
-	if (gToken.type == 'symbol' && gToken.value == 'debugger') { return parseDebuggerStatement() }
+var parseMutationStatement = function() {
+	switch(gToken.type) {
+		case 'keyword':
+			switch(gToken.value) {
+				case 'let':       return parseMutationAssignment()
+				case 'debugger':  return parseDebuggerStatement()
+				default:          console.log(gToken); UNKNOWN_MUTATION_KEYWORD
+			}
+		default:
+			return parseValueMutation()
+	}
+}
+
+var parseMutationAssignment = astGenerator(function() {
+	var namespace = [advance('name').value]
+	advance('symbol', '=')
+	var value = parseValueOrAliasOrItemCreation()
+	return {type: 'MUTATION_DECLARATION', namespace:namespace, value:value}
+})
+
+var parseValueMutation = astGenerator(function() {
 	var alias = parseAlias('Object mutation'),
 		method = alias.namespace.pop() // e.g. task.title.set() -> namespace ['task','title'], method 'set'
 	
 	advance('symbol', L_PAREN)
-	var args = parseList(parseValueOrAlias)
+	var args = parseList(parseValueOrAliasOrItemCreation)
 	advance('symbol', R_PAREN)
 	
 	return {type: 'MUTATION', alias:alias, method:method, args:args}
 })
 
+var parseValueOrAliasOrItemCreation = function() {
+	if (peek('keyword', 'new')) { return parseItemCreation() }
+	else { return parseValueOrAlias() }
+}
+
+var parseItemCreation = astGenerator(function() {
+	advance('keyword', 'new')
+	advance('symbol', L_CURLY)
+	var itemProperties = parseAliasLiteral()
+	return {type: 'MUTATION_ITEM_CREATION', properties:itemProperties}
+})
 
 /*******************
  * Utility methods *
@@ -122,7 +152,7 @@ var peek = function(type, value, steps) {
 	if (!token) { return false }
 	if (type && findInArray(type, token.type) != token.type) { return false }
 	if (value && findInArray(value, token.value) != token.value) { return false }
-	return true
+	return token
 }
 // Find an item in an array and return it
 //  if target is in array, return target
@@ -353,7 +383,7 @@ var parseAliasLiteral = astGenerator(function() {
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
 	return { type:'NESTED_ALIAS', content:content }
 })
-var parseArrayLiteral = astGenerator(function() {
+var parseListLiteral = astGenerator(function() {
 	debug('parseListLiteral')
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
 	var content = parseValueList(R_ARRAY)

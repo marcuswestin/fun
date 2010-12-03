@@ -8,6 +8,8 @@ var tokenizer = require('./tokenizer'),
 var util = require('./util'),
 	bind = util.bind,
 	map = util.map,
+	each = util.each,
+	name = util.name,
 	shallowCopy = util.shallowCopy
 
 // Resolve imports by injecting declarations into the reference table
@@ -44,27 +46,30 @@ var resolve = function(context, ast) {
 
 var resolveStatement = function(context, ast) {
 	switch(ast.type) {
-		case 'IMPORT_MODULE':    handleModuleImport(context, ast)      ;break
-		case 'IMPORT_FILE':      handleFileImport(context, ast)        ;break
-		case 'DECLARATION':      handleDeclaration(context, ast)       ;break
+		case 'IMPORT_MODULE':        handleModuleImport(context, ast)      ;break
+		case 'IMPORT_FILE':          handleFileImport(context, ast)        ;break
+		case 'DECLARATION':          handleDeclaration(context, ast)       ;break
 		
-		case 'HANDLER':          return resolveHandler(context, ast)
+		case 'XML':                  return resolveXML(context, ast)
+		case 'IF_STATEMENT':         return resolveIfStatement(context, ast)
+		case 'FOR_LOOP':             return resolveForLoop(context, ast)
+		case 'INVOCATION':           return resolveInvocation(context, ast)
+
+		case 'MUTATION':             return resolveMutation(context, ast)
+		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)
 		
-		case 'XML':              return resolveXML(context, ast)
-		case 'IF_STATEMENT':     return resolveIfStatement(context, ast)
-		case 'FOR_LOOP':         return resolveForLoop(context, ast)
-		case 'INVOCATION':       return resolveInvocation(context, ast)
-		case 'MUTATION':         return resolveMutation(context, ast)
+		case 'NESTED_ALIAS':         return lookup(context, ast)
+		case 'ALIAS':                return resolveStatement(context, lookup(context, ast))
 		
-		case 'NESTED_ALIAS':     return lookup(context, ast)
-		case 'ALIAS':            return resolveStatement(context, lookup(context, ast))
+		case 'RUNTIME_ITERATOR':     return resolveRuntimeIterator(context, ast)
+		case 'ITEM_PROPERTY':        return resolveItemProperty(context, ast)
+		case 'STATIC_VALUE':         return resolveStaticValue(context, ast)
 		
-		case 'RUNTIME_ITERATOR': return resolveRuntimeIterator(context, ast)
-		case 'ITEM_PROPERTY':    return resolveItemProperty(context, ast)
-		case 'STATIC_VALUE':     return resolveStaticValue(context, ast)
+		// Inline handler - will be compiled inline. Fall through to debugger to then return the AST
+		case 'HANDLER':              resolve(_createScope(context), ast.block)
 		case 'DEBUGGER':             return ast
 		
-		default:                 halt(ast, 'Unknoen AST type "'+ast.type+'"')
+		default:                     halt(ast, 'Unknown AST type "'+ast.type+'"')
 	}
 }
 
@@ -157,13 +162,12 @@ var resolveMutation = function(context, ast) {
 /* For loops
  ************/
 var resolveForLoop = function(context, ast) {
+	ast.runtimeName = name('RUNTIME_NAME')
 	ast.iterable = lookup(context, ast.iterable)
-	assert(ast, ast.iterable.property.length == 1, 'TODO: Handle nested item property references')
-	Types.infer(ast.iterable, [Types.byName.List.of(ast.iterator)])
+	ast.iterator.value.iterable = ast.iterable
+	Types.infer(ast.iterable, [Types.byName.List])
 	var loopContext = _createScope(context)
 	handleDeclaration(loopContext, ast.iterator)
-	// The iterator needs a reference to the iterable for type inference (Types/index.js)
-	ast.iterator.value.iterable = ast.iterable
 	ast.block = resolve(loopContext, ast.block)
 	return ast
 }
@@ -193,16 +197,23 @@ var resolveIfStatement = function(context, ast) {
 var handleDeclaration = function(context, ast) {
 	ast.value = lookup(context, ast.value)
 	_storeAlias(context, ast)
-	if (ast.value.type == 'TEMPLATE') {
-		context.declarations.push(ast.value)
-		resolve(_createScope(context), ast.value.block)
-	}
+	handleDeclarationsWithCompilation(context, ast.value)
 }
 
-var resolveHandler = function(context, ast) {
-	context.declarations.push(ast)
-	resolve(_createScope(context), ast.block)
-	return ast
+// some types need compiled code just by being declared
+var handleDeclarationsWithCompilation = function(context, ast) {
+	switch(ast.type) {
+		case 'TEMPLATE':
+		case 'HANDLER':
+			context.declarations.push(ast)
+			resolve(_createScope(context), ast.block)
+			break
+		case 'MUTATION_ITEM_CREATION':
+			each(ast.properties.content, function(prop) {
+				prop.value = lookup(context, prop.value)
+			})
+		default:
+	}
 }
 
 var _storeAlias = function(context, ast) {
@@ -232,6 +243,10 @@ var _getAlias = function(context, ast, skipLast) {
 		len = namespace.length - (skipLast ? 1 : 0)
 	
 	for (var i=0; i < len; i++) {
+		if (value.type == 'RUNTIME_ITERATOR' || value.type == 'ITEM_PROPERTY') {
+			value.HACKitemProperty = namespace[1] // TODO This is a hack for compileRuntimeIterator to know what property is accessed
+			return value
+		}
 		value = value['__alias__' + namespace[i]]
 		assert(ast, value, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
 		if (value.type == 'ITEM') {

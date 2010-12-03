@@ -26,6 +26,13 @@ function getValueID(valueAST) {
 	}
 }
 
+Types.get = function(ast) {
+	if (ast.type == 'RUNTIME_ITERATOR') {
+		ast = ast.iterable
+	}
+	var valueID = getValueID(ast)
+	return inferredTypes[valueID] || []
+}
 Types.infer = function(ast, possibleTypes) {
 	var valueID = getValueID(ast)
 	if (!inferredTypes[valueID]) { inferredTypes[valueID] = possibleTypes }

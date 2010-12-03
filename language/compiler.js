@@ -6,6 +6,8 @@ var fs = require('fs'),
 	Tags = require('./Tags'),
 	bind = util.bind,
 	map = util.map,
+	pick = util.pick,
+	name = util.name,
 	boxComment = util.boxComment,
 	q = util.q
 
@@ -44,11 +46,9 @@ function compile(context, ast) {
 function compileStatement(context, ast) {
 	if (!ast) { return '' }
 	switch (ast.type) {
-		case 'RUNTIME_ITERATOR': // TODO Give types to the runtime iterator values,
-		                         // so that list iterators can take other things than static
-		                         // for now, fall through to STATIC_VALUE
 		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
 		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
+		case 'RUNTIME_ITERATOR': return compileRuntimeIterator(context, ast);
 		case 'XML':              return compileXML(context, ast)
 		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
 		case 'FOR_LOOP':         return compileForLoop(context, ast)
@@ -56,6 +56,26 @@ function compileStatement(context, ast) {
 		case 'DEBUGGER':         return 'debugger'
 		
 		default:                 halt(ast, 'Unknown AST type ' + ast.type)
+	}
+}
+
+function compileRuntimeIterator(context, ast) {
+	// TODO This function uses HACKitemProperty
+	// TODO this function assumes that the iterable is an item property.
+	//  It would be nice if it could be a static inline-defined list
+	if (ast.iterable.type == 'ITEM_PROPERTY') {
+		return code(ast,
+			'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
+			'	fun.getHook({{ hookName }}).innerHTML = value',
+			'})',
+			{
+				hookName: context.hookName,
+				id: ast.name,
+				property: q(ast.HACKitemProperty),
+				type: q('BYTES')
+			})
+	} else {
+		halt(ast, 'Unknown iterable type "'+ast.iterable.type+'"')
 	}
 }
 
@@ -76,6 +96,8 @@ function _getValue(ast) {
 	switch(ast.type) {
 		case 'STATIC_VALUE':     return q(ast.value)
 		case 'RUNTIME_ITERATOR': return ast.name
+		case 'LIST':             return q(ast.content)
+		case 'ITEM_PROPERTY':    return 'fun.cachedValue('+q(ast.item.id)+','+q(ast.property.join('.'))+')'
 		default: halt(ast, 'Unknown value type "'+ast.type+'"')
 	}
 }
@@ -272,16 +294,15 @@ function compileIfStatement(context, ast) {
  * For loops *
  *************/
 function compileForLoop(context, ast) {
-	var iteratorName = name('FOR_LOOP_ITERATOR_VALUE'),
-		loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
+	var loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	
-	ast.iterator.value.name = iteratorName
+	ast.iterator.value.name = ast.runtimeName // TODO why do we do this?
 	
 	return code(ast,
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ loopHookName }})',
 		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
-		'function onMutation({{ iteratorName }}, op) {',
+		'function onMutation({{ iteratorRuntimeName }}, op) {',
 		'	var {{ emitHookName }} = fun.name()',
 		'	fun.hook({{ loopHookName }}, {{ emitHookName }}, { prepend: (op=="unshift") })',
 		'	{{ loopCode }}',
@@ -290,8 +311,8 @@ function compileForLoop(context, ast) {
 			parentHook: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
 			itemID: q(ast.iterable.item.id),
-			propertyName: q(ast.iterable.property[0]),
-			iteratorName: iteratorName,
+			propertyName: q(ast.iterable.property.join('.')),
+			iteratorRuntimeName: ast.runtimeName,
 			emitHookName: loopContext.hookName,
 			loopCode: compile(loopContext, ast.block)
 		})
@@ -335,6 +356,22 @@ function _compileTemplateInvocation(context, invocationAST, templateAST) {
 		})
 }
 
+function compileMutationItemCreation(ast) {
+	// get the item creation property values -> fun.create({ prop1:val1, prop2:val2, ... })
+	//  TODO: do we need to wait for promises for the values that are itemProperties?
+	var propertiesCode = pick(ast.properties.content, function(prop) {
+		return prop.name + ':' + _getValue(prop.value)
+	}).join(',')
+	
+	ast.promiseName = name('ITEM_CREATION_PROMISE')
+	return code(ast,
+		'var {{ promiseName }} = fun.create({ {{ propertiesCode }} })',
+		{
+			promiseName: ast.promiseName,
+			propertiesCode: propertiesCode
+		})
+}
+
 /************
  * Handlers *
  ************/
@@ -354,27 +391,38 @@ function compileHandlerDeclaration(ast) {
 }
 
 function _compileMutationStatement(context, ast) {
-	var type = Types.decide(ast.value)
 	if (ast.type == 'DEBUGGER') { return 'debugger' }
+	if (ast.value.type == 'MUTATION_ITEM_CREATION') {
+		return compileMutationItemCreation(ast.value)
+	}
+	// TODO Need to check if any of the ast.args are asynchronously retrieved, in which case we need
+	//  to wait for them
+	var promiseNames = pick(ast.args, function(arg) { return arg.promiseName })
 	return code(ast,
-		'fun.mutate({{ operation }}, {{ id }}, {{ prop }}, [{{ args }}])',
+		'fun.waitForPromises({{ promiseNames }}, function() {',
+		'	fun.mutate({{ operation }}, {{ id }}, {{ prop }}, [{{ args }}])',
+		'})',
 		{
+			promiseNames: '['+promiseNames.join(',')+']',
 			operation: q(ast.method),
 			id: q(ast.value.item.id),
-			prop: q(ast.value.property[0]),
-			args: _cachedValueCode(ast.args)
+			prop: q(ast.value.property.join('.')),
+			args: _cachedValueListCode(ast.args)
 		})
 }
 
-function _cachedValueCode(args) {
+function _cachedValueListCode(args) {
 	return map(args, function(arg) {
-		if (arg.type == 'STATIC_VALUE') { return q(arg.value) }
-		else { return code(arg,
-			'fun.cachedValue({{ itemID }}, {{ property }})',
-			{
-				itemID: q(arg.item.id),
-				property: q(arg.property[0])
-			})
+		switch (arg.type) {
+			case 'STATIC_VALUE': return q(arg.value)
+			case 'MUTATION_ITEM_CREATION': return arg.promiseName+'.fulfillment[0]' // the fulfillment is [itemID]
+			case 'RUNTIME_ITERATOR': return arg.name
+			default: return code(arg,
+				'fun.cachedValue({{ itemID }}, {{ property }})',
+				{
+					itemID: q(arg.item.id), // this can be a runtime item ID
+					property: q(arg.property[0])
+				})
 		}
 	}).join(',')
 }
@@ -389,7 +437,6 @@ function _compileHandlerInvocation(context, invocationAST, handlerAST) {
 function compileInvocation(context, ast) {
 	switch(ast.invocable.type) {
 		case 'TEMPLATE': return _compileTemplateInvocation(context, ast, ast.invocable)
-		case 'HANDLER':  return _compileHandlerInvocation(context, ast, ast.invocable)
 		default:         halt(ast, 'Couldn\'t invoce the value of type "'+ast.type+'". Expected a template or a handler.')
 	}
 }
@@ -397,9 +444,6 @@ function compileInvocation(context, ast) {
 /*********************
  * Utility functions *
  *********************/
-function name(readable) { return '_' + (readable || '') + '$' + (name._uniqueId++) }
-name._uniqueId = 0
-
 var emitReplaceRegex = /{{\s*(\w+)\s*}}/
 function code(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,

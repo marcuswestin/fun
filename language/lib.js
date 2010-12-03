@@ -1,6 +1,6 @@
 // from lib.js
 fun = {}
-jsio('from shared.javascript import bind, blockCallback');
+jsio('from shared.javascript import bind, blockCallback, getPromise');
 ;(function() {
 	
 	var doc = document
@@ -43,8 +43,8 @@ jsio('from shared.javascript import bind, blockCallback');
 		else { _hookCallbacks[hookName] = [callback] }
 	}
 
-/* Mutations
- ***********/
+/* Mutations/Creations
+ *********************/
 	fun.mutate = function(op, id, propName, args) {
 		var doMutate = bind(fin, 'mutate', op.toLowerCase(), id, propName, args)
 		if (id == 'LOCAL') { doMutate() }
@@ -53,6 +53,13 @@ jsio('from shared.javascript import bind, blockCallback');
 	fun.cachedValue = function(id, propName) {
 		var mutation = fin.getCachedMutation(id, propName)
 		return mutation && mutation.value
+	}
+	fun.create = function(properties) {
+		var promise = getPromise()
+		fin.connect(bind(fin, 'create', properties, function() {
+			promise.fulfill.apply(this, arguments)
+		}))
+		return promise
 	}
 	
 /* Observations
@@ -103,4 +110,14 @@ jsio('from shared.javascript import bind, blockCallback');
 /* Utility functions
  *******************/
 	fun.block = blockCallback
+	
+	fun.waitForPromises = function(promises, callback) {
+		if (promises.length == 0) { callback() }
+		else {
+			var block = blockCallback(callback)
+			for (var i=0; i<promises.length; i++) {
+				promises[i](block.addBlock())
+			}
+		}
+	}
 })()
