@@ -86,7 +86,6 @@ function _getValue(ast) {
 function compileItemProperty(context, ast) {
 	assert(ast, ast.property.length > 0, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
 	assert(ast, ast.property.length == 1, 'TODO: Handle nested property references')
-	var hookName = name('ITEM_PROPERTY_HOOK')
 	return code(ast,
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ parentHook }}, {{ hookName }})',
@@ -95,7 +94,7 @@ function compileItemProperty(context, ast) {
 		'})',
 		{
 			parentHook: context.hookName,
-			hookName: hookName,
+			hookName: name('ITEM_PROPERTY_HOOK'),
 			id: q(ast.item.id),
 			property: q(ast.property[0]),
 			type: q('BYTES')
