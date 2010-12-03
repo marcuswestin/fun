@@ -216,7 +216,7 @@ function compileIfStatement(context, ast) {
 		right = ast.condition.right,
 		ifContext = util.shallowCopy(context, { hookName: name('IF_HOOK') }),
 		elseContext = util.shallowCopy(context, { hookName: name('ELSE_HOOK') }),
-		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right.type == 'ITEM_PROPERTY') }
+		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right ? right.type == 'ITEM_PROPERTY' : false) }
 	
 	return code(ast,
 		'var {{ ifHookName }} = fun.name(),',
@@ -250,8 +250,8 @@ function compileIfStatement(context, ast) {
 			leftIsDynamic: isDynamic.left,
 			rightIsDynamic: isDynamic.right,
 			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : _getValue(left),
-			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : _getValue(right),
-			comparison: ast.condition.comparison,
+			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : right ? _getValue(right) : null,
+			comparison: ast.condition.comparison || '||', // if there is no comparison/right side, just use OR
 			leftID: isDynamic.left && q(left.item.id),
 			rightID: isDynamic.right && q(right.item.id),
 			leftProperty: isDynamic.left && q(left.property[0]),

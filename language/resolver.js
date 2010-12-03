@@ -177,9 +177,13 @@ var resolveRuntimeIterator = function(context, ast) {
  ****************/
 var resolveIfStatement = function(context, ast) {
 	ast.condition.left = lookup(context, ast.condition.left)
-	ast.condition.right = lookup(context, ast.condition.right)
+	if (ast.condition.right) {
+		ast.condition.right = lookup(context, ast.condition.right)
+	}
 	ast.ifBlock = resolve(_createScope(context), ast.ifBlock)
-	ast.elseBlock = resolve(_createScope(context), ast.elseBlock)
+	if (ast.elseBlock) {
+		ast.elseBlock = resolve(_createScope(context), ast.elseBlock)
+	}
 	return ast
 }
 
