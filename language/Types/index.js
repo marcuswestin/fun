@@ -22,7 +22,7 @@ function getValueID(valueAST) {
 		case 'STATIC_VALUE':     return valueAST.valueType + ':' + valueAST.value
 		case 'ITEM_PROPERTY':    return 'item:' + valueAST.item.id
 		case 'RUNTIME_ITERATOR': return 'iterator:' + getValueID(valueAST.iterable)
-		default:                 UNDEFINED_VALUEAST
+		default:                 console.log(valueAST); UNDEFINED_VALUEAST
 	}
 }
 
