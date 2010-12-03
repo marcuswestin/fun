@@ -198,14 +198,20 @@ function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value
 
 // modifies dynamicCode
 function _handleHandlerAttribute(nodeHookName, ast, dynamicCode, handlerName, handlerAST) {
+	var handlerFunctionCode
+	if (handlerAST.compiledFunctionName) {
+		handlerFunctionCode = handlerAST.compiledFunctionName
+	} else {
+		handlerFunctionCode = compileHandlerDeclaration(handlerAST)
+	}
 	dynamicCode.push(code(ast,
 		'fun.withHook({{ hookName }}, function(hook) {',
-		'	fun.on(hook, "{{ handlerName }}", {{ compiledFunctionName }})',
+		'	fun.on(hook, "{{ handlerName }}", {{ handlerFunctionCode }})',
 		'})',
 		{
 			hookName: nodeHookName,
 			handlerName: handlerName.toLowerCase(),
-			compiledFunctionName: handlerAST.compiledFunctionName
+			handlerFunctionCode: handlerFunctionCode
 		}))
 }
 /**********************
