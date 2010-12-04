@@ -457,6 +457,7 @@ function code(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
 		var wholeMatch = match[0],
 			nameMatch = match[1],
 			value = injectObj[nameMatch]
+		assert(ast, typeof value != 'function', 'Found a function passed in as a value to code()')
 		assert(ast, typeof value != 'undefined', 'Missing inject value "'+nameMatch+'"')
 		code = code.replace(wholeMatch, value)
 	}
