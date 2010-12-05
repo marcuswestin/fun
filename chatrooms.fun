@@ -22,9 +22,8 @@ if (Local.currentRoom) {
 	<div class="currentChatroom">
 		<div class="messages">
 			for (message in Local.currentRoom.messages) {
-				<div class="message">
-					message.sender ': "' message.text '"'
-				</div>
+				<input class="message" data=message.text style={ width: 350 }/>
+				<br />
 			}
 		</div>
 		<input data=Local.messageText /><button>"Send"</button onclick=handler() {
