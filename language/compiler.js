@@ -102,6 +102,27 @@ function _getValue(ast) {
 	}
 }
 
+function _getItemID(ast) {
+	switch(ast.type) {
+		case 'RUNTIME_ITERATOR':
+			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', '_getItemID expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
+			return ast.name
+		case 'ITEM_PROPERTY':
+			return q(ast.item.id)
+		default: halt(ast, 'Unknown value type "'+ast.type+'"')
+	}
+}
+
+function _getPropertyName(ast) {
+	switch(ast.type) {
+		case 'RUNTIME_ITERATOR':
+			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', '_getPropertyName expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
+			return q(ast.HACKitemProperty)
+		case 'ITEM_PROPERTY':
+			return q(ast.property.join('.'))
+		default: halt(ast, 'Unknown value type "'+ast.type+'"')
+	}
+}
 
 /************************
  * Item Property values *
@@ -198,8 +219,8 @@ function _handleDataAttribute(nodeHookName, ast, dynamicCode, value) {
 		'})',
 		{
 			hookName: nodeHookName,
-			itemID: q(value.item.id),
-			property: q(value.property[0])
+			itemID: _getItemID(value),
+			property: _getPropertyName(value)
 		}))
 }
 
