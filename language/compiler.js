@@ -85,7 +85,7 @@ function compileRuntimeIterator(context, ast) {
 // TODO This should be using Types[ast.value.type].emit(ast.value)
 function compileStaticValue(context, ast) {
 	return code(ast,
-		'fun.hook({{ parentHook }}, fun.name("inlineString")).innerHTML = {{ value }}',
+		'fun.hook(fun.name("inlineString"), {{ parentHook }}).innerHTML = {{ value }}',
 		{
 			parentHook: context.hookName,
 			value: _getValue(ast)
@@ -132,7 +132,7 @@ function compileItemProperty(context, ast) {
 	assert(ast, ast.property.length == 1, 'TODO: Handle nested property references')
 	return code(ast,
 		'var {{ hookName }} = fun.name()',
-		'fun.hook({{ parentHook }}, {{ hookName }})',
+		'fun.hook({{ hookName }}, {{ parentHook }})',
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.getHook({{ hookName }}).innerHTML = value',
 		'})',
@@ -155,7 +155,7 @@ function compileXML(context, ast) {
 	var attributes = _handleXMLAttributes(nodeHookName, ast)
 	return code(ast,
 		'var {{ hookName }} = fun.name()',
-		'fun.hook({{ parentHook }}, {{ hookName }}, { tagName:{{ tagName }}, attrs:{{ staticAttributes }} })',
+		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ staticAttributes }} })',
 		'{{ dynamicAttributesCode }}',
 		'{{ childCode }}',
 		{
@@ -272,8 +272,8 @@ function compileIfStatement(context, ast) {
 		'var {{ ifHookName }} = fun.name(),',
 		'	{{ elseHookName }} = fun.name()',
 		';(function(ifBranch, elseBranch) {',
-		'	fun.hook({{ parentHookName }}, {{ ifHookName }})',
-		'	fun.hook({{ parentHookName }}, {{ elseHookName }})',
+		'	fun.hook({{ ifHookName }}, {{ parentHookName }})',
+		'	fun.hook({{ elseHookName }}, {{ parentHookName }})',
 		'	var ready = fun.block(evaluate, {fireOnce: false}), lastTime',
 		'	{{ leftIsDynamic }} && fun.observe("BYTES", {{ leftID }}, {{ leftProperty }}, ready.addBlock())',
 		'	{{ rightIsDynamic }} && fun.observe("BYTES", {{ rightID }}, {{ rightProperty }}, ready.addBlock())',
@@ -321,11 +321,11 @@ function compileForLoop(context, ast) {
 	
 	return code(ast,
 		'var {{ loopHookName }} = fun.name()',
-		'fun.hook({{ parentHook }}, {{ loopHookName }})',
+		'fun.hook({{ loopHookName }}, {{ parentHook }})',
 		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
 		'function onMutation({{ iteratorRuntimeName }}, op) {',
 		'	var {{ emitHookName }} = fun.name()',
-		'	fun.hook({{ loopHookName }}, {{ emitHookName }}, { prepend: (op=="unshift") })',
+		'	fun.hook({{ emitHookName }}, {{ loopHookName }}, { prepend: (op=="unshift") })',
 		'	{{ loopCode }}',
 		'}',
 		{

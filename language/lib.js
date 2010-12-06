@@ -14,7 +14,7 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 		_hookCallbacks = {}
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
 	fun.getHook = function(name) { return _hooks[name] }
-	fun.hook = function(parentName, name, opts) {
+	fun.hook = function(name, parentName, opts) {
 		if (_hooks[name]) { return _hooks[name] }
 		opts = opts || {}
 		var parent = _hooks[parentName],
