@@ -69,7 +69,7 @@ var resolveStatement = function(context, ast) {
 		case 'HANDLER':              resolve(_createScope(context), ast.block)
 		case 'DEBUGGER':             return ast
 		
-		default:                     halt(ast, 'Unknown AST type "'+ast.type+'"')
+		default:                     console.log(ast); UNKOWN_AST_TYPE
 	}
 }
 

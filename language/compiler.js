@@ -75,7 +75,7 @@ function compileRuntimeIterator(context, ast) {
 				type: q('BYTES')
 			})
 	} else {
-		halt(ast, 'Unknown iterable type "'+ast.iterable.type+'"')
+		console.log(ast); UNKNOWN_ITERABLE_TYPE
 	}
 }
 
@@ -98,7 +98,7 @@ function _getValue(ast) {
 		case 'RUNTIME_ITERATOR': return ast.name
 		case 'LIST':             return q(ast.content)
 		case 'ITEM_PROPERTY':    return 'fun.cachedValue('+q(ast.item.id)+','+q(ast.property.join('.'))+')'
-		default: halt(ast, 'Unknown value type "'+ast.type+'"')
+		default:                 console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 
@@ -109,7 +109,8 @@ function _getItemID(ast) {
 			return ast.name
 		case 'ITEM_PROPERTY':
 			return q(ast.item.id)
-		default: halt(ast, 'Unknown value type "'+ast.type+'"')
+		default:
+			console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 
@@ -120,7 +121,8 @@ function _getPropertyName(ast) {
 			return q(ast.HACKitemProperty)
 		case 'ITEM_PROPERTY':
 			return q(ast.property.join('.'))
-		default: halt(ast, 'Unknown value type "'+ast.type+'"')
+		default:
+			console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 
