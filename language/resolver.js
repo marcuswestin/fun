@@ -162,7 +162,7 @@ var resolveMutation = function(context, ast) {
 /* For loops
  ************/
 var resolveForLoop = function(context, ast) {
-	ast.runtimeName = name('RUNTIME_NAME')
+	ast.iteratorRuntimeName = ast.iterator.value.runtimeName = name('RUNTIME_ITERATOR_NAME')
 	ast.iterable = lookup(context, ast.iterable)
 	ast.iterator.value.iterable = ast.iterable
 	Types.infer(ast.iterable, [Types.byName.List])
@@ -243,8 +243,10 @@ var _getAlias = function(context, ast, skipLast) {
 		len = namespace.length - (skipLast ? 1 : 0)
 	
 	for (var i=0; i < len; i++) {
-		if (value.type == 'RUNTIME_ITERATOR' || value.type == 'ITEM_PROPERTY') {
-			value.HACKitemProperty = namespace[1] // TODO This is a hack for compileRuntimeIterator to know what property is accessed
+		if (value.type == 'RUNTIME_ITERATOR') {
+			return util.shallowCopy(value, { iteratorProperty: namespace.slice(i).join('.') })
+		}
+		if (value.type == 'ITEM_PROPERTY') {
 			return value
 		}
 		value = value['__alias__' + namespace[i]]

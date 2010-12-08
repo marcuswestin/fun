@@ -22,7 +22,7 @@ if (Local.currentRoom) {
 	<div class="currentChatroom">
 		<div class="messages">
 			for (message in Local.currentRoom.messages) {
-				<input class="message" data=message.text style={ width: 350 }/>
+				message.sender ": " <input class="message" data=message.text style={ width: 350 }/>
 				<br />
 			}
 		</div>

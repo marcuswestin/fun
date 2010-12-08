@@ -60,20 +60,10 @@ function compileStatement(context, ast) {
 }
 
 function compileRuntimeIterator(context, ast) {
-	// TODO This function uses HACKitemProperty
 	// TODO this function assumes that the iterable is an item property.
 	//  It would be nice if it could be a static inline-defined list
 	if (ast.iterable.type == 'ITEM_PROPERTY') {
-		return code(ast,
-			'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
-			'	fun.getHook({{ hookName }}).innerHTML = value',
-			'})',
-			{
-				hookName: context.hookName,
-				id: ast.name,
-				property: q(ast.HACKitemProperty),
-				type: q('BYTES')
-			})
+		return compileItemProperty(context, ast)
 	} else {
 		console.log(ast); UNKNOWN_ITERABLE_TYPE
 	}
@@ -106,7 +96,7 @@ function _getItemID(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
 			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', '_getItemID expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
-			return ast.name
+			return ast.runtimeName
 		case 'ITEM_PROPERTY':
 			return q(ast.item.id)
 		default:
@@ -118,7 +108,7 @@ function _getPropertyName(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
 			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', '_getPropertyName expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
-			return q(ast.HACKitemProperty)
+			return q(ast.iteratorProperty)
 		case 'ITEM_PROPERTY':
 			return q(ast.property.join('.'))
 		default:
@@ -130,8 +120,6 @@ function _getPropertyName(ast) {
  * Item Property values *
  ************************/
 function compileItemProperty(context, ast) {
-	assert(ast, ast.property.length > 0, 'Missing property on item reference. "'+ast.namespace[0]+'" should probably be something like "'+ast.namespace[0]+'.foo"')
-	assert(ast, ast.property.length == 1, 'TODO: Handle nested property references')
 	return code(ast,
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }})',
@@ -139,10 +127,10 @@ function compileItemProperty(context, ast) {
 		'	fun.getHook({{ hookName }}).innerHTML = value',
 		'})',
 		{
-			parentHook: context.hookName,
 			hookName: name('ITEM_PROPERTY_HOOK'),
-			id: q(ast.item.id),
-			property: q(ast.property[0]),
+			parentHook: context.hookName,
+			id: _getItemID(ast),
+			property: _getPropertyName(ast),
 			type: q('BYTES')
 		})
 }
@@ -319,8 +307,6 @@ function compileIfStatement(context, ast) {
 function compileForLoop(context, ast) {
 	var loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	
-	ast.iterator.value.name = ast.runtimeName // TODO why do we do this?
-	
 	return code(ast,
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
@@ -335,7 +321,7 @@ function compileForLoop(context, ast) {
 			loopHookName: name('FOR_LOOP_HOOK'),
 			itemID: q(ast.iterable.item.id),
 			propertyName: q(ast.iterable.property.join('.')),
-			iteratorRuntimeName: ast.runtimeName,
+			iteratorRuntimeName: ast.iteratorRuntimeName,
 			emitHookName: loopContext.hookName,
 			loopCode: compile(loopContext, ast.block)
 		})
@@ -439,7 +425,7 @@ function _cachedValueListCode(args) {
 		switch (arg.type) {
 			case 'STATIC_VALUE': return q(arg.value)
 			case 'MUTATION_ITEM_CREATION': return arg.promiseName+'.fulfillment[0]' // the fulfillment is [itemID]
-			case 'RUNTIME_ITERATOR': return arg.name
+			case 'RUNTIME_ITERATOR': return arg.runtimeName
 			default: return code(arg,
 				'fun.cachedValue({{ itemID }}, {{ property }})',
 				{
