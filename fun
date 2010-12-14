@@ -21,16 +21,16 @@ var sourceFile = argv._[0],
 function startHTTPServer() {
 	var funJS = fs.readFileSync(__dirname + '/language/lib.js')
 	http.createServer(function(req, res) {
-		var match
-		if (match = req.url.match(/\/fin\/(.*)/)) {
+		var url = req.url, match
+		if (match = url.match(/\/fin\/(.*)/)) {
 			fs.readFile(__dirname + '/lib/fin/' + match[1], function(err, text) {
 				res.writeHead(err ? 404 : 200, {'Content-Type':'application/javascript'})
 				res.end(text || '')
 			})
-		} else if (req.url == '/fun/fun.js') {
+		} else if (url == '/fun/fun.js') {
 			res.writeHead(200, {'Content-Type':'application/javascript'})
 			res.end(funJS)
-		} else if (match = req.url.match(/(.*\.css)$/)) {
+		} else if (match = url.match(/(.*\.css)$/)) {
 			fs.readFile(__dirname + match[1], function(err, text) {
 				res.writeHead(err ? 404 : 200, {})
 				res.end(text || '')
