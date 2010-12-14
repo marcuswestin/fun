@@ -223,16 +223,11 @@ function parseValueOrAlias() {
 
 function parseValueLiteral() {
 	switch(gToken.value) {
-		case '<':
-			return parseXML()
-		case L_CURLY:
-			return parseAliasLiteral()
-		case L_ARRAY:
-			return parseListLiteral()
-		case '@':
-			return parseItem()
-		default:
-			halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON')
+		case '<':     return parseXML()
+		case L_CURLY: return parseAliasLiteral()
+		case L_ARRAY: return parseListLiteral()
+		case '@':     return parseItem()
+		default:      halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON')
 	}
 }
 
