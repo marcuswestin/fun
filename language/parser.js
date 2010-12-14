@@ -226,8 +226,9 @@ function parseValueLiteral() {
 		case '<':
 			return parseXML()
 		case L_CURLY:
+			return parseAliasLiteral()
 		case L_ARRAY:
-			return parseJSON()
+			return parseListLiteral()
 		case '@':
 			return parseItem()
 		default:
@@ -361,10 +362,6 @@ var _createDeclaration = astGenerator(function(namespace, value) {
 /********
  * JSON *
  ********/
-function parseJSON() {
-	if (gToken.value == L_CURLY) { return parseAliasLiteral() }
-	else { return parseListLiteral() }
-}
 var parseAliasLiteral = astGenerator(function() {
 	debug('parseObjectLiteral')
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
