@@ -119,13 +119,15 @@ var _resolveAttributes = function(context, ast) {
  ******************************/
 var handleModuleImport = function(context, ast) {
 	if (context.modules[ast.name]) { return }
-	var module = context.modules[ast.name] = { name: ast.name, path: __dirname + '/modules/' + ast.name + '/' }
+	var module = context.modules[ast.name] = { name: ast.name, path: __dirname + '/Modules/' + ast.name + '/' }
 	assert(ast, fs.statSync(module.path).isDirectory(), 'Could not find the module at ' + module.path)
 	
 	// TODO Read a package/manifest.json file in the module directory, describing name/version/which files to load, etc
-	if (fs.statSync(module.path + 'lib.fun').isFile()) { _importFile(module.path + 'lib.fun', context) }
+	var funFile = module.path + module.name + '.fun'
+	if (fs.statSync(funFile).isFile()) { _importFile(funFile, context) }
 	
-	if (path.existsSync(module.path + 'lib.js')) { module.jsCode = fs.readFileSync(module.path + 'lib.js') }
+	var jsFile = module.path + module.name + '.js'
+	if (path.existsSync(jsFile)) { module.jsCode = fs.readFileSync(jsFile) }
 	else { module.jsCode = '// No JS code for ' + module.name }
 }
 
