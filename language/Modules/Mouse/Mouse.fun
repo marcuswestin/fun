@@ -1,7 +1,7 @@
 import Local
 
 let Mouse = {
-	x: Local.__mouseX__,
-	y: Local.__mouseY__,
-	isDown: Local.__mouseIsDown__
+	x: Local.__Mouse_x__,
+	y: Local.__Mouse_y__,
+	isDown: Local.__Mouse_isDown__
 }
