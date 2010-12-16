@@ -11,7 +11,7 @@ var L_PAREN = '(',
 	L_ARRAY = '[',
 	R_ARRAY = ']'
 
-var gToken, gIndex, gTokens, gState, gAST
+var gToken, gIndex, gTokens, gState
 
 var ParseError = function(file, msg) {
 	this.name = 'ParseError';
@@ -23,15 +23,13 @@ function doParse(tokens) {
 	gTokens = tokens
 	gIndex = -1
 	gToken = null
-	gAST = []
 	
-	while (true) {
-		if (gIndex + 1 == gTokens.length) { break }
+	var ast = []
+	while (gIndex + 1 != gTokens.length) {
 		advance()
-		gAST.push(parseStatement())
+		ast.push(parseStatement())
 	}
-	
-	return gAST
+	return ast
 }
 
 var parseStatement = function() {
