@@ -435,7 +435,7 @@ var parseIfStatement = astGenerator(function() {
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 })
 var parseCondition = astGenerator(function() {
-	// TODO Parse compond statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
+	// TODO Parse compound statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
 	var type = gToken.type,
 		value = gToken.value
 	
