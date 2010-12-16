@@ -23,7 +23,7 @@ var Tags = require('./Tags'),
 
 exports.resolve = util.intercept('ResolveError', function (ast, context) {
 	if (!context) {
-		context = { modules:{}, declarations:[], fileDependencies:[] }
+		context = { modules:{}, declarations:[], fileDependencies:[], aliases: {} }
 	}
 	var ast = resolve(context, ast)
 	return {
@@ -58,8 +58,7 @@ var resolveStatement = function(context, ast) {
 		case 'MUTATION':             return resolveMutation(context, ast)
 		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)
 		
-		case 'NESTED_ALIAS':         return lookup(context, ast)
-		case 'ALIAS':                return resolveStatement(context, lookup(context, ast))
+		case 'ALIAS':                return resolveAlias(context, ast)
 		
 		case 'RUNTIME_ITERATOR':     return resolveRuntimeIterator(context, ast)
 		case 'ITEM_PROPERTY':        return resolveItemProperty(context, ast)
@@ -69,7 +68,7 @@ var resolveStatement = function(context, ast) {
 		case 'HANDLER':              resolve(_createScope(context), ast.block)
 		case 'DEBUGGER':             return ast
 		
-		default:                     console.log(ast); UNKOWN_AST_TYPE
+		default:                     console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 
@@ -80,7 +79,12 @@ var lookup = function(context, aliasOrValue) {
 		}
 	}
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
-	else { return lookup(context, _getAlias(context, aliasOrValue)) }
+	else { return lookup(context, _resolveAlias(context, aliasOrValue)) }
+}
+
+function resolveAlias(context, ast) {
+	var res = lookup(context, ast)
+	return resolveStatement(context, res)
 }
 
 /* Item Properties
@@ -156,6 +160,8 @@ var resolveInvocation = function(context, ast) {
  ************/
 var resolveMutation = function(context, ast) {
 	ast.value = lookup(context, ast.alias)
+	ast.method = ast.alias.namespace.pop()
+	delete ast.alias
 	ast.args = map(ast.args, bind(this, lookup, context))
 	Types.inferByMethod(ast.value, ast.method)
 	return ast
@@ -197,8 +203,7 @@ var resolveIfStatement = function(context, ast) {
 /* Declarations
  ***************/
 var handleDeclaration = function(context, ast) {
-	ast.value = lookup(context, ast.value)
-	_storeAlias(context, ast)
+	_declareAlias(context, ast)
 	handleDeclarationsWithCompilation(context, ast.value)
 }
 
@@ -215,50 +220,54 @@ var handleDeclarationsWithCompilation = function(context, ast) {
 				prop.value = lookup(context, prop.value)
 			})
 		default:
+			// do nothing
 	}
 }
 
-var _storeAlias = function(context, ast) {
-	var baseValue = _getAlias(context, ast, true),
+var _declareAlias = function(context, ast) {
+	var aliases = context.aliases,
 		namespace = ast.namespace,
-		name = namespace[namespace.length - 1],
-		value = ast.value
+		valueAST = ast.value
 	
-	assert(ast, !baseValue['__alias__' + name], 'Repeat declaration')
-	if (value.type == 'NESTED_ALIAS') {
-		// store the nested alias, and then create a child-alias for each nested property
-		// e.g. let foo = { width: 1 } allows you to reference foo.width as well as do e.g. style=foo
-		baseValue['__alias__' + name] = value
-		for (var i=0, content; content = value.content[i]; i++) {
-			var newNamespace = util.copyArray(ast.namespace).concat(content.name),
-				newAST = util.shallowCopy(ast, { type: 'ALIAS', value: content.value, namespace: newNamespace })
-			
-			_storeAlias(context, newAST)
+	if (valueAST.type == 'NESTED_ALIAS') {
+		var baseNamespace = ast.namespace
+		for (var i=0, kvp; kvp = valueAST.content[i]; i++) {
+			var nestedDeclarationAST = util.create(ast)
+			nestedDeclarationAST.namespace = namespace.concat(kvp.name)
+			nestedDeclarationAST.value = kvp.value
+			handleDeclaration(context, nestedDeclarationAST)
 		}
 	} else {
-		baseValue['__alias__' + name] = ast.value
+		var namespaceKey = ast.namespace.join('.')
+		assert(ast, !aliases[namespaceKey], 'Repeat declaration of "'+namespaceKey+'"')
+		aliases[namespaceKey] = valueAST
 	}
 }
-var _getAlias = function(context, ast, skipLast) {
-	var value = context,
-		namespace = ast.namespace,
-		len = namespace.length - (skipLast ? 1 : 0)
+
+var _resolveAlias = function(context, ast, skipLast) {
+	var lookupNamespace = [],
+		aliases = context.aliases,
+		len = ast.namespace.length - (skipLast ? 1 : 0)
 	
+		
 	for (var i=0; i < len; i++) {
-		if (value.type == 'RUNTIME_ITERATOR') {
-			return util.shallowCopy(value, { iteratorProperty: namespace.slice(i).join('.') })
-		}
-		if (value.type == 'ITEM_PROPERTY') {
-			return value
-		}
-		value = value['__alias__' + namespace[i]]
-		assert(ast, value, 'Undeclared alias "'+namespace[i]+'"' + (i == 0 ? '' : ' on "'+namespace.slice(0, i).join('.')+'"'))
-		if (value.type == 'ITEM') {
-			return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
+		lookupNamespace.push(ast.namespace[i])
+		var namespaceKey = lookupNamespace.join('.'),
+			value = context.aliases[namespaceKey]
+		
+		if (!value) { continue }
+		
+		switch(value.type) {
+			case 'RUNTIME_ITERATOR':
+				return util.shallowCopy(value, { iteratorProperty: ast.namespace.slice(i).join('.') })
+			case 'ITEM':
+				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:ast.namespace.slice(i+1) })
+			default:
+				return value
 		}
 	}
 	
-	return value
+	halt(ast, 'Lookup of undeclared alias "'+ast.namespace.join('.')+'"')
 }
 
 /* Utility 
@@ -273,7 +282,9 @@ function _createScope(context) {
 	// Creates a scope by prototypically inheriting from the current context.
 	// Reads will propegate up the prototype chain, while writes won't.
 	// However, writes *will* shadow values up the prototype chain
-	return util.create(context) 
+	context = util.create(context)
+	context.aliases = util.create(context.aliases)
+	return context
 }
 
 var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
