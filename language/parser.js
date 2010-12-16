@@ -39,14 +39,14 @@ var parseStatement = function() {
 		case 'string':
 		case 'number':
 			return getStaticValue()
+		case 'name':
+			return parseAliasOrInvocation()
 		case 'symbol':
 			switch(gToken.value) {
 				case '<': return parseXML()
 				case '=': halt('Unexpected symbol "=". Did you forget a "let" at the beginning of the line?')
 				default:  halt('Unexpected symbol "'+gToken.value+'"')
 			}
-		case 'name':
-			return parseAliasOrInvocation()
 		case 'keyword':
 			switch (gToken.value) {
 				case 'import':   return parseImport()
