@@ -10,6 +10,8 @@ var L_PAREN = '(',
 	R_CURLY = '}',
 	L_ARRAY = '[',
 	R_ARRAY = ']'
+	
+var JAVASCRIPT_BRIDGE_TOKEN = '__javascriptBridge'
 
 var gToken, gIndex, gTokens, gState
 
@@ -32,6 +34,9 @@ function doParse(tokens) {
 	return ast
 }
 
+/************************************************
+ * Top level emit statements (non-handler code) *
+ ************************************************/
 var parseStatement = function() {
 	switch(gToken.type) {
 		case 'string':
@@ -51,73 +56,13 @@ var parseStatement = function() {
 				case 'let':      return parseDeclaration()
 				case 'for':      return parseForLoop()
 				case 'if':       return parseIfStatement()
-				case 'debugger': return parseDebuggerStatement()
+				case 'debugger': return debuggerAST()
 				default:       halt('Unexpected keyword "'+gToken.value+'" at the beginning of a statement')
 			}
 		default:
 			halt('Unknown parse statement token: ' + gToken.type)
 	}
 }
-
-function parseBlock(statementType, statementParseFn) {
-	advance('symbol', L_CURLY, 'beginning of the '+statementType+'\'s block')
-	var block = []
-	while(!peek('symbol', R_CURLY)) {
-		advance()
-		block.push(statementParseFn())
-	}
-	advance('symbol', R_CURLY, 'end of the '+statementType+' statement\'s block')
-	return block
-}
-
-var parseDebuggerStatement = astGenerator(function() {
-	return {type:'DEBUGGER'}
-})
-
-/***********************
- * Mutation statements *
- ***********************/
-var parseMutationStatement = function() {
-	switch(gToken.type) {
-		case 'keyword':
-			switch(gToken.value) {
-				case 'let':       return parseMutationAssignment()
-				case 'debugger':  return parseDebuggerStatement()
-				default:          console.log(gToken); UNKNOWN_MUTATION_KEYWORD
-			}
-		default:
-			return parseValueMutation()
-	}
-}
-
-var parseMutationAssignment = astGenerator(function() {
-	var namespace = [advance('name').value]
-	advance('symbol', '=')
-	var value = parseValueOrAliasOrItemCreation()
-	return {type: 'MUTATION_DECLARATION', namespace:namespace, value:value}
-})
-
-var parseValueMutation = astGenerator(function() {
-	var alias = parseAlias('Object mutation')
-	advance('symbol', L_PAREN)
-	var args = parseList(parseValueOrAliasOrItemCreation)
-	advance('symbol', R_PAREN)
-	
-	var method = alias.namespace[alias.namespace.length - 1]
-	return {type: 'MUTATION', alias:alias, method:method, args:args}
-})
-
-var parseValueOrAliasOrItemCreation = function() {
-	if (peek('keyword', 'new')) { return parseItemCreation() }
-	else { return parseValueOrAlias() }
-}
-
-var parseItemCreation = astGenerator(function() {
-	advance('keyword', 'new')
-	advance('symbol', L_CURLY)
-	var itemProperties = parseAliasLiteral()
-	return {type: 'MUTATION_ITEM_CREATION', properties:itemProperties}
-})
 
 /***********
  * Imports *
@@ -131,9 +76,21 @@ var parseImport = astGenerator(function() {
 	}
 })
 
-/*****************************
- * Items, aliases and values *
- *****************************/
+/****************
+ * Declarations *
+ ****************/
+function parseDeclaration() {
+	var assignment = parseAssignment('declaration')
+	return _createDeclaration(assignment[0], assignment[1])
+}
+
+var _createDeclaration = astGenerator(function(namespace, value) {
+	return { type:'DECLARATION', namespace:namespace, value:value }
+})
+
+/*********************************************************************
+ * Value statements (static literals, aliases, template invocations) *
+ *********************************************************************/
 function parseValueOrAlias() {
 	advance()
 	switch(gToken.type) {
@@ -143,11 +100,17 @@ function parseValueOrAlias() {
 		case 'number':
 			return getStaticValue()
 		case 'symbol':
-			return parseValueLiteral();
+			switch(gToken.value) {
+				case '<':     return parseXML()
+				case L_CURLY: return parseAliasLiteral()
+				case L_ARRAY: return parseListLiteral()
+				case '@':     return parseItemLiteral()
+				default:      halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON')
+			}
 		case 'keyword':
 			switch(gToken.value) {
-				case 'template': return parseTemplate()
-				case 'handler':  return parseHandler()
+				case 'template': return parseTemplateLiteral()
+				case 'handler':  return parseHandlerLiteral()
 				default:         halt('Unexpected keyword "'+gToken.value+'"')
 			}
 		default:
@@ -155,36 +118,16 @@ function parseValueOrAlias() {
 	}
 }
 
-function parseValueLiteral() {
-	switch(gToken.value) {
-		case '<':     return parseXML()
-		case L_CURLY: return parseAliasLiteral()
-		case L_ARRAY: return parseListLiteral()
-		case '@':     return parseItem()
-		default:      halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON')
-	}
-}
-
-var parseItem = astGenerator(function() {
-	assert(gToken.type == 'symbol' && gToken.value == '@')
-	advance(['name', 'number'])
-	var itemID = gToken.value
-	if (peek('symbol', '.')) {
-		// TODO parse property
-	}
-	return { type:'ITEM', id: itemID }
-})
-
 var parseAlias = astGenerator(function(msg) {
-	var res = { type: 'ALIAS', namespace: _parseNamespace(msg) }
+	var res = { type: 'ALIAS', namespace: parseNamespace(msg) }
 	return res
 })
 
 var parseAliasOrInvocation = astGenerator(function() {
-	var namespace = _parseNamespace()
+	var namespace = parseNamespace()
 	if (peek('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
-		var args = parseValueList(R_PAREN)
+		var args = parseList(parseValueOrAlias, R_PAREN)
 		advance('symbol', R_PAREN)
 		return { type:'INVOCATION', namespace:namespace, args:args }
 	}
@@ -196,26 +139,59 @@ var getStaticValue = astGenerator(function() {
 	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
 })
 
-// Note: _parseNamespace expects the current token to be a name (the first in name.foo.bar)
-function _parseNamespace(msg) {
-	var namespace = []
-	while(true) {
-		assert(gToken.type == 'name')
-		namespace.push(gToken.value)
-		if (!peek('symbol', '.')) { break }
-		advance('symbol', '.', msg)
-		advance('name', null, msg)
+/*****************
+ * Item literals *
+ *****************/
+var parseItemLiteral = astGenerator(function() {
+	assert(gToken.type == 'symbol' && gToken.value == '@')
+	advance(['name', 'number'])
+	var itemID = gToken.value
+	if (peek('symbol', '.')) {
+		// TODO parse property
 	}
-	return namespace
-}
+	return { type:'ITEM', id: itemID }
+})
 
-/*******
- * XML *
- *******/
+/************************************
+ * JSON - list and object listerals *
+ ************************************/
+var parseListLiteral = astGenerator(function() {
+	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
+	var content = parseList(parseValueOrAlias, R_ARRAY)
+	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
+	return { type:'LIST', content:content }
+})
+
+var parseAliasLiteral = astGenerator(function() {
+	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
+	var content = []
+	while (true) {
+		if (peek('symbol', R_CURLY)) { break }
+		var nameValuePair = {}
+		advance(['name','string'])
+		nameValuePair.name = gToken.value
+		advance('symbol', ':')
+		// HACK! Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
+		if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) {
+			nameValuePair.value = parseJavascriptBridge()
+		} else {
+			nameValuePair.value = parseValueOrAlias()
+		}
+		content.push(nameValuePair)
+		if (!peek('symbol', ',')) { break }
+		advance('symbol',',')
+	}
+	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
+	return { type:'NESTED_ALIAS', content:content }
+})
+
+/****************
+ * XML literals *
+ ****************/
 var parseXML = astGenerator(function() {
 	advance('name', null, 'XML tag')
 	var tagName = gToken.value,
-		attributes = parseXMLAttributes()
+		attributes = _parseXMLAttributes()
 	
 	advance('symbol', ['>', '/'], 'end of XML tag')
 	if (gToken.value == '/') {
@@ -233,98 +209,101 @@ var parseXML = astGenerator(function() {
 		advance('symbol', '/')
 		advance('name', tagName, 'matching XML tags')
 		// allow for attributes on closing tag, e.g. <button>"Click"</button onClick=handler(){ ... }>
-		attributes = attributes.concat(parseXMLAttributes())
+		attributes = attributes.concat(_parseXMLAttributes())
 		advance('symbol', '>')
 		
 		return { type:'XML', tagName:tagName, attributes:attributes, block:statements }
 	}
 })
-var parseXMLAttributes = function() {
+var _parseXMLAttributes = function() {
 	var XMLAttributes = []
 	while (peek('name')) { XMLAttributes.push(_parseXMLAttribute()) }
 	return XMLAttributes
 }
-
 var _parseXMLAttribute = astGenerator(function() {
 	var assignment = parseAssignment('XML_attribute')
 	return {namespace:assignment[0], value:assignment[1]}
 })
 
-function parseAssignment(msg) {
-	advance('name', null, msg)
-	var namespace = _parseNamespace()
-	advance('symbol', '=', msg)
-	var value = parseValueOrAlias()
-	return [namespace, value]
-}
-
-/****************
- * Declarations *
- ****************/
-function parseDeclaration() {
-	var assignment = parseAssignment('declaration')
-	return _createDeclaration(assignment[0], assignment[1])
-}
-
-var _createDeclaration = astGenerator(function(namespace, value) {
-	return { type:'DECLARATION', namespace:namespace, value:value }
+/*******************************
+ * Template & Handler literals *
+ *******************************/
+var parseTemplateLiteral = astGenerator(function() {
+	var callable = _parseCallable(parseStatement, 'template')
+	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 
-/********
- * JSON *
- ********/
-var parseAliasLiteral = astGenerator(function() {
-	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
-	var content = []
-	while (true) {
-		if (peek('symbol', R_CURLY)) { break }
-		var nameValuePair = {}
-		advance(['name','string'])
-		nameValuePair.name = gToken.value
-		advance('symbol', ':')
-		// HACK! Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
-		if (peek('name', '__javascriptBridge')) {
-			advance('name', '__javascriptBridge')
-			nameValuePair.value = parseJavascriptBridge()
-		} else {
-			nameValuePair.value = parseValueOrAlias()
-		}
-		content.push(nameValuePair)
-		if (!peek('symbol', ',')) { break }
-		advance('symbol',',')
-	}
-	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:'NESTED_ALIAS', content:content }
+var parseHandlerLiteral = astGenerator(function() {
+	var callable = _parseCallable(parseMutationStatement, 'handler')
+	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
-var parseListLiteral = astGenerator(function() {
-	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
-	var content = parseValueList(R_ARRAY)
-	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
-	return { type:'LIST', content:content }
-})
-function parseValueList(breakSymbol) {
-	var list = []
-	while (true) {
-		if (peek('symbol', breakSymbol)) { break }
-		list.push(parseValueOrAlias())
-		if (!peek('symbol', ',')) { break }
-		advance('symbol', ',')
-	}
-	return list
+
+function _parseCallable(statementParseFn, msg) {
+	advance('symbol', L_PAREN)
+	var args = parseList(function() { advance('name'); return gToken.value }, R_PAREN)
+	advance('symbol', R_PAREN)
+	var block = parseBlock(statementParseFn, msg)
+	return [args, block]
 }
 
-/**********************
- * Javascript bridges *
- **********************/
-
-// HACK expects ("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun
+/******************************
+ * Javascript bridge literals *
+ ******************************/
+// HACK expects __javascriptBridge("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun
 var parseJavascriptBridge = astGenerator(function() {
+	advance('name', JAVASCRIPT_BRIDGE_TOKEN)
 	advance('symbol', L_PAREN)
 	var jsType = advance('string').value
 	advance('symbol', ',')
 	var jsName = advance('string').value
 	advance('symbol', R_PAREN)
 	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
+})
+
+/************************************************
+ * Top level mutation statements (handler code) *
+ ************************************************/
+var parseMutationStatement = function() {
+	switch(gToken.type) {
+		case 'keyword':
+			switch(gToken.value) {
+				case 'let':       return _parseMutationAssignment()
+				case 'debugger':  return debuggerAST()
+				default:          console.log(gToken); UNKNOWN_MUTATION_KEYWORD
+			}
+		default:
+			return _parseValueMutation()
+	}
+}
+
+var _parseMutationAssignment = astGenerator(function() {
+	var namespace = [advance('name').value]
+	advance('symbol', '=')
+	var value = _parseValueOrAliasOrItemCreation()
+	return {type: 'MUTATION_DECLARATION', namespace:namespace, value:value}
+})
+
+var _parseValueMutation = astGenerator(function() {
+	// TODO Make this parseNamespace instead of parseAlias
+	var alias = parseAlias('Object mutation')
+	advance('symbol', L_PAREN)
+	var args = parseList(_parseValueOrAliasOrItemCreation, R_PAREN)
+	advance('symbol', R_PAREN)
+	
+	var method = alias.namespace[alias.namespace.length - 1]
+	return {type: 'MUTATION', alias:alias, method:method, args:args}
+})
+
+var _parseValueOrAliasOrItemCreation = function() {
+	if (peek('keyword', 'new')) { return _parseItemCreation() }
+	else { return parseValueOrAlias() }
+}
+
+var _parseItemCreation = astGenerator(function() {
+	advance('keyword', 'new')
+	advance('symbol', L_CURLY)
+	var itemProperties = parseAliasLiteral()
+	return {type: 'MUTATION_ITEM_CREATION', properties:itemProperties}
 })
 
 /*************
@@ -341,8 +320,8 @@ var parseForLoop = astGenerator(function() {
 	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	
 	// parse "{ ... for loop statements ... }"
-	var block = parseBlock('for_loop', parseStatement)
-	
+	var block = parseBlock(parseStatement, 'for_loop')
+
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 })
 
@@ -355,28 +334,29 @@ var _createRuntimeIterator = astGenerator(function() {
  ****************/
 var parseIfStatement = astGenerator(function() {
 	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
-	var condition = parseCondition()
+	var condition = _parseCondition()
 	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
-	
-	var ifBlock = parseBlock('if statement', parseStatement)
-	
+
+	var ifBlock = parseBlock(parseStatement, 'if statement')
+
 	var elseBlock = null
 	if (peek('keyword', 'else')) {
 		advance('keyword', 'else')
-		elseBlock = parseBlock('else statement', parseStatement)
+		elseBlock = parseBlock(parseStatement, 'else statement')
 	}
-	
+
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 })
-var parseCondition = astGenerator(function() {
+
+var _parseCondition = astGenerator(function() {
 	// TODO Parse compound statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
 	var type = gToken.type,
 		value = gToken.value
-	
+
 	// Only strings, numbers, and aliases allowed
 	advance(['string', 'number', 'name'])
 	var left = parseStatement()
-	
+
 	var comparison, right
 	if (peek('symbol', '<,<=,>,>=,==,!='.split(','))) {
 		advance('symbol')
@@ -384,49 +364,63 @@ var parseCondition = astGenerator(function() {
 		advance(['string', 'number', 'name'])
 		var right = parseStatement()
 	}
-	
+
 	return { left:left, comparison:comparison, right:right }
 })
 
-/************************
- * Templates & Handlers *
- ************************/
-var parseTemplate = astGenerator(function() {
-	var callable = parseCallable('template', parseStatement)
-	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
-})
-
-var parseHandler = astGenerator(function() {
-	var callable = parseCallable('handler', parseMutationStatement)
-	return { type:'HANDLER', signature:callable[0], block:callable[1] }
-})
-
-function parseCallable(msg, statementParseFn) {
-	advance('symbol', L_PAREN)
-	var args = parseList(function() {
-		advance('name')
-		return gToken.value
-	})
-	advance('symbol', R_PAREN)
-	var block = parseBlock(msg, statementParseFn)
-	return [args, block]
-}
-
-function parseList(itemParseFn) {
-	var args = []
+/****************************
+ * Shared parsing functions *
+ ****************************/
+// parses comma-seperated statements until <breakSymbol> is encounteded (e.g. R_PAREN or R_BRACKET)
+function parseList(statementParseFunction, breakSymbol) {
+	var list = []
 	while (true) {
-		if (peek('symbol', R_PAREN)) { break }
-		args.push(itemParseFn())
+		if (peek('symbol', breakSymbol)) { break }
+		list.push(statementParseFunction())
 		if (!peek('symbol', ',')) { break }
 		advance('symbol', ',')
 	}
-	return args
+	return list
 }
 
+// parses <namespace> = <value statement>
+function parseAssignment(msg) {
+	advance('name', null, msg)
+	var namespace = parseNamespace()
+	advance('symbol', '=', msg)
+	var value = parseValueOrAlias()
+	return [namespace, value]
+}
 
-/*******************
- * Utility methods *
- *******************/
+// parses a series of statements enclosed by curlies, e.g. { <statement> <statement> <statement> }
+function parseBlock(statementParseFn, statementType) {
+	advance('symbol', L_CURLY, 'beginning of the '+statementType+'\'s block')
+	var block = []
+	while(!peek('symbol', R_CURLY)) {
+		advance()
+		block.push(statementParseFn())
+	}
+	advance('symbol', R_CURLY, 'end of the '+statementType+' statement\'s block')
+	return block
+}
+
+// parses <name1>.<name2>.<name3>...
+// expects the current token to be <name1> (e.g. foo foo.bar.cat)
+function parseNamespace(msg) {
+	var namespace = []
+	while(true) {
+		assert(gToken.type == 'name')
+		namespace.push(gToken.value)
+		if (!peek('symbol', '.')) { break }
+		advance('symbol', '.', msg)
+		advance('name', null, msg)
+	}
+	return namespace
+}
+
+/*********************
+ * Utility functions *
+ *********************/
 var assert = function(ok, msg) { if (!ok) halt(msg) }
 var halt = function(msg) {
 	sys.puts(util.grabLine(gToken.file, gToken.line, gToken.column, gToken.span));
@@ -467,6 +461,7 @@ var findInArray = function(array, target) {
 	return array
 }
 
+// Generates an AST
 function astGenerator(generatorFn) {
 	return function() {
 		var startToken = gToken,
@@ -485,3 +480,10 @@ function astGenerator(generatorFn) {
 		return ast
 	}
 }
+
+// return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
+var debuggerAST = astGenerator(function() {
+	if (gToken.type != 'keyword' || gToken.value != 'debugger') { UNEXPECTED_NON_DEBUGGER_TOKEN }
+	return { type:'DEBUGGER' }
+})
+
