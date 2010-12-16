@@ -87,15 +87,15 @@ function _getValue(ast) {
 		case 'STATIC_VALUE':     return q(ast.value)
 		case 'RUNTIME_ITERATOR': return ast.name
 		case 'LIST':             return q(ast.content)
-		case 'ITEM_PROPERTY':    return 'fun.cachedValue('+q(ast.item.id)+','+q(ast.property.join('.'))+')'
+		case 'ITEM_PROPERTY':    return 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
 		default:                 console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 
-function _getItemID(ast) {
+function getItemID(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
-			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', '_getItemID expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
+			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', 'getItemID expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
 			return ast.runtimeName
 		case 'ITEM_PROPERTY':
 			return q(ast.item.id)
@@ -104,10 +104,10 @@ function _getItemID(ast) {
 	}
 }
 
-function _getPropertyName(ast) {
+function getPropertyName(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
-			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', '_getPropertyName expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
+			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', 'getPropertyName expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
 			return q(ast.iteratorProperty)
 		case 'ITEM_PROPERTY':
 			return q(ast.property.join('.'))
@@ -129,8 +129,8 @@ function compileItemProperty(context, ast) {
 		{
 			hookName: name('ITEM_PROPERTY_HOOK'),
 			parentHook: context.hookName,
-			id: _getItemID(ast),
-			property: _getPropertyName(ast),
+			id: getItemID(ast),
+			property: getPropertyName(ast),
 			type: q('BYTES')
 		})
 }
@@ -209,22 +209,21 @@ function _handleDataAttribute(nodeHookName, ast, dynamicCode, value) {
 		'})',
 		{
 			hookName: nodeHookName,
-			itemID: _getItemID(value),
-			property: _getPropertyName(value)
+			itemID: getItemID(value),
+			property: getPropertyName(value)
 		}))
 }
 
 // modifies dynamicCode
 function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value) {
-	assert(ast, value.property.length == 1, 'TODO: Handle nested item property references')
 	dynamicCode.push(code(ast,
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.attr({{ hookName }}, {{ attr }}, value)',
 		'})',
 		{
 			type: q('BYTES'),
-			id: q(value.item.id),
-			property: q(value.property[0]),
+			id: getItemID(value),
+			property: getPropertyName(value),
 			attr: q(attrName),
 			hookName: nodeHookName
 		}))
@@ -294,8 +293,8 @@ function compileIfStatement(context, ast) {
 			comparison: ast.condition.comparison || '||', // if there is no comparison/right side, just use OR
 			leftID: isDynamic.left && q(left.item.id),
 			rightID: isDynamic.right && q(right.item.id),
-			leftProperty: isDynamic.left && q(left.property[0]),
-			rightProperty: isDynamic.right && q(right.property[0]),
+			leftProperty: isDynamic.left && getPropertyName(left),
+			rightProperty: isDynamic.right && getPropertyName(right),
 			ifCode: compile(ifContext, ast.ifBlock),
 			elseCode: ast.elseBlock && compile(elseContext, ast.elseBlock)
 		})
@@ -319,8 +318,8 @@ function compileForLoop(context, ast) {
 		{
 			parentHook: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
-			itemID: q(ast.iterable.item.id),
-			propertyName: q(ast.iterable.property.join('.')),
+			itemID: getItemID(ast.iterable),
+			propertyName: getPropertyName(ast.iterable),
 			iteratorRuntimeName: ast.iteratorRuntimeName,
 			emitHookName: loopContext.hookName,
 			loopCode: compile(loopContext, ast.block)
@@ -435,8 +434,8 @@ function compileItemPropertyMutation(ast) {
 		{
 			promiseNames: '['+promiseNames.join(',')+']',
 			operation: q(ast.method),
-			id: q(ast.value.item.id),
-			prop: q(ast.value.property.join('.')),
+			id: getItemID(ast.value),
+			prop: getPropertyName(ast.value),
 			args: _cachedValueListCode(ast.args)
 		})
 }
@@ -450,8 +449,8 @@ function _cachedValueListCode(args) {
 			default: return code(arg,
 				'fun.cachedValue({{ itemID }}, {{ property }})',
 				{
-					itemID: q(arg.item.id), // this can be a runtime item ID
-					property: q(arg.property[0])
+					itemID: getItemID(arg),
+					property: getPropertyName(arg)
 				})
 		}
 	}).join(',')
