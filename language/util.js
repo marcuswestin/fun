@@ -10,10 +10,6 @@ util.name = function(readable) {
 	return '_' + (readable || '') + '$' + (_uniqueId++)
 }
 
-util.debug = function(msg) {
-	// console.log(msg)
-}
-
 util.copyArray = function(arr) {
 	return Array.prototype.slice.call(arr, 0)
 }

@@ -1,7 +1,6 @@
 var sys = require('sys'),
 	util = require('./util'),
-	q = util.q,
-	debug = util.debug
+	q = util.q
 
 exports.parse = util.intercept('ParseError', doParse)
 
@@ -190,7 +189,6 @@ function astGenerator(generatorFn) {
  * Imports *
  ***********/
 var parseImport = astGenerator(function() {
-	debug('parseImport')
 	advance(['string','name'])
 	if (gToken.type == 'string') {
 		return { type: 'IMPORT_FILE', path: gToken.value }
@@ -203,7 +201,6 @@ var parseImport = astGenerator(function() {
  * Items, aliases and values *
  *****************************/
 function parseValueOrAlias() {
-	debug('parseValueOrAlias')
 	advance()
 	switch(gToken.type) {
 		case 'name':
@@ -235,7 +232,6 @@ function parseValueLiteral() {
 }
 
 var parseItem = astGenerator(function() {
-	debug('parseItem')
 	assert(gToken.type == 'symbol' && gToken.value == '@')
 	advance(['name', 'number'])
 	var itemID = gToken.value
@@ -251,7 +247,6 @@ var parseAlias = astGenerator(function(msg) {
 })
 
 var parseAliasOrInvocation = astGenerator(function() {
-	debug('parseAliasOrInvocation')
 	var namespace = _parseNamespace()
 	if (peek('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
@@ -263,7 +258,6 @@ var parseAliasOrInvocation = astGenerator(function() {
 })
 
 var getStaticValue = astGenerator(function() {
-	debug('getStaticValue')
 	assert(gToken.type == 'string' || gToken.type == 'number')
 	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
 })
@@ -285,7 +279,6 @@ function _parseNamespace(msg) {
  * XML *
  *******/
 var parseXML = astGenerator(function() {
-	debug('parseXML')
 	advance('name', null, 'XML tag')
 	var tagName = gToken.value,
 		attributes = parseXMLAttributes()
@@ -313,7 +306,6 @@ var parseXML = astGenerator(function() {
 	}
 })
 var parseXMLAttributes = function() {
-	debug('parseXMLAttributes')
 	var XMLAttributes = []
 	while (peek('name')) { XMLAttributes.push(_parseXMLAttribute()) }
 	return XMLAttributes
@@ -325,7 +317,6 @@ var _parseXMLAttribute = astGenerator(function() {
 })
 
 function parseAssignment(acceptDotNotation, msg) {
-	debug('parseAssignment')
 	var namespace
 	advance('name', null, msg)
 	if (acceptDotNotation) { namespace = _parseNamespace() }
@@ -339,7 +330,6 @@ function parseAssignment(acceptDotNotation, msg) {
  * Declarations *
  ****************/
 function parseDeclaration() {
-	debug('parseDeclaration')
 	var assignment = parseAssignment('declaration')
 	return _createDeclaration(assignment[0], assignment[1])
 }
@@ -352,7 +342,6 @@ var _createDeclaration = astGenerator(function(namespace, value) {
  * JSON *
  ********/
 var parseAliasLiteral = astGenerator(function() {
-	debug('parseObjectLiteral')
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
 	var content = []
 	while (true) {
@@ -376,7 +365,6 @@ var parseAliasLiteral = astGenerator(function() {
 	return { type:'NESTED_ALIAS', content:content }
 })
 var parseListLiteral = astGenerator(function() {
-	debug('parseListLiteral')
 	assert(gToken.type == 'symbol' && gToken.value == L_ARRAY)
 	var content = parseValueList(R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
@@ -411,7 +399,6 @@ var parseJavascriptBridge = astGenerator(function() {
 * For loops *
 *************/
 var parseForLoop = astGenerator(function() {
-	debug('parseForLoop')
 	// parse "(item in Global.items)"
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	advance('name', null, 'for_loop\'s iterator alias')
@@ -435,8 +422,6 @@ var _createRuntimeIterator = astGenerator(function() {
  * If statement *
  ****************/
 var parseIfStatement = astGenerator(function() {
-	debug('parseIfStatement')
-	
 	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
 	var condition = parseCondition()
 	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
@@ -452,7 +437,6 @@ var parseIfStatement = astGenerator(function() {
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 })
 var parseCondition = astGenerator(function() {
-	debug('parseCondition')
 	// TODO Parse compond statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
 	var type = gToken.type,
 		value = gToken.value
@@ -476,13 +460,11 @@ var parseCondition = astGenerator(function() {
  * Templates & Handlers *
  ************************/
 var parseTemplate = astGenerator(function() {
-	debug('parseTemplate')
 	var callable = parseCallable('template', parseStatement)
 	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 
 var parseHandler = astGenerator(function() {
-	debug('parseHandler')
 	var callable = parseCallable('handler', parseMutationStatement)
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
@@ -499,7 +481,6 @@ function parseCallable(msg, statementParseFn) {
 }
 
 function parseList(itemParseFn) {
-	debug('parseSignature')
 	var args = []
 	while (true) {
 		if (peek('symbol', R_PAREN)) { break }
