@@ -495,13 +495,15 @@ function code(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
 }
 
 var CompileError = function(file, ast, msg) {
+	var info = ast.info
 	this.name = "CompileError"
-	this.message = ['on line', ast.line + ',', 'column', ast.column, 'of', '"'+file+'":', msg].join(' ')
+	this.message = ['on line', info.line + ',', 'column', info.column, 'of', '"'+file+'":', msg].join(' ')
 }
 CompileError.prototype = Error.prototype
 
 var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
-	if (ast.file) { sys.puts(util.grabLine(ast.file, ast.line, ast.column, ast.span)) }
-	throw new CompileError(ast.file, ast, msg)
+	var info = ast.info
+	if (info.file) { sys.puts(util.grabLine(info.file, info.line, info.column, info.span)) }
+	throw new CompileError(info.file, ast, msg)
 }

@@ -473,15 +473,13 @@ function astGenerator(generatorFn) {
 			ast = generatorFn.apply(this, arguments),
 			endToken = gToken
 		
-		ast.file = startToken.file
-		ast.line = startToken.line
-		ast.column = startToken.column
-		ast.lineEnd = endToken.line
-		ast.columnEnd = endToken.column
-		if (ast.line == ast.lineEnd) {
-			ast.span = endToken.column - startToken.column + endToken.span
-		} else {
-			ast.span = startToken.span
+		ast.info = {
+			file: startToken.file,
+			line: startToken.line,
+			column: startToken.column,
+			span: (startToken.line == endToken.line
+				? endToken.column - startToken.column + endToken.span
+				: startToken.span)
 		}
 		
 		return ast
