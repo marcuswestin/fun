@@ -316,11 +316,9 @@ var _parseXMLAttribute = astGenerator(function() {
 	return {namespace:assignment[0], value:assignment[1]}
 })
 
-function parseAssignment(acceptDotNotation, msg) {
-	var namespace
+function parseAssignment(msg) {
 	advance('name', null, msg)
-	if (acceptDotNotation) { namespace = _parseNamespace() }
-	else { namespace = gToken.value }
+	var namespace = _parseNamespace()
 	advance('symbol', '=', msg)
 	var value = parseValueOrAlias()
 	return [namespace, value]
