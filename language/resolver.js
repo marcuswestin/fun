@@ -56,7 +56,7 @@ var resolveStatement = function(context, ast) {
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 
 		case 'MUTATION':             return resolveMutation(context, ast)
-		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)
+		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)       ;break
 		
 		case 'ALIAS':                return resolveAlias(context, ast)
 		
