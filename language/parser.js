@@ -214,7 +214,11 @@ function parseValueOrAlias() {
 		case 'symbol':
 			return parseValueLiteral();
 		case 'keyword':
-			return parseKeyword();
+			switch(gToken.value) {
+				case 'template': return parseTemplate()
+				case 'handler':  return parseHandler()
+				default:         halt('Unexpected keyword "'+gToken.value+'"')
+			}
 		default:
 			halt('Unexpected value or alias token: ' + gToken.type + ' ' + gToken.value)
 	}
@@ -240,16 +244,6 @@ var parseItem = astGenerator(function() {
 	}
 	return { type:'ITEM', id: itemID }
 })
-
-function parseKeyword() {
-	switch(gToken.value) {
-		case 'import': return parseImport()
-		case 'template': return parseTemplate()
-		case 'handler': return parseHandler()
-		default:
-			halt('Unexpected keyword "'+gToken.value+'"')
-	}
-}
 
 var parseAlias = astGenerator(function(msg) {
 	var res = { type: 'ALIAS', namespace: _parseNamespace(msg) }
