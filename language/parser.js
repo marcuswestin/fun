@@ -121,70 +121,6 @@ var parseItemCreation = astGenerator(function() {
 	return {type: 'MUTATION_ITEM_CREATION', properties:itemProperties}
 })
 
-/*******************
- * Utility methods *
- *******************/
-var assert = function(ok, msg) { if (!ok) halt(msg) }
-var halt = function(msg) {
-	sys.puts(util.grabLine(gToken.file, gToken.line, gToken.column, gToken.span));
-	throw new ParseError(gToken.file, msg)
-}
-var advance = function(type, value, expressionType) {
-	var nextToken = gTokens[++gIndex]
-	if (!nextToken) { halt('Unexpected end of file') }
-	function check(v1, v2) {
-		assert(v1 == v2,
-			['Expected a', q(type),
-				value ? 'of value ' + q(value) : '',
-				expressionType ? 'for the ' + expressionType : '',
-				'but found a', q(nextToken.type),
-				'of value', q(nextToken.value)].join(' ')
-	)}
-	if (type) { check(findInArray(type, nextToken.type), nextToken.type) }
-	if (value) { check(findInArray(value, nextToken.value), nextToken.value) }
-	gToken = nextToken
-	return gToken
-}
-var peek = function(type, value, steps) {
-	var token = gTokens[gIndex + (steps || 1)]
-	if (!token) { return false }
-	if (type && findInArray(type, token.type) != token.type) { return false }
-	if (value && findInArray(value, token.value) != token.value) { return false }
-	return token
-}
-// Find an item in an array and return it
-//  if target is in array, return target
-//  if target is not in array, return array
-//  if array is not an array, return array
-var findInArray = function(array, target) {
-	if (!(array instanceof Array)) { return array }
-	for (var i=0, item; item = array[i]; i++) {
-		if (item == target) { return item }
-	}
-	return array
-}
-
-function astGenerator(generatorFn) {
-	return function() {
-		var startToken = gToken,
-			ast = generatorFn.apply(this, arguments),
-			endToken = gToken
-		
-		ast.file = startToken.file
-		ast.line = startToken.line
-		ast.column = startToken.column
-		ast.lineEnd = endToken.line
-		ast.columnEnd = endToken.column
-		if (ast.line == ast.lineEnd) {
-			ast.span = endToken.column - startToken.column + endToken.span
-		} else {
-			ast.span = startToken.span
-		}
-		
-		return ast
-	}
-}
-
 /***********
  * Imports *
  ***********/
@@ -487,4 +423,69 @@ function parseList(itemParseFn) {
 		advance('symbol', ',')
 	}
 	return args
+}
+
+
+/*******************
+ * Utility methods *
+ *******************/
+var assert = function(ok, msg) { if (!ok) halt(msg) }
+var halt = function(msg) {
+	sys.puts(util.grabLine(gToken.file, gToken.line, gToken.column, gToken.span));
+	throw new ParseError(gToken.file, msg)
+}
+var advance = function(type, value, expressionType) {
+	var nextToken = gTokens[++gIndex]
+	if (!nextToken) { halt('Unexpected end of file') }
+	function check(v1, v2) {
+		assert(v1 == v2,
+			['Expected a', q(type),
+				value ? 'of value ' + q(value) : '',
+				expressionType ? 'for the ' + expressionType : '',
+				'but found a', q(nextToken.type),
+				'of value', q(nextToken.value)].join(' ')
+	)}
+	if (type) { check(findInArray(type, nextToken.type), nextToken.type) }
+	if (value) { check(findInArray(value, nextToken.value), nextToken.value) }
+	gToken = nextToken
+	return gToken
+}
+var peek = function(type, value, steps) {
+	var token = gTokens[gIndex + (steps || 1)]
+	if (!token) { return false }
+	if (type && findInArray(type, token.type) != token.type) { return false }
+	if (value && findInArray(value, token.value) != token.value) { return false }
+	return token
+}
+// Find an item in an array and return it
+//  if target is in array, return target
+//  if target is not in array, return array
+//  if array is not an array, return array
+var findInArray = function(array, target) {
+	if (!(array instanceof Array)) { return array }
+	for (var i=0, item; item = array[i]; i++) {
+		if (item == target) { return item }
+	}
+	return array
+}
+
+function astGenerator(generatorFn) {
+	return function() {
+		var startToken = gToken,
+			ast = generatorFn.apply(this, arguments),
+			endToken = gToken
+		
+		ast.file = startToken.file
+		ast.line = startToken.line
+		ast.column = startToken.column
+		ast.lineEnd = endToken.line
+		ast.columnEnd = endToken.column
+		if (ast.line == ast.lineEnd) {
+			ast.span = endToken.column - startToken.column + endToken.span
+		} else {
+			ast.span = startToken.span
+		}
+		
+		return ast
+	}
 }
