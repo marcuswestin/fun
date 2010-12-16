@@ -5,5 +5,8 @@ import Facebook
 }>
 
 if (Facebook.connected) {
-	"Welcome!"
+	if (Facebook.user.name) {
+		"Welcome " Facebook.user.name "!"
+	}
+	<br />"Your ID is: " Facebook.user.id
 }

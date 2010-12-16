@@ -1,8 +1,12 @@
 void(function() {
-	window.FacebookModule = {}
+	window.FacebookModule = {
+		connect: connect
+	}
 	
-	var fbRootDiv, doc = document
-	FacebookModule.connect = function(appId) {
+	var doc = document,
+		fbRootDiv
+	
+	function connect(appId) {
 		FB.init({ appId:appId, status:true, cookie:true, xfbml:false })
 		FB.login(_handleLoginResponse)
 	}
@@ -10,6 +14,10 @@ void(function() {
 	function _handleLoginResponse(response) {
 		if (response.status == 'connected') {
 			fun.mutate('SET', 'LOCAL', '__FacebookConnected__', [true])
+			fun.mutate('SET', 'LOCAL', '__Facebook_user_id_', [response.session.uid])
+			FB.api('/me', function(response) {
+				fun.mutate('SET', 'LOCAL', '__Facebook_user_name_', [response.name])
+			});
 		}
 	}
 	

@@ -75,7 +75,7 @@ function compileRuntimeIterator(context, ast) {
 // TODO This should be using Types[ast.value.type].emit(ast.value)
 function compileStaticValue(context, ast) {
 	return code(ast,
-		'fun.hook(fun.name("inlineString"), {{ parentHook }}).innerHTML = {{ value }}',
+		'fun.text({{ parentHook }}, {{ value }})',
 		{
 			parentHook: context.hookName,
 			value: _getValue(ast)

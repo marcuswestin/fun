@@ -106,6 +106,10 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 			element.attachEvent("on"+eventName, handler)
 		}
 	}
+	
+	fun.text = function(name, text) {
+		_hooks[name].appendChild(document.createTextNode(text))
+	}
 
 /* Utility functions
  *******************/
