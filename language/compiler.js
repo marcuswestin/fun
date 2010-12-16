@@ -366,17 +366,18 @@ function _compileTemplateInvocation(context, invocationAST, templateAST) {
 }
 
 function compileMutationItemCreation(ast) {
+	var value = ast.value
 	// get the item creation property values -> fun.create({ prop1:val1, prop2:val2, ... })
 	//  TODO: do we need to wait for promises for the values that are itemProperties?
-	var propertiesCode = pick(ast.properties.content, function(prop) {
+	var propertiesCode = pick(value.properties.content, function(prop) {
 		return prop.name + ':' + _getValue(prop.value)
 	}).join(',')
 	
-	ast.promiseName = name('ITEM_CREATION_PROMISE')
+	value.promiseName = name('ITEM_CREATION_PROMISE')
 	return code(ast,
 		'var {{ promiseName }} = fun.create({ {{ propertiesCode }} })',
 		{
-			promiseName: ast.promiseName,
+			promiseName: value.promiseName,
 			propertiesCode: propertiesCode
 		})
 }
@@ -395,15 +396,35 @@ function compileHandlerDeclaration(ast) {
 		{
 			handlerFunctionName: ast.compiledFunctionName,
 			hookName: hookName,
-			code: map(ast.block, bind(this, _compileMutationStatement, {hookName:hookName})).join('\n')
+			code: map(ast.block, bind(this, _compileMutationStatement)).join('\n')
 		})
 }
 
-function _compileMutationStatement(context, ast) {
+function _compileMutationStatement(ast) {
 	if (ast.type == 'DEBUGGER') { return 'debugger' }
-	if (ast.value.type == 'MUTATION_ITEM_CREATION') {
-		return compileMutationItemCreation(ast.value)
+	switch(ast.value.type) {
+		case 'MUTATION_ITEM_CREATION':
+			return compileMutationItemCreation(ast)
+		case 'JAVASCRIPT_BRIDGE':
+			return compileJavascriptBridge(ast)
+		case 'ITEM_PROPERTY':
+			return compileItemPropertyMutation(ast)
+		default:
+			console.log(ast.value); UNKNOWN_MUTATION_VALUE_AST_TYPE
 	}
+}
+
+function compileJavascriptBridge(ast) {
+	var value = ast.value,
+		args = map(ast.args, _getValue)
+	
+	switch (value.jsType) {
+		case 'function': return code(ast, '{{ functionName }}({{ args }})', { functionName: value.jsName, args: args.join(',') })
+		default:         console.log(ast); UNKNOWN_AST_JS_TYPE
+	}
+}
+
+function compileItemPropertyMutation(ast) {
 	// TODO Need to check if any of the ast.args are asynchronously retrieved, in which case we need
 	//  to wait for them
 	var promiseNames = pick(ast.args, function(arg) { return arg.promiseName })

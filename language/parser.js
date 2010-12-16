@@ -101,13 +101,12 @@ var parseMutationAssignment = astGenerator(function() {
 })
 
 var parseValueMutation = astGenerator(function() {
-	var alias = parseAlias('Object mutation'),
-		method = alias.namespace.pop() // e.g. task.title.set() -> namespace ['task','title'], method 'set'
-	
+	var alias = parseAlias('Object mutation')
 	advance('symbol', L_PAREN)
 	var args = parseList(parseValueOrAliasOrItemCreation)
 	advance('symbol', R_PAREN)
 	
+	var method = alias.namespace[alias.namespace.length - 1]
 	return {type: 'MUTATION', alias:alias, method:method, args:args}
 })
 
@@ -253,19 +252,20 @@ function parseKeyword() {
 }
 
 var parseAlias = astGenerator(function(msg) {
-	return { type: 'ALIAS', namespace: _parseNamespace(msg) }
+	var res = { type: 'ALIAS', namespace: _parseNamespace(msg) }
+	return res
 })
 
 var parseAliasOrInvocation = astGenerator(function() {
 	debug('parseAliasOrInvocation')
-	var alias = parseAlias()
+	var namespace = _parseNamespace()
 	if (peek('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
 		var args = parseValueList(R_PAREN)
 		advance('symbol', R_PAREN)
-		return { type:'INVOCATION', alias:alias, args:args }
+		return { type:'INVOCATION', namespace:namespace, args:args }
 	}
-	return alias
+	return { type: 'ALIAS', namespace: namespace }
 })
 
 var getStaticValue = astGenerator(function() {
@@ -367,7 +367,13 @@ var parseAliasLiteral = astGenerator(function() {
 		advance(['name','string'])
 		nameValuePair.name = gToken.value
 		advance('symbol', ':')
-		nameValuePair.value = parseValueOrAlias()
+		// HACK! Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
+		if (peek('name', '__javascriptBridge')) {
+			advance('name', '__javascriptBridge')
+			nameValuePair.value = parseJavascriptBridge()
+		} else {
+			nameValuePair.value = parseValueOrAlias()
+		}
 		content.push(nameValuePair)
 		if (!peek('symbol', ',')) { break }
 		advance('symbol',',')
@@ -393,12 +399,25 @@ function parseValueList(breakSymbol) {
 	return list
 }
 
+/**********************
+ * Javascript bridges *
+ **********************/
+
+// HACK expects ("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun
+var parseJavascriptBridge = astGenerator(function() {
+	advance('symbol', L_PAREN)
+	var jsType = advance('string').value
+	advance('symbol', ',')
+	var jsName = advance('string').value
+	advance('symbol', R_PAREN)
+	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
+})
+
 /*************
 * For loops *
 *************/
 var parseForLoop = astGenerator(function() {
 	debug('parseForLoop')
-	
 	// parse "(item in Global.items)"
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	advance('name', null, 'for_loop\'s iterator alias')
