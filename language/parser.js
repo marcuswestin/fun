@@ -129,7 +129,7 @@ var parseAliasOrInvocation = astGenerator(function() {
 		advance('symbol', L_PAREN)
 		var args = parseList(parseValueOrAlias, R_PAREN)
 		advance('symbol', R_PAREN)
-		return { type:'INVOCATION', namespace:namespace, args:args }
+		return { type:'INVOCATION', method:namespace.pop(), namespace:namespace, args:args }
 	}
 	return { type: 'ALIAS', namespace: namespace }
 })

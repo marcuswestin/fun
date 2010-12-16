@@ -159,8 +159,8 @@ var resolveInvocation = function(context, ast) {
 /* Mutations
  ************/
 var resolveMutation = function(context, ast) {
-	ast.value = lookup(context, ast.alias)
 	ast.method = ast.alias.namespace.pop()
+	ast.value = lookup(context, ast.alias)
 	delete ast.alias
 	ast.args = map(ast.args, bind(this, lookup, context))
 	Types.inferByMethod(ast.value, ast.method)
@@ -259,7 +259,7 @@ var _resolveAlias = function(context, ast, skipLast) {
 		
 		switch(value.type) {
 			case 'RUNTIME_ITERATOR':
-				return util.shallowCopy(value, { iteratorProperty: ast.namespace.slice(i).join('.') })
+				return util.shallowCopy(value, { iteratorProperty: ast.namespace.slice(i+1).join('.') })
 			case 'ITEM':
 				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:ast.namespace.slice(i+1) })
 			default:
