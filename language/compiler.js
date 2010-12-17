@@ -161,36 +161,26 @@ function compileXML(context, ast) {
 function _handleXMLAttributes(nodeHookName, ast) {
 	var staticAttrs = {}, dynamicCode = []
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
-		assert(attribute, attribute.namespace.length == 1, 'TODO Handle dot notation attributes')
-		var name = attribute.namespace[0],
+		var namespace = attribute.namespace,
 			value = attribute.value
-		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
+		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, namespace, value)
 	}
 	return { staticAttrs: staticAttrs, dynamicCode: dynamicCode.join('\n') }
 }
 
 // modifies staticAttrs and, dynamicCode
-function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value) {
-	var match
-	if (name == 'style') {
-		_handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value)
-	} else if (name == 'data') {
+function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, namespace, value) {
+	var match, name = namespace.join('.')
+	if (name == 'data') {
+		// TODO Individual tags should define how to handle the data attribute
 		_handleDataAttribute(nodeHookName, ast, dynamicCode, value)
 	} else if (match = name.match(/^on(\w+)$/)) {
 		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
 	} else if (value.type == 'STATIC_VALUE') {
 		staticAttrs[name] = value.value
 	} else {
-		assert(ast, value.type != 'NESTED_ALIAS', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+		assert(ast, value.type != 'OBJECT_LITERAL', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
 		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
-	}
-}
-
-// modifies staticAttrs and dynamicCode
-function _handleStyleAttribute(nodeHookName, ast, staticAttrs, dynamicCode, name, value) {
-	assert(ast, value.type == 'NESTED_ALIAS', 'You should assign the style tag to a JSON object, e.g. <div style={width:100,height:100} />')
-	for (var i=0, prop; prop = value.content[i]; i++) {
-		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, 'style.'+prop.name, prop.value)
 	}
 }
 
