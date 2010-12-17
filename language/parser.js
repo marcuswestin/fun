@@ -119,8 +119,7 @@ function parseValueOrAlias() {
 }
 
 var parseAlias = astGenerator(function(msg) {
-	var res = { type: 'ALIAS', namespace: parseNamespace(msg) }
-	return res
+	return { type: 'ALIAS', namespace: parseNamespace(msg) }
 })
 
 var parseAliasOrInvocation = astGenerator(function() {
