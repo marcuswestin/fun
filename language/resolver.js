@@ -73,7 +73,7 @@ var resolveStatement = function(context, ast) {
 }
 
 var lookup = function(context, aliasOrValue) {
-	if (aliasOrValue.type == 'NESTED_ALIAS') {
+	if (aliasOrValue.type == 'OBJECT_LITERAL') {
 		for (var i=0, prop; prop = aliasOrValue.content[i]; i++) {
 			prop.value = lookup(context, prop.value)
 		}
@@ -211,17 +211,29 @@ var handleDeclaration = function(context, ast) {
 var handleDeclarationsWithCompilation = function(context, ast) {
 	switch(ast.type) {
 		case 'TEMPLATE':
+			context.declarations.push(ast)
+			handleTemplate(context, ast)
+			break
 		case 'HANDLER':
 			context.declarations.push(ast)
-			resolve(_createScope(context), ast.block)
+			handleHandler(context, ast)
 			break
 		case 'MUTATION_ITEM_CREATION':
 			each(ast.properties.content, function(prop) {
 				prop.value = lookup(context, prop.value)
 			})
+			break
 		default:
 			// do nothing
 	}
+}
+
+function handleHandler(context, ast) {
+	resolve(_createScope(context), ast.block)
+}
+
+function handleTemplate(context, ast) {
+	resolve(_createScope(context), ast.block)
 }
 
 var _declareAlias = function(context, ast) {
@@ -229,7 +241,7 @@ var _declareAlias = function(context, ast) {
 		namespace = ast.namespace,
 		valueAST = ast.value
 	
-	if (valueAST.type == 'NESTED_ALIAS') {
+	if (valueAST.type == 'OBJECT_LITERAL') {
 		var baseNamespace = ast.namespace
 		for (var i=0, kvp; kvp = valueAST.content[i]; i++) {
 			var nestedDeclarationAST = util.create(ast)

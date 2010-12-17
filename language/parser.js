@@ -102,7 +102,7 @@ function parseValueOrAlias() {
 		case 'symbol':
 			switch(gToken.value) {
 				case '<':     return parseXML()
-				case L_CURLY: return parseAliasLiteral()
+				case L_CURLY: return parseObjectLiteral()
 				case L_ARRAY: return parseListLiteral()
 				case '@':     return parseItemLiteral()
 				default:      halt('Unexpected symbol "'+gToken.value+'". Expected XML or JSON')
@@ -162,7 +162,7 @@ var parseListLiteral = astGenerator(function() {
 	return { type:'LIST', content:content }
 })
 
-var parseAliasLiteral = astGenerator(function() {
+var parseObjectLiteral = astGenerator(function() {
 	assert(gToken.type == 'symbol' && gToken.value == L_CURLY)
 	var content = []
 	while (true) {
@@ -182,7 +182,7 @@ var parseAliasLiteral = astGenerator(function() {
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:'NESTED_ALIAS', content:content }
+	return { type:'OBJECT_LITERAL', content:content }
 })
 
 /****************
@@ -302,7 +302,7 @@ var _parseValueOrAliasOrItemCreation = function() {
 var _parseItemCreation = astGenerator(function() {
 	advance('keyword', 'new')
 	advance('symbol', L_CURLY)
-	var itemProperties = parseAliasLiteral()
+	var itemProperties = parseObjectLiteral()
 	return {type: 'MUTATION_ITEM_CREATION', properties:itemProperties}
 })
 
