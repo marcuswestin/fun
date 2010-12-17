@@ -56,7 +56,7 @@ var resolveStatement = function(context, ast) {
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 
 		case 'MUTATION':             return resolveMutation(context, ast)
-		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)       ;break
+		case 'MUTATION_DECLARATION': handleMutationDeclaration(context, ast)       ;break
 		
 		case 'ALIAS':                return resolveAlias(context, ast)
 		
@@ -65,7 +65,7 @@ var resolveStatement = function(context, ast) {
 		case 'STATIC_VALUE':         return resolveStaticValue(context, ast)
 		
 		// Inline handler - will be compiled inline. Fall through to debugger to then return the AST
-		case 'HANDLER':              resolve(_createScope(context), ast.block)
+		case 'HANDLER':              handleHandler(context, ast)
 		case 'DEBUGGER':             return ast
 		
 		default:                     console.log(ast); UNKNOWN_AST_TYPE
@@ -219,6 +219,9 @@ var resolveIfStatement = function(context, ast) {
 
 /* Declarations
  ***************/
+function handleMutationDeclaration(context, ast) {
+	handleDeclaration(context, ast)
+}
 var handleDeclaration = function(context, ast) {
 	_declareAlias(context, ast)
 	handleDeclarationsWithCompilation(context, ast.value)
