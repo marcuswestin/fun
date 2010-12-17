@@ -1,7 +1,7 @@
 import Local
 import Global
 
-<link rel="stylesheet" href="chatrooms.css" />
+<link rel="stylesheet" href="examples/chatrooms.css" />
 
 <div class="rooms">
 	<h1>"Rooms"</h1>
