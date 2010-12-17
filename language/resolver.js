@@ -176,9 +176,11 @@ var resolveInvocation = function(context, ast) {
 /* Mutations
  ************/
 var resolveMutation = function(context, ast) {
-	ast.method = ast.alias.namespace.pop()
-	ast.value = lookup(context, ast.alias)
-	delete ast.alias
+	if (ast.alias) {
+		ast.method = ast.alias.namespace.pop()
+		ast.value = lookup(context, ast.alias)
+		delete ast.alias
+	}
 	ast.args = map(ast.args, bind(this, lookup, context))
 	Types.inferByMethod(ast.value, ast.method)
 	return ast
