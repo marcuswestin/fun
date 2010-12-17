@@ -85,7 +85,7 @@ function compileStaticValue(context, ast) {
 function _getValue(ast) {
 	switch(ast.type) {
 		case 'STATIC_VALUE':     return q(ast.value)
-		case 'RUNTIME_ITERATOR': return ast.name
+		case 'RUNTIME_ITERATOR': return ast.runtimeName
 		case 'LIST':             return q(ast.content)
 		case 'ITEM_PROPERTY':    return 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
 		default:                 console.log(ast); UNKNOWN_AST_TYPE
