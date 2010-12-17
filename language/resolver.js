@@ -108,15 +108,32 @@ var resolveStaticValue = function(context, ast) {
 /* XML
  ******/
 var resolveXML = function(context, ast) {
-	ast.attributes = map(ast.attributes, bind(this, _resolveAttributes, context))
+	_resolveXMLAttributes(context, ast.attributes)
 	ast.block = resolve(context, ast.block)
 	return ast
 }
 
-var _resolveAttributes = function(context, ast) {
-	assert(ast, ast.namespace.length == 1, 'TODO Handle dot notation XML attribute namespace (for e.g. style.width=100)')
-	ast.value = resolve(context, ast.value)
-	return ast
+function _resolveXMLAttributes(context, attributes) {
+	var i = 0, attrAST
+	while (attrAST = attributes[i]) {
+		switch(attrAST.value.type) {
+			case 'OBJECT_LITERAL':
+				var nestedAttrs = map(attrAST.value.content, function(kvp) {
+					return { namespace:attrAST.namespace.concat(kvp.name), value:kvp.value }
+				})
+				// splice out the nestedAST rather than increment i
+				attributes.splice.apply(attributes, [i, 1].concat(nestedAttrs))
+				break
+			
+			case 'ALIAS':
+				attrAST.value = resolveAlias(context, attrAST.value)
+				break
+			default:
+				resolve(context, attrAST.value)
+				i++
+				break
+		}
+	}
 }
 
 /* Imports (modules and files)
