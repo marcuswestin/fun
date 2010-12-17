@@ -304,10 +304,10 @@ var _resolveAlias = function(context, ast, skipLast) {
 
 /* Utility 
  **********/
-var ResolveError = function(file, ast, msg) {
-	var info = ast.info
+var ResolveError = function(ast, msg) {
+	var info = ast.info || {}
 	this.name = "ResolveError"
-	this.message = ['on line', info.line + ',', 'column', info.column, 'of', '"'+file+'":', msg].join(' ')
+	this.message = ['on line', info.line + ',', 'column', info.column, 'of', '"'+info.file+'":', msg].join(' ')
 }
 ResolveError.prototype = Error.prototype
 
@@ -322,7 +322,7 @@ function _createScope(context) {
 
 var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
-	var info = ast.info
+	var info = ast.info || {}
 	if (info.file) { sys.puts(util.grabLine(info.file, info.line, info.column, info.span)) }
-	throw new ResolveError(info.file, ast, msg)
+	throw new ResolveError(ast, msg)
 }
