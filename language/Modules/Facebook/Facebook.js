@@ -13,10 +13,10 @@ void(function() {
 	
 	function _handleLoginResponse(response) {
 		if (response.status == 'connected') {
-			fun.mutate('SET', 'LOCAL', '__FacebookConnected__', [true])
-			fun.mutate('SET', 'LOCAL', '__Facebook_user_id_', [response.session.uid])
+			fun.mutate('SET', 'LOCAL', '__Facebook_connected__', [true])
+			fun.mutate('SET', 'LOCAL', '__Facebook_user_id__', [response.session.uid])
 			FB.api('/me', function(response) {
-				fun.mutate('SET', 'LOCAL', '__Facebook_user_name_', [response.name])
+				fun.mutate('SET', 'LOCAL', '__Facebook_user_name__', [response.name])
 			});
 		}
 	}
