@@ -79,7 +79,7 @@ var lookup = function(context, aliasOrValue) {
 		}
 	}
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
-	else { return _resolveAlias(context, aliasOrValue) }
+	else { return _lookupAlias(context, aliasOrValue) }
 }
 
 function resolveAlias(context, ast) {
@@ -284,16 +284,14 @@ var _declareAlias = function(context, ast) {
 	}
 }
 
-var _resolveAlias = function(context, ast, skipLast) {
+var _lookupAlias = function(context, ast) {
 	var lookupNamespace = [],
-		aliases = context.aliases,
-		len = ast.namespace.length - (skipLast ? 1 : 0)
+		aliases = context.aliases
 	
-		
-	for (var i=0; i < len; i++) {
+	for (var i=0; i < ast.namespace.length; i++) {
 		lookupNamespace.push(ast.namespace[i])
 		var namespaceKey = lookupNamespace.join('.'),
-			value = context.aliases[namespaceKey]
+			value = aliases[namespaceKey]
 		
 		if (!value) { continue }
 		
