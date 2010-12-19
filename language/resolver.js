@@ -79,7 +79,7 @@ var lookup = function(context, aliasOrValue) {
 		}
 	}
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
-	else { return lookup(context, _resolveAlias(context, aliasOrValue)) }
+	else { return _resolveAlias(context, aliasOrValue) }
 }
 
 function resolveAlias(context, ast) {
