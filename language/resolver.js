@@ -65,7 +65,7 @@ var resolveStatement = function(context, ast) {
 		case 'STATIC_VALUE':         return resolveStaticValue(context, ast)
 		
 		// Inline handler - will be compiled inline. Fall through to debugger to then return the AST
-		case 'HANDLER':              handleHandler(context, ast)
+		case 'HANDLER':              resolve(_createScope(context), ast.block)
 		case 'DEBUGGER':             return ast
 		
 		default:                     console.log(ast); UNKNOWN_AST_TYPE
@@ -258,12 +258,9 @@ var handleDeclaration = function(context, ast) {
 var handleDeclarationsWithCompilation = function(context, ast) {
 	switch(ast.type) {
 		case 'TEMPLATE':
-			context.declarations.push(ast)
-			handleTemplate(context, ast)
-			break
 		case 'HANDLER':
 			context.declarations.push(ast)
-			handleHandler(context, ast)
+			resolve(_createScope(context), ast.block)
 			break
 		case 'MUTATION_ITEM_CREATION':
 			each(ast.properties.content, function(prop) {
@@ -273,14 +270,6 @@ var handleDeclarationsWithCompilation = function(context, ast) {
 		default:
 			// do nothing
 	}
-}
-
-function handleHandler(context, ast) {
-	resolve(_createScope(context), ast.block)
-}
-
-function handleTemplate(context, ast) {
-	resolve(_createScope(context), ast.block)
 }
 
 var _declareAlias = function(context, ast) {
