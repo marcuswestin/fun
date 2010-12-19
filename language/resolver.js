@@ -34,8 +34,9 @@ exports.resolve = util.intercept('ResolveError', function (ast, context) {
 	}
 })
 
-/* Top level statements
- **********************/
+/************************
+ * Top level statements *
+ ************************/
 var resolve = function(context, ast) {
 	if (!ast) {
 		return null
@@ -74,8 +75,9 @@ var resolveStatement = function(context, ast) {
 	}
 }
 
-/* Lookup aliases
- ****************/
+/******************
+ * Lookup aliases *
+ ******************/
 var lookup = function(context, aliasOrValue) {
 	if (aliasOrValue.type == 'OBJECT_LITERAL') {
 		for (var i=0, prop; prop = aliasOrValue.content[i]; i++) {
@@ -114,15 +116,17 @@ var _lookupAlias = function(context, ast) {
 	halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"')
 }
 
-/* Item Properties
- ******************/
+/*******************
+ * Item Properties *
+ *******************/
 var resolveItemProperty = function(context, ast) {
 	// TODO Can we infer the type of item properties?
 	return Types.infer(ast, [])
 }
 
-/* Static values
- ****************/
+/*****************
+ * Static values *
+ *****************/
 var resolveStaticValue = function(context, ast) {
 	switch(ast.valueType) {
 		case 'string': return Types.infer(ast, [Types.byName.Text])
@@ -131,8 +135,9 @@ var resolveStaticValue = function(context, ast) {
 	}
 }
 
-/* XML
- ******/
+/*******
+ * XML *
+ *******/
 var resolveXML = function(context, ast) {
 	_resolveXMLAttributes(context, ast.attributes)
 	ast.block = resolve(context, ast.block)
@@ -161,8 +166,9 @@ function _resolveXMLAttributes(context, attributes) {
 	}
 }
 
-/* Imports (modules and files)
- ******************************/
+/*******************************
+ * Imports (modules and files) *
+ *******************************/
 var handleModuleImport = function(context, ast) {
 	if (context.modules[ast.name]) { return }
 	var module = context.modules[ast.name] = { name: ast.name, path: __dirname + '/Modules/' + ast.name + '/' }
@@ -190,16 +196,18 @@ var _importFile = function(path, context, a) {
 	resolve(context, newAST)
 }
 
-/* Invocations
- **************/
+/***************
+ * Invocations *
+ ***************/
 var resolveInvocation = function(context, ast) {
 	if (ast.alias) { ast.invocable = lookup(context, ast.alias) }
 	assert(ast, ast.invocable, 'Found an invocation without a reference to a invocable')
 	return ast
 }
 
-/* Mutations
- ************/
+/*************
+ * Mutations *
+ *************/
 var resolveMutation = function(context, ast) {
 	ast.args = map(ast.args, bind(this, lookup, context))
 	ast.value = lookup(context, ast.alias)
@@ -216,8 +224,9 @@ var resolveMutation = function(context, ast) {
 	return ast
 }
 
-/* For loops
- ************/
+/*************
+ * For loops *
+ *************/
 var resolveForLoop = function(context, ast) {
 	ast.iteratorRuntimeName = ast.iterator.value.runtimeName = name('RUNTIME_ITERATOR_NAME')
 	ast.iterable = lookup(context, ast.iterable)
@@ -235,8 +244,9 @@ var resolveRuntimeIterator = function(context, ast) {
 	return Types.infer(ast, [Types.Text])
 }
 
-/* If statements
- ****************/
+/*****************
+ * If statements *
+ *****************/
 var resolveIfStatement = function(context, ast) {
 	ast.condition.left = lookup(context, ast.condition.left)
 	if (ast.condition.right) {
@@ -249,8 +259,9 @@ var resolveIfStatement = function(context, ast) {
 	return ast
 }
 
-/* Declarations
- ***************/
+/****************
+ * Declarations *
+ ****************/
 var handleDeclaration = function(context, ast) {
 	_declareAlias(context, ast)
 	var value = ast.value
@@ -289,8 +300,9 @@ var _declareAlias = function(context, ast) {
 	}
 }
 
-/* Utility 
- **********/
+/***********
+ * Utility *
+ ***********/
 var ResolveError = function(ast, msg) {
 	var info = ast.info || {}
 	this.name = "ResolveError"
