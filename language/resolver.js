@@ -70,7 +70,7 @@ var resolveStatement = function(context, ast) {
 		case 'STATIC_VALUE':         return resolveStaticValue(context, ast)
 		
 		// Inline handler - will be compiled inline. Fall through to debugger to then return the AST
-		case 'HANDLER':              resolve(_createScope(context), ast.block)
+		case 'HANDLER':              resolve(createScope(context), ast.block)
 		case 'DEBUGGER':             return ast
 		
 		default:                     console.log(ast); UNKNOWN_AST_TYPE
@@ -234,7 +234,7 @@ var resolveForLoop = function(context, ast) {
 	ast.iterable = lookup(context, ast.iterable)
 	ast.iterator.value.iterable = ast.iterable
 	Types.infer(ast.iterable, [Types.byName.List])
-	var loopContext = _createScope(context)
+	var loopContext = createScope(context)
 	handleDeclaration(loopContext, ast.iterator)
 	ast.block = resolve(loopContext, ast.block)
 	return ast
@@ -254,9 +254,9 @@ var resolveIfStatement = function(context, ast) {
 	if (ast.condition.right) {
 		ast.condition.right = lookup(context, ast.condition.right)
 	}
-	ast.ifBlock = resolve(_createScope(context), ast.ifBlock)
+	ast.ifBlock = resolve(createScope(context), ast.ifBlock)
 	if (ast.elseBlock) {
-		ast.elseBlock = resolve(_createScope(context), ast.elseBlock)
+		ast.elseBlock = resolve(createScope(context), ast.elseBlock)
 	}
 	return ast
 }
@@ -271,7 +271,7 @@ var handleDeclaration = function(context, ast) {
 		case 'TEMPLATE':
 		case 'HANDLER':
 			context.declarations.push(value)
-			resolve(_createScope(context), value.block)
+			resolve(createScope(context), value.block)
 			break
 		case 'MUTATION_ITEM_CREATION':
 			each(value.properties.content, function(prop) {
