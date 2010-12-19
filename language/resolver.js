@@ -177,8 +177,8 @@ var resolveInvocation = function(context, ast) {
  ************/
 var resolveMutation = function(context, ast) {
 	if (ast.alias) {
-		ast.method = ast.alias.namespace.pop()
 		ast.value = lookup(context, ast.alias)
+		ast.method = ast.alias.namespace.pop()
 		delete ast.alias
 	}
 	ast.args = map(ast.args, bind(this, lookup, context))

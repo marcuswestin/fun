@@ -1,5 +1,19 @@
 TASKS
 
+- "Composite statements"
+	<input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
+	rename parseValueOrAlias to parseValue
+	in parseValue, if parsed number, text or alias
+		if next token is operator (e.g. "+")
+			parseCompositeStatement(value, operator)
+	add dataType <input data=Local.x dataType="number" />
+
+- "Template arguments"
+	let aTemplate = template(item) { "Hello " item.name }
+	let anotherTemplate = template(name) { "Hello " name }
+	aTemplate(@1)
+	aTemplate("world")
+
 - "Items and Item Properties"
 	An item iterator referencing a list of items should have the type of "Item". Properties off of the Item are then ItemProperties (note that the value of an ItemProperty may ultimately resolve to an item ID if there is a chain of itemProperties, as in the case of @1.foo.bar, where @1.foo will resolve to an item ID)
 
