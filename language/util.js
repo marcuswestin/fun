@@ -3,7 +3,7 @@ var util = exports
 var sys = require('sys'),
 	fs = require('fs')
 
-var q = util.q = function(val) { return JSON.stringify(val) }
+util.q = function(val) { return JSON.stringify(val) }
 
 var _uniqueId = 0
 util.name = function(readable) {
