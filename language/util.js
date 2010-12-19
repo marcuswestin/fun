@@ -10,10 +10,6 @@ util.name = function(readable) {
 	return '_' + (readable || '') + '$' + (_uniqueId++)
 }
 
-util.copyArray = function(arr) {
-	return Array.prototype.slice.call(arr, 0)
-}
-
 util.shallowCopy = function(obj, merge) {
 	var result = {}
 	for (var key in obj) { result[key] = obj[key] }
