@@ -56,7 +56,7 @@ var resolveStatement = function(context, ast) {
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 
 		case 'MUTATION':             return resolveMutation(context, ast)
-		case 'MUTATION_DECLARATION': handleMutationDeclaration(context, ast)       ;break
+		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)       ;break
 		
 		case 'ALIAS':                return lookup(context, ast)
 		
@@ -249,9 +249,6 @@ var resolveIfStatement = function(context, ast) {
 
 /* Declarations
  ***************/
-function handleMutationDeclaration(context, ast) {
-	handleDeclaration(context, ast)
-}
 var handleDeclaration = function(context, ast) {
 	_declareAlias(context, ast)
 	handleDeclarationsWithCompilation(context, ast.value)
