@@ -8,7 +8,6 @@ var tokenizer = require('./tokenizer'),
 var util = require('./util'),
 	bind = util.bind,
 	map = util.map,
-	each = util.each,
 	name = util.name,
 	shallowCopy = util.shallowCopy
 
@@ -274,7 +273,7 @@ var handleDeclaration = function(context, ast) {
 			resolve(createScope(context), value.block)
 			break
 		case 'MUTATION_ITEM_CREATION':
-			each(value.properties.content, function(prop) {
+			util.each(value.properties.content, function(prop) {
 				prop.value = lookup(context, prop.value)
 			})
 			break
