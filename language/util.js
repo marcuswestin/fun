@@ -23,11 +23,6 @@ util.create = function(oldObject) {
 	return new F();
 }
 
-util.log = function() {
-	var arr = Array.prototype.slice.call(arguments, 0)
-	sys.puts('console.log.apply(this, '+JSON.stringify(arr)+')')
-}
-
 util.intercept = function(errorName, fn) {
 	return function() {
 		try { return fn.apply(this, arguments) }
