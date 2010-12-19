@@ -58,16 +58,11 @@ util.pick = function(arr, fn) {
 	return result
 }
 
-var repeat = util.repeat = function(str, times) {
-	if (times < 0) { return '' }
-	return new Array(times + 1).join(str)
-}
-
 util.boxComment = function(msg) {
 	var len = msg.length
-	return '/**' + repeat('*', len) + "**\n" +
+	return '/**' + _repeat('*', len) + "**\n" +
 		' * ' + msg	+ " *\n" +
-		' **' + repeat('*', len) + "**/"
+		' **' + _repeat('*', len) + "**/"
 }
 
 
@@ -88,26 +83,32 @@ util.indent = function(code) {
 		line = lines[i]
 		
 		if (line.match(/^\s*\}/)) { indentation-- }
-		result.push(repeat('\t', indentation) + line)
+		result.push(_repeat('\t', indentation) + line)
 		if (line.match(/\{\s*$/)) { indentation++ }
 	}
 	return result.join('\n')
-}
-
-util.replace = function(haystack, needle, replacement) {
-	while (haystack.match(needle)) {
-		haystack = haystack.replace(needle, replacement)
-	}
-	return haystack
 }
 
 util.grabLine = function(file, lineNumber, column, length) {
 	length = length || 1
 	var code = fs.readFileSync(file).toString(),
 		lines = code.split('\n'),
-		line = util.replace(lines[lineNumber - 1], '\t', ' ')
+		line = _replace(lines[lineNumber - 1], '\t', ' ')
 	
 	return '\n' + line + '\n'
-		+ repeat(' ', column - 1) + repeat('^', length)
+		+ _repeat(' ', column - 1) + _repeat('^', length)
 }
 
+/* unexposed utility functions
+ *****************************/
+function _repeat(str, times) {
+	if (times < 0) { return '' }
+	return new Array(times + 1).join(str)
+}
+
+function _replace(haystack, needle, replacement) {
+	while (haystack.match(needle)) {
+		haystack = haystack.replace(needle, replacement)
+	}
+	return haystack
+}
