@@ -251,19 +251,15 @@ var resolveIfStatement = function(context, ast) {
  ***************/
 var handleDeclaration = function(context, ast) {
 	_declareAlias(context, ast)
-	handleDeclarationsWithCompilation(context, ast.value)
-}
-
-// some types need compiled code just by being declared
-var handleDeclarationsWithCompilation = function(context, ast) {
-	switch(ast.type) {
+	var value = ast.value
+	switch(value.type) {
 		case 'TEMPLATE':
 		case 'HANDLER':
-			context.declarations.push(ast)
-			resolve(_createScope(context), ast.block)
+			context.declarations.push(value)
+			resolve(_createScope(context), value.block)
 			break
 		case 'MUTATION_ITEM_CREATION':
-			each(ast.properties.content, function(prop) {
+			each(value.properties.content, function(prop) {
 				prop.value = lookup(context, prop.value)
 			})
 			break
@@ -271,7 +267,6 @@ var handleDeclarationsWithCompilation = function(context, ast) {
 			// do nothing
 	}
 }
-
 var _declareAlias = function(context, ast) {
 	var aliases = context.aliases,
 		namespace = ast.namespace,
