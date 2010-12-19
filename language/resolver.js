@@ -176,13 +176,19 @@ var resolveInvocation = function(context, ast) {
 /* Mutations
  ************/
 var resolveMutation = function(context, ast) {
-	if (ast.alias) {
-		ast.value = lookup(context, ast.alias)
-		ast.method = ast.alias.namespace.pop()
-		delete ast.alias
-	}
 	ast.args = map(ast.args, bind(this, lookup, context))
-	Types.inferByMethod(ast.value, ast.method)
+	
+	ast.value = lookup(context, ast.alias)
+	
+	switch(ast.value.type) {
+		case 'ITEM_PROPERTY':
+			ast.method = ast.value.property.pop()
+			Types.inferByMethod(ast.value, ast.method)
+			break
+		case 'JAVASCRIPT_BRIDGE':
+			break // do nothing
+	}
+	
 	return ast
 }
 
