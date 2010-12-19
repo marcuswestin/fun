@@ -81,6 +81,32 @@ var lookup = function(context, aliasOrValue) {
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
 	else { return _lookupAlias(context, aliasOrValue) }
 }
+var _lookupAlias = function(context, ast) {
+	var lookupNamespace = [],
+		namespace = ast.namespace,
+		aliases = context.aliases
+	
+	for (var i=0; i < namespace.length; i++) {
+		lookupNamespace.push(namespace[i])
+		var namespaceKey = lookupNamespace.join('.'),
+			value = aliases[namespaceKey]
+		
+		if (!value) { continue }
+		
+		switch(value.type) {
+			case 'RUNTIME_ITERATOR':
+				return util.shallowCopy(value, { iteratorProperty: namespace.slice(i+1).join('.') })
+			case 'ITEM':
+				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
+			case 'JAVASCRIPT_BRIDGE':
+				return value
+			default:
+				return value
+		}
+	}
+	
+	halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"')
+}
 
 function resolveAlias(context, ast) {
 	var res = lookup(context, ast)
@@ -282,33 +308,6 @@ var _declareAlias = function(context, ast) {
 		assert(ast, !aliases[namespaceKey], 'Repeat declaration of "'+namespaceKey+'"')
 		aliases[namespaceKey] = valueAST
 	}
-}
-
-var _lookupAlias = function(context, ast) {
-	var lookupNamespace = [],
-		namespace = ast.namespace,
-		aliases = context.aliases
-	
-	for (var i=0; i < namespace.length; i++) {
-		lookupNamespace.push(namespace[i])
-		var namespaceKey = lookupNamespace.join('.'),
-			value = aliases[namespaceKey]
-		
-		if (!value) { continue }
-		
-		switch(value.type) {
-			case 'RUNTIME_ITERATOR':
-				return util.shallowCopy(value, { iteratorProperty: namespace.slice(i+1).join('.') })
-			case 'ITEM':
-				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
-			case 'JAVASCRIPT_BRIDGE':
-				return value
-			default:
-				return value
-		}
-	}
-	
-	halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"')
 }
 
 /* Utility 
