@@ -107,13 +107,17 @@ function compileFunCode() {
 	].join('\n')
 }
 
-fs.watchFile(sourceFile, function(currStat, prevStat) {
-	if (currStat.mtime.getTime() == prevStat.mtime.getTime()) { return }
-	sys.puts('detected change to ' + sourceFile + ' - recompiling')
-	compileFunCode()
-	sys.puts('done recompiling')
-})
+if (engine == 'development') {
+	fs.watchFile(sourceFile, function(currStat, prevStat) {
+		if (currStat.mtime.getTime() == prevStat.mtime.getTime()) { return }
+		sys.puts('detected change to ' + sourceFile + ' - recompiling')
+		compileFunCode()
+		sys.puts('done recompiling')
+	})
+}
 
+/* Compile the code and start the servers
+ ****************************************/
 compileFunCode()
 startHTTPServer()
 startFinServer()
