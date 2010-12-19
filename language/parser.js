@@ -79,7 +79,7 @@ var parseImport = astGenerator(function() {
 /****************
  * Declarations *
  ****************/
-function parseDeclaration() {
+var parseDeclaration = function() {
 	var assignment = parseAssignment('declaration')
 	return _createDeclaration(assignment[0], assignment[1])
 }
@@ -91,7 +91,7 @@ var _createDeclaration = astGenerator(function(namespace, value) {
 /*********************************************************************
  * Value statements (static literals, aliases, template invocations) *
  *********************************************************************/
-function parseValueOrAlias() {
+var parseValueOrAlias = function() {
 	advance()
 	switch(gToken.type) {
 		case 'name':
@@ -237,7 +237,7 @@ var parseHandlerLiteral = astGenerator(function() {
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
 
-function _parseCallable(statementParseFn, msg) {
+var _parseCallable = function(statementParseFn, msg) {
 	advance('symbol', L_PAREN)
 	var args = parseList(function() { advance('name'); return gToken.value }, R_PAREN)
 	advance('symbol', R_PAREN)
@@ -371,7 +371,7 @@ var _parseCondition = astGenerator(function() {
  * Shared parsing functions *
  ****************************/
 // parses comma-seperated statements until <breakSymbol> is encounteded (e.g. R_PAREN or R_BRACKET)
-function parseList(statementParseFunction, breakSymbol) {
+var parseList = function(statementParseFunction, breakSymbol) {
 	var list = []
 	while (true) {
 		if (peek('symbol', breakSymbol)) { break }
@@ -383,7 +383,7 @@ function parseList(statementParseFunction, breakSymbol) {
 }
 
 // parses <namespace> = <value statement>
-function parseAssignment(msg) {
+var parseAssignment = function(msg) {
 	advance('name', null, msg)
 	var namespace = parseNamespace()
 	advance('symbol', '=', msg)
@@ -392,7 +392,7 @@ function parseAssignment(msg) {
 }
 
 // parses a series of statements enclosed by curlies, e.g. { <statement> <statement> <statement> }
-function parseBlock(statementParseFn, statementType) {
+var parseBlock = function(statementParseFn, statementType) {
 	advance('symbol', L_CURLY, 'beginning of the '+statementType+'\'s block')
 	var block = []
 	while(!peek('symbol', R_CURLY)) {
@@ -405,7 +405,7 @@ function parseBlock(statementParseFn, statementType) {
 
 // parses <name1>.<name2>.<name3>...
 // expects the current token to be <name1> (e.g. foo foo.bar.cat)
-function parseNamespace(msg) {
+var parseNamespace = function(msg) {
 	var namespace = []
 	while(true) {
 		assert(gToken.type == 'name')

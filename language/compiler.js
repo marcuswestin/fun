@@ -11,7 +11,9 @@ var fs = require('fs'),
 	boxComment = util.boxComment,
 	q = util.q
 
-exports.compile = util.intercept('CompileError', function (ast, modules, declarations) {
+exports.compile = util.intercept('CompileError', doCompile)
+
+function doCompile(ast, modules, declarations) {
 	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
 	var context = { hookName: name('ROOT_HOOK') } // root context
 	return code(ast,
@@ -29,12 +31,12 @@ exports.compile = util.intercept('CompileError', function (ast, modules, declara
 			modules: map(modules, function(module, name) {
 				return boxComment('Module: ' + name) + '\n' + module.jsCode }).join('\n\n\n')
 		})
-})
+}
 
 /************************
  * Top level statements *
  ************************/
-function compile(context, ast) {
+var compile = function(context, ast) {
 	assert(ast, context && context.hookName, "compile called with invalid context")
 	if (ast instanceof Array) {
 		return map(ast, bind(this, compileStatement, context)).join('\n') + '\n'
@@ -43,7 +45,7 @@ function compile(context, ast) {
 	}
 }
 
-function compileStatement(context, ast) {
+var compileStatement = function(context, ast) {
 	if (!ast) { return '' }
 	switch (ast.type) {
 		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
@@ -59,7 +61,7 @@ function compileStatement(context, ast) {
 	}
 }
 
-function compileRuntimeIterator(context, ast) {
+var compileRuntimeIterator = function(context, ast) {
 	// TODO this function assumes that the iterable is an item property.
 	//  It would be nice if it could be a static inline-defined list
 	if (ast.iterable.type == 'ITEM_PROPERTY') {
@@ -73,7 +75,7 @@ function compileRuntimeIterator(context, ast) {
  * Static values *
  *****************/
 // TODO This should be using Types[ast.value.type].emit(ast.value)
-function compileStaticValue(context, ast) {
+var compileStaticValue = function(context, ast) {
 	return code(ast,
 		'fun.text({{ parentHook }}, {{ value }})',
 		{
@@ -82,7 +84,7 @@ function compileStaticValue(context, ast) {
 		})
 }
 
-function _getValue(ast) {
+var _getValue = function(ast) {
 	switch(ast.type) {
 		case 'STATIC_VALUE':     return q(ast.value)
 		case 'RUNTIME_ITERATOR': return ast.runtimeName
@@ -92,7 +94,7 @@ function _getValue(ast) {
 	}
 }
 
-function getItemID(ast) {
+var getItemID = function(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
 			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', 'getItemID expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
@@ -104,7 +106,7 @@ function getItemID(ast) {
 	}
 }
 
-function getPropertyName(ast) {
+var getPropertyName = function(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
 			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', 'getPropertyName expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
@@ -119,7 +121,7 @@ function getPropertyName(ast) {
 /************************
  * Item Property values *
  ************************/
-function compileItemProperty(context, ast) {
+var compileItemProperty = function(context, ast) {
 	return code(ast,
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }})',
@@ -138,7 +140,7 @@ function compileItemProperty(context, ast) {
 /*******
  * XML *
  *******/
-function compileXML(context, ast) {
+var compileXML = function(context, ast) {
 	var nodeHookName = name('XML_HOOK'),
 		newContext = util.shallowCopy(context, { hookName:nodeHookName })
 	
@@ -158,7 +160,7 @@ function compileXML(context, ast) {
 		})
 }
 
-function _handleXMLAttributes(nodeHookName, ast) {
+var _handleXMLAttributes = function(nodeHookName, ast) {
 	var staticAttrs = {}, dynamicCode = []
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
 		var namespace = attribute.namespace,
@@ -169,7 +171,7 @@ function _handleXMLAttributes(nodeHookName, ast) {
 }
 
 // modifies staticAttrs and, dynamicCode
-function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, namespace, value) {
+var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, namespace, value) {
 	var match, name = namespace.join('.')
 	if (name == 'data') {
 		// TODO Individual tags should define how to handle the data attribute
@@ -185,7 +187,7 @@ function _handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, namesp
 }
 
 // modifies dynamicCode
-function _handleDataAttribute(nodeHookName, ast, dynamicCode, value) {
+var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value) {
 	dynamicCode.push(code(ast,
 		'fun.withHook({{ hookName }}, function(hook) {',
 		'	fun.on(hook, "keypress", function() {',
@@ -205,7 +207,7 @@ function _handleDataAttribute(nodeHookName, ast, dynamicCode, value) {
 }
 
 // modifies dynamicCode
-function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value) {
+var _handleDynamicAttribute = function(nodeHookName, ast, dynamicCode, attrName, value) {
 	dynamicCode.push(code(ast,
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.attr({{ hookName }}, {{ attr }}, value)',
@@ -220,7 +222,7 @@ function _handleDynamicAttribute(nodeHookName, ast, dynamicCode, attrName, value
 }
 
 // modifies dynamicCode
-function _handleHandlerAttribute(nodeHookName, ast, dynamicCode, handlerName, handlerAST) {
+var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerName, handlerAST) {
 	var handlerFunctionCode
 	if (handlerAST.compiledFunctionName) {
 		handlerFunctionCode = handlerAST.compiledFunctionName
@@ -240,7 +242,7 @@ function _handleHandlerAttribute(nodeHookName, ast, dynamicCode, handlerName, ha
 /**********************
  * If/Else statements *
  **********************/
-function compileIfStatement(context, ast) {
+var compileIfStatement = function(context, ast) {
 	var left = ast.condition.left,
 		right = ast.condition.right,
 		ifContext = util.shallowCopy(context, { hookName: name('IF_HOOK') }),
@@ -293,7 +295,7 @@ function compileIfStatement(context, ast) {
 /*************
  * For loops *
  *************/
-function compileForLoop(context, ast) {
+var compileForLoop = function(context, ast) {
 	var loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	
 	return code(ast,
@@ -319,7 +321,7 @@ function compileForLoop(context, ast) {
 /*************
  * Templates *
  *************/
-function compileDeclaration(declaration) {
+var compileDeclaration = function(declaration) {
 	switch (declaration.type) {
 		case 'TEMPLATE':  return compileTemplateDeclaration(declaration)
 		case 'HANDLER':   return compileHandlerDeclaration(declaration)
@@ -327,7 +329,7 @@ function compileDeclaration(declaration) {
 	}
 }
 
-function compileTemplateDeclaration(ast) {
+var compileTemplateDeclaration = function(ast) {
 	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same template twice')
 	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
 	var hookName = name('TEMPLATE_HOOK')
@@ -342,7 +344,7 @@ function compileTemplateDeclaration(ast) {
 		})
 }
 
-function _compileTemplateInvocation(context, invocationAST, templateAST) {
+var _compileTemplateInvocation = function(context, invocationAST, templateAST) {
 	// ast.args is a list of invocation values/aliases
 	assert(invocationAST, invocationAST.args.length == 0, 'TODO Handle template invocation arguments')
 	assert(templateAST, templateAST.signature.length == 0, 'TODO Handle template signature')
@@ -354,7 +356,7 @@ function _compileTemplateInvocation(context, invocationAST, templateAST) {
 		})
 }
 
-function compileMutationItemCreation(ast) {
+var compileMutationItemCreation = function(ast) {
 	var value = ast.value
 	// get the item creation property values -> fun.create({ prop1:val1, prop2:val2, ... })
 	//  TODO: do we need to wait for promises for the values that are itemProperties?
@@ -374,7 +376,7 @@ function compileMutationItemCreation(ast) {
 /************
  * Handlers *
  ************/
-function compileHandlerDeclaration(ast) {
+var compileHandlerDeclaration = function(ast) {
 	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same handler twice')
 	ast.compiledFunctionName = name('HANDLER_FUNCTION')
 	var hookName = name('HANDLER_HOOK')
@@ -389,7 +391,7 @@ function compileHandlerDeclaration(ast) {
 		})
 }
 
-function _compileMutationStatement(ast) {
+var _compileMutationStatement = function(ast) {
 	if (ast.type == 'DEBUGGER') { return 'debugger' }
 	switch(ast.value.type) {
 		case 'MUTATION_ITEM_CREATION':
@@ -403,7 +405,7 @@ function _compileMutationStatement(ast) {
 	}
 }
 
-function compileJavascriptBridge(ast) {
+var compileJavascriptBridge = function(ast) {
 	var value = ast.value,
 		args = map(ast.args, _getValue)
 	
@@ -413,7 +415,7 @@ function compileJavascriptBridge(ast) {
 	}
 }
 
-function compileItemPropertyMutation(ast) {
+var compileItemPropertyMutation = function(ast) {
 	// TODO Need to check if any of the ast.args are asynchronously retrieved, in which case we need
 	//  to wait for them
 	var promiseNames = pick(ast.args, function(arg) { return arg.promiseName })
@@ -430,7 +432,7 @@ function compileItemPropertyMutation(ast) {
 		})
 }
 
-function _cachedValueListCode(args) {
+var _cachedValueListCode = function(args) {
 	return map(args, function(arg) {
 		switch (arg.type) {
 			case 'STATIC_VALUE': return q(arg.value)
@@ -446,14 +448,14 @@ function _cachedValueListCode(args) {
 	}).join(',')
 }
 
-function _compileHandlerInvocation(context, invocationAST, handlerAST) {
+var _compileHandlerInvocation = function(context, invocationAST, handlerAST) {
 	halt(statementAST, 'TODO Compile handler invocation')
 }
 
 /****************************************
  * Invocations (handlers and templates) *
  ****************************************/
-function compileInvocation(context, ast) {
+var compileInvocation = function(context, ast) {
 	switch(ast.invocable.type) {
 		case 'TEMPLATE': return _compileTemplateInvocation(context, ast, ast.invocable)
 		default:         halt(ast, 'Couldn\'t invoce the value of type "'+ast.type+'". Expected a template or a handler.')
@@ -464,7 +466,7 @@ function compileInvocation(context, ast) {
  * Utility functions *
  *********************/
 var emitReplaceRegex = /{{\s*(\w+)\s*}}/
-function code(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
+var code = function(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
 		lastArg = arguments[argsLen - 1],
 		injectObj = (typeof lastArg == 'string' ? null : lastArg),

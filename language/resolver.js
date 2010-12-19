@@ -21,7 +21,9 @@ var util = require('./util'),
 var Tags = require('./Tags'),
 	Types = require('./Types')
 
-exports.resolve = util.intercept('ResolveError', function (ast, context) {
+exports.resolve = util.intercept('ResolveError', doResolve)
+
+function doResolve (ast, context) {
 	if (!context) {
 		context = { modules:{}, declarations:[], fileDependencies:[], aliases: {} }
 	}
@@ -32,7 +34,7 @@ exports.resolve = util.intercept('ResolveError', function (ast, context) {
 		declarations: context.declarations,
 		dependencies: context.dependencies
 	}
-})
+}
 
 /************************
  * Top level statements *
@@ -144,7 +146,7 @@ var resolveXML = function(context, ast) {
 	return ast
 }
 
-function _resolveXMLAttributes(context, attributes) {
+var _resolveXMLAttributes = function(context, attributes) {
 	var i = 0, attrAST
 	while (attrAST = attributes[i]) {
 		switch(attrAST.value.type) {
@@ -310,7 +312,7 @@ var ResolveError = function(ast, msg) {
 }
 ResolveError.prototype = Error.prototype
 
-function _createScope(context) {
+var createScope = function(context) {
 	// Creates a scope by prototypically inheriting from the current context.
 	// Reads will propegate up the prototype chain, while writes won't.
 	// However, writes *will* shadow values up the prototype chain
