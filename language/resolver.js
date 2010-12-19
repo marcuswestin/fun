@@ -286,10 +286,11 @@ var _declareAlias = function(context, ast) {
 
 var _lookupAlias = function(context, ast) {
 	var lookupNamespace = [],
+		namespace = ast.namespace,
 		aliases = context.aliases
 	
-	for (var i=0; i < ast.namespace.length; i++) {
-		lookupNamespace.push(ast.namespace[i])
+	for (var i=0; i < namespace.length; i++) {
+		lookupNamespace.push(namespace[i])
 		var namespaceKey = lookupNamespace.join('.'),
 			value = aliases[namespaceKey]
 		
@@ -297,9 +298,9 @@ var _lookupAlias = function(context, ast) {
 		
 		switch(value.type) {
 			case 'RUNTIME_ITERATOR':
-				return util.shallowCopy(value, { iteratorProperty: ast.namespace.slice(i+1).join('.') })
+				return util.shallowCopy(value, { iteratorProperty: namespace.slice(i+1).join('.') })
 			case 'ITEM':
-				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:ast.namespace.slice(i+1) })
+				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
 			case 'JAVASCRIPT_BRIDGE':
 				return value
 			default:
@@ -307,7 +308,7 @@ var _lookupAlias = function(context, ast) {
 		}
 	}
 	
-	halt(ast, 'Lookup of undeclared alias "'+ast.namespace.join('.')+'"')
+	halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"')
 }
 
 /* Utility 
