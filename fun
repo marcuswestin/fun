@@ -118,4 +118,4 @@ compileFunCode()
 startHTTPServer()
 startFinServer()
 
-sys.puts('\nWoot!! ' + sourceFile + ' is running using the '+engine+' engine. Now point your browser to ' + host + ':' + port)
+sys.puts('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
