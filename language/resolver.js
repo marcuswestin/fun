@@ -300,6 +300,8 @@ var _lookupAlias = function(context, ast) {
 				return util.shallowCopy(value, { iteratorProperty: ast.namespace.slice(i+1).join('.') })
 			case 'ITEM':
 				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:ast.namespace.slice(i+1) })
+			case 'JAVASCRIPT_BRIDGE':
+				return value
 			default:
 				return value
 		}
