@@ -58,7 +58,7 @@ var resolveStatement = function(context, ast) {
 		case 'MUTATION':             return resolveMutation(context, ast)
 		case 'MUTATION_DECLARATION': handleMutationDeclaration(context, ast)       ;break
 		
-		case 'ALIAS':                return resolveAlias(context, ast)
+		case 'ALIAS':                return lookup(context, ast)
 		
 		case 'RUNTIME_ITERATOR':     return resolveRuntimeIterator(context, ast)
 		case 'ITEM_PROPERTY':        return resolveItemProperty(context, ast)
@@ -72,6 +72,8 @@ var resolveStatement = function(context, ast) {
 	}
 }
 
+/* Lookup aliases
+ ****************/
 var lookup = function(context, aliasOrValue) {
 	if (aliasOrValue.type == 'OBJECT_LITERAL') {
 		for (var i=0, prop; prop = aliasOrValue.content[i]; i++) {
@@ -100,17 +102,14 @@ var _lookupAlias = function(context, ast) {
 				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
 			case 'JAVASCRIPT_BRIDGE':
 				return value
+			case 'ALIAS':
+				return _lookupAlias(context, value)
 			default:
 				return value
 		}
 	}
 	
 	halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"')
-}
-
-function resolveAlias(context, ast) {
-	var res = lookup(context, ast)
-	return resolveStatement(context, res)
 }
 
 /* Item Properties
@@ -152,7 +151,7 @@ function _resolveXMLAttributes(context, attributes) {
 				break
 			
 			case 'ALIAS':
-				attrAST.value = resolveAlias(context, attrAST.value)
+				attrAST.value = lookup(context, attrAST.value)
 				break
 			default:
 				resolve(context, attrAST.value)
