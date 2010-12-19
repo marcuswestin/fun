@@ -121,7 +121,6 @@ var resolveItemProperty = function(context, ast) {
 
 /* Static values
  ****************/
-
 var resolveStaticValue = function(context, ast) {
 	switch(ast.valueType) {
 		case 'string': return Types.infer(ast, [Types.byName.Text])
@@ -149,7 +148,6 @@ function _resolveXMLAttributes(context, attributes) {
 				// splice out the nestedAST rather than increment i
 				attributes.splice.apply(attributes, [i, 1].concat(nestedAttrs))
 				break
-			
 			case 'ALIAS':
 				attrAST.value = lookup(context, attrAST.value)
 				break
@@ -202,7 +200,6 @@ var resolveInvocation = function(context, ast) {
  ************/
 var resolveMutation = function(context, ast) {
 	ast.args = map(ast.args, bind(this, lookup, context))
-	
 	ast.value = lookup(context, ast.alias)
 	
 	switch(ast.value.type) {
