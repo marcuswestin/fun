@@ -34,6 +34,8 @@ exports.resolve = util.intercept('ResolveError', function (ast, context) {
 	}
 })
 
+/* Top level statements
+ **********************/
 var resolve = function(context, ast) {
 	if (!ast) {
 		return null
