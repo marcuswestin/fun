@@ -57,7 +57,7 @@ var compileStatement = function(context, ast) {
 		case 'INVOCATION':       return compileInvocation(context, ast)
 		case 'DEBUGGER':         return 'debugger'
 		
-		default:                 halt(ast, 'Unknown AST type ' + ast.type)
+		default:                 console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 
