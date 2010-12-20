@@ -23,6 +23,12 @@ TASKS
 		aTemplate(@1)
 		aTemplate("world")
 
+- "List/Range literals (and list comprehensions?)"
+	See examples/for_loop_literal.fun
+	1) Implement list literals (e.g. for (number in [1,2,3]) { ... })
+	2) Implement ranges (e.g. for (number in [1..10]) { ... })
+	3) Investigate list comprehension - are they useful for fun?
+
 BUGS
 
 - "Already subscribed to item property doesn't show up after created"
