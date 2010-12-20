@@ -72,7 +72,7 @@ var parseImportStatement = astGenerator(function() {
 /****************
  * Declarations *
  ****************/
-var parseDeclaration = function() {
+var parseDeclarationStatement = astGenerator(function() {
 	advance('keyword', 'let')
 	
 	var allowedValues = { itemLiteral:true, handlerLiteral:true, templateLiteral:true, objectLiteral:true },
