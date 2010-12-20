@@ -429,13 +429,13 @@ var advance = function(type, value, expressionType) {
 	var nextToken = gTokens[++gIndex]
 	if (!nextToken) { halt('Unexpected end of file') }
 	function check(v1, v2) {
-		assert(v1 == v2,
-			['Expected a', q(type),
-				value ? 'of value ' + q(value) : '',
-				expressionType ? 'for the ' + expressionType : '',
-				'but found a', q(nextToken.type),
-				'of value', q(nextToken.value)].join(' ')
-	)}
+		if (v1 == v2) { return }
+		halt(['Expected a', q(type),
+			value ? 'of value ' + (value instanceof Array ? value.join(' or ') : value) : ',',
+			expressionType ? 'for the ' + expressionType : '',
+			'but found a', q(nextToken.type),
+			'of value', q(nextToken.value)].join(' '))
+	}
 	if (type) { check(findInArray(type, nextToken.type), nextToken.type) }
 	if (value) { check(findInArray(value, nextToken.value), nextToken.value) }
 	gToken = nextToken
