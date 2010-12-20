@@ -1,5 +1,19 @@
 TASKS
 
+Get involved - complete a task :)
+
+- "Write apps"
+	1) write an app
+	2) write another one
+	3) tell the world about them
+
+- "thefunlanguage.com"
+	1) just put something up there
+	2) run server in browser for demos
+	3) in-browser editor for demos
+	4) list engines
+	5) technical docs
+
 - "Composite statements"
 	X 1) rename parseValueOrAlias to parseValue
 	X 2) in parseValue, if parsed number, text or alias
@@ -23,11 +37,39 @@ TASKS
 		aTemplate(@1)
 		aTemplate("world")
 
+- "Handler arguments"
+	1) Pass in arguments to handler invocations
+		let removeFriend = handler(user, friend) {
+			user.friends.remove(friend)
+		}
+		for (friend in user.friends) {
+			<button>"remove"</button onclick=removeFriend(user, friend)>
+		}
+
 - "List/Range literals (and list comprehensions?)"
 	See examples/for_loop_literal.fun
 	1) Implement list literals (e.g. for (number in [1,2,3]) { ... })
 	2) Implement ranges (e.g. for (number in [1..10]) { ... })
 	3) Investigate list comprehension - are they useful for fun?
+
+- "Unit testing"
+	1) Figure out what unit testing framework to use
+	2) unit test parser
+	3) unit test resolver
+	4) unit test compiler
+	5) unit test fin client api
+	6) unit tests for the persistence engine api(!)
+	7) unit tests for the pubsub engine api(!)
+
+- "Fun Engines"
+	1) a mysqpl persistence engine
+	2) a 0mq pubsub engine
+	3) a couchdb persistence engine
+	4) a couchdb pubsub engine (changes api)
+
+- "Type-safe item creation"
+	1) Whenever an item gets created, ensure that all item properties that are used elsewhere
+		are properly initialized, and that no properties that are not used are initialized
 
 BUGS
 
@@ -36,3 +78,6 @@ BUGS
 		let a = @1
 		a.name
 	Now create a new room. The room does not show up in the for loop, nor does it show up at the "a.name" hook
+
+- "Relative file imports"
+	file imports are relative to the process directory but should be relative to the file's directory
