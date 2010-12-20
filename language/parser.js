@@ -170,6 +170,7 @@ var _doParseValueStatement = function(allowed) {
 	}
 }
 
+// TODO Replace with straight call to parseNamespace wherever it's being called, since they're not real aliases
 var parseAlias = astGenerator(function(msg) {
 	return { type: 'ALIAS', namespace: parseNamespace(msg) }
 })
