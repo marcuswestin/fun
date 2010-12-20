@@ -94,7 +94,7 @@ var parseDeclarationStatement = astGenerator(function() {
 var parseValueStatement = function(allowed) {
 	if (typeof allowed.number == 'undefined') { allowed.number = true }
 	if (typeof allowed.text == 'undefined') { allowed.text = true }
-	if (typeof allowed.alias == 'undefined') { allowed.alias = true }
+	allowed.alias = true
 	
 	var result = _doParseValueStatement(allowed),
 		nextSymbol = peek('symbol')
