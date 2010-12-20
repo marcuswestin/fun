@@ -3,12 +3,9 @@ var sys = require('sys'),
 	bind = util.bind,
 	q = util.q
 
-var L_PAREN = '(',
-	R_PAREN = ')',
-	L_CURLY = '{',
-	R_CURLY = '}',
-	L_ARRAY = '[',
-	R_ARRAY = ']'
+var L_PAREN = '(', R_PAREN = ')',
+	L_CURLY = '{', R_CURLY = '}',
+	L_ARRAY = '[', R_ARRAY = ']'
 	
 var JAVASCRIPT_BRIDGE_TOKEN = '__javascriptBridge'
 
