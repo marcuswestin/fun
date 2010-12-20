@@ -395,7 +395,8 @@ var parseAssignment = function(msg) {
 var parseBlock = function(statementParseFn, statementType) {
 	advance('symbol', L_CURLY, 'beginning of the '+statementType+'\'s block')
 	var block = []
-	while(!peek('symbol', R_CURLY)) {
+	while(true) {
+		if (peek('symbol', R_CURLY)) { break }
 		advance()
 		block.push(statementParseFn())
 	}
