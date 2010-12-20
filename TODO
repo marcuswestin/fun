@@ -1,21 +1,27 @@
 TASKS
 
 - "Composite statements"
-	<input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
-	rename parseValueOrAlias to parseValue
-	in parseValue, if parsed number, text or alias
+	X 1) rename parseValueOrAlias to parseValue
+	X 2) in parseValue, if parsed number, text or alias
 		if next token is operator (e.g. "+")
 			parseCompositeStatement(value, operator)
-	add dataType <input data=Local.x dataType="number" />
+	3) <input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
+	4) Grouped composite statements, e.g. (6 * (5 + 4))
+
+- "Deferred values"
+	1) Come up with a common way to wait on a series of values before executing a function of compiled code
+	2) If all the values are static, don't bother creating a delayed function
+
+- "Tag-based type inference"
+	1) Tags with data should have the dataType attribute <input data=Local.x dataType="number" />
+	2) Tags should have custom implementations, that declare what types of data they accept
 
 - "Template arguments"
-	let aTemplate = template(item) { "Hello " item.name }
-	let anotherTemplate = template(name) { "Hello " name }
-	aTemplate(@1)
-	aTemplate("world")
-
-- "Items and Item Properties"
-	An item iterator referencing a list of items should have the type of "Item". Properties off of the Item are then ItemProperties (note that the value of an ItemProperty may ultimately resolve to an item ID if there is a chain of itemProperties, as in the case of @1.foo.bar, where @1.foo will resolve to an item ID)
+	1) Pass in arguments to template invocations
+		let aTemplate = template(item) { "Hello " item.name }
+		let anotherTemplate = template(name) { "Hello " name }
+		aTemplate(@1)
+		aTemplate("world")
 
 BUGS
 
@@ -24,5 +30,3 @@ BUGS
 		let a = @1
 		a.name
 	Now create a new room. The room does not show up in the for loop, nor does it show up at the "a.name" hook
-
-
