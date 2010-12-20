@@ -82,16 +82,16 @@ var resolveStatement = function(context, ast) {
 /******************
  * Lookup aliases *
  ******************/
-var lookup = function(context, aliasOrValue) {
+var lookup = function(context, aliasOrValue, allowMiss) {
 	if (aliasOrValue.type == 'OBJECT_LITERAL') {
 		for (var i=0, prop; prop = aliasOrValue.content[i]; i++) {
-			prop.value = lookup(context, prop.value)
+			prop.value = lookup(context, prop.value, allowMiss)
 		}
 	}
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
-	else { return _lookupAlias(context, aliasOrValue) }
+	else { return _lookupAlias(context, aliasOrValue, allowMiss) }
 }
-var _lookupAlias = function(context, ast) {
+var _lookupAlias = function(context, ast, allowMiss) {
 	var lookupNamespace = [],
 		namespace = ast.namespace,
 		aliases = context.aliases
@@ -117,7 +117,8 @@ var _lookupAlias = function(context, ast) {
 		}
 	}
 	
-	halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"')
+	if (allowMiss) { return }
+	else { halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"') }
 }
 
 /*******************
@@ -214,16 +215,32 @@ var resolveInvocation = function(context, ast) {
  *************/
 var resolveMutation = function(context, ast) {
 	ast.args = map(ast.args, bind(this, lookup, context))
-	ast.value = lookup(context, ast.alias)
+	ast.value = lookup(context, ast.alias, true)
+	
+	// HACK For Javascript bridges, the method ("connect" in Facebook.connect()),
+	//  gets popped off of the namespace in _parseInvocation. Try to look up
+	//  ast.alias + ast.method and check to see if it maps to a javascript bridge.
+	//  If it does, then go with that. Possibly, _parseInvocation could not pop off
+	//  the last part of the namespace and interpret it as the method. However, that
+	//  would require the resolver or the compiler to detect item property mutations,
+	//  and pop off the last part of the namespace for method then. This works for now.
+	if (!ast.value) {
+		ast.alias.namespace.push(ast.method)
+		var lookForJSBridge = lookup(context, ast.alias)
+		if (lookForJSBridge.type == 'JAVASCRIPT_BRIDGE') {
+			ast.value = lookForJSBridge
+		}
+	}
 	
 	switch(ast.value.type) {
 		case 'ITEM_PROPERTY':
-			ast.method = ast.value.property.pop()
 			Types.inferByMethod(ast.value, ast.method)
 			break
 		case 'JAVASCRIPT_BRIDGE':
 			break // do nothing
 	}
+	
+	delete ast.alias
 	
 	return ast
 }
