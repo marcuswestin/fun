@@ -313,7 +313,6 @@ var handleDeclaration = function(context, ast) {
 			// do nothing
 	}
 	_declareAlias(context, ast)
-
 }
 var _declareAlias = function(context, ast) {
 	var aliases = context.aliases,

@@ -78,11 +78,7 @@ var parseDeclarationStatement = astGenerator(function() {
 	var allowedValues = { itemLiteral:true, handlerLiteral:true, templateLiteral:true, objectLiteral:true },
 		assignment = parseAssignment(allowedValues)
 	
-	return _createDeclaration(assignment[0], assignment[1])
-}
-
-var _createDeclaration = astGenerator(function(namespace, value) {
-	return { type:'DECLARATION', namespace:namespace, value:value }
+	return { type:'DECLARATION', namespace:assignment[0], value:assignment[1] }
 })
 
 /*********************************************************************
@@ -353,20 +349,18 @@ var _parseItemCreation = astGenerator(function() {
 var parseForLoopStatement = astGenerator(function() {
 	advance('keyword', 'for')
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
-	var iteratorName = advance('name', null, 'for_loop\'s iterator alias').value
-	var iterator = _createDeclaration([iteratorName], _createRuntimeIterator())
-	advance('keyword', 'in', 'for_loop\'s "in" keyword')
-	var iterable = parseAlias()
-	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	
-	// parse "{ ... for loop statements ... }"
+	var iteratorName = advance('name', null, 'for_loop\'s iterator alias').value,
+		iteratorValue = createAST({ type:'RUNTIME_ITERATOR' }),
+		iterator = createAST({ type:'FOR_ITERATOR_DECLARATION', namespace:[iteratorName], value: iteratorValue })
+	
+	advance('keyword', 'in', 'for_loop\'s "in" keyword')
+	var iterable = parseValueStatement({ alias:true, listLiteral:true, text:false, number:false })
+	
+	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	var block = parseBlock(parseStatement, 'for_loop')
-
+	
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
-})
-
-var _createRuntimeIterator = astGenerator(function() {
-	return { type:'RUNTIME_ITERATOR' }
 })
 
 /****************
@@ -388,7 +382,6 @@ var parseIfStatement = astGenerator(function() {
 
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 })
-
 var _conditionOperators = '<,<=,>,>=,==,!='.split(',')
 var _parseCondition = astGenerator(function() {
 	// TODO Parse compound statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
@@ -497,24 +490,30 @@ var findInArray = function(array, target) {
 	return array
 }
 
-// Generates an AST
+// Upgrades a function that creates AST to return properly annotated ASTs
 function astGenerator(generatorFn) {
 	return function() {
 		var startToken = peek(),
 			ast = generatorFn.apply(this, arguments),
 			endToken = peek()
-		
-		ast.info = {
-			file: startToken.file,
-			line: startToken.line,
-			column: startToken.column,
-			span: (startToken.line == endToken.line
-				? endToken.column - startToken.column + endToken.span
-				: startToken.span)
-		}
-		
-		return ast
+		return createAST(ast, startToken, endToken)
 	}
+}
+
+// Creates a proper AST object, annotated with info about where
+//  in the source file it appeared (based on startToken and endToken)
+var createAST = function(astObj, startToken, endToken) {
+	if (!startToken) { startToken = gToken }
+	if (!endToken) { endToken = gToken }
+	astObj.info = {
+		file: startToken.file,
+		line: startToken.line,
+		column: startToken.column,
+		span: (startToken.line == endToken.line
+			? endToken.column - startToken.column + endToken.span
+			: startToken.span)
+	}
+	return astObj
 }
 
 // return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
