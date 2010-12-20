@@ -2,8 +2,6 @@ var sys = require('sys'),
 	util = require('./util'),
 	q = util.q
 
-exports.parse = util.intercept('ParseError', doParse)
-
 var L_PAREN = '(',
 	R_PAREN = ')',
 	L_CURLY = '{',
@@ -21,7 +19,7 @@ var ParseError = function(file, msg) {
 }
 ParseError.prototype = Error.protoype
 
-function doParse(tokens) {
+exports.parse = util.intercept('ParseError', function(tokens) {
 	gTokens = tokens
 	gIndex = -1
 	gToken = null
@@ -32,7 +30,7 @@ function doParse(tokens) {
 		ast.push(parseStatement())
 	}
 	return ast
-}
+})
 
 /************************************************
  * Top level emit statements (non-handler code) *

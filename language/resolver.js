@@ -1,3 +1,12 @@
+/* The resolver primarily does three things:
+ * 1) Resolve import statements by injecting declarations from
+ *    the imported module into the main context's alias table
+ * 2) Resolve aliases to balues
+ * 3) Infer the type of all values
+ * The resolver returns an AST with no import statements and
+ * no aliases, in which all values have been annotated with a type
+ *****************************************************************/
+
 var fs = require('fs'),
 	sys = require('sys'),
 	path = require('path')
@@ -11,18 +20,12 @@ var util = require('./util'),
 	name = util.name,
 	shallowCopy = util.shallowCopy
 
-// Resolve imports by injecting declarations into the reference table
-// Resolve aliases to values
-// Return an AST with no import statements and no aliases 
-
 // TODO Read types from types
 // TODO read tags from tags
 var Tags = require('./Tags'),
 	Types = require('./Types')
 
-exports.resolve = util.intercept('ResolveError', doResolve)
-
-function doResolve (ast, context) {
+exports.resolve = util.intercept('ResolveError', function(ast, context) {
 	if (!context) {
 		context = { modules:{}, declarations:[], fileDependencies:[], aliases: {} }
 	}
@@ -33,7 +36,7 @@ function doResolve (ast, context) {
 		declarations: context.declarations,
 		dependencies: context.dependencies
 	}
-}
+})
 
 /************************
  * Top level statements *

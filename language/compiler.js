@@ -11,9 +11,7 @@ var fs = require('fs'),
 	boxComment = util.boxComment,
 	q = util.q
 
-exports.compile = util.intercept('CompileError', doCompile)
-
-function doCompile(ast, modules, declarations) {
+exports.compile = util.intercept('CompileError', function(ast, modules, declarations) {
 	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
 	var context = { hookName: name('ROOT_HOOK') } // root context
 	return code(ast,
@@ -31,7 +29,7 @@ function doCompile(ast, modules, declarations) {
 			modules: map(modules, function(module, name) {
 				return boxComment('Module: ' + name) + '\n' + module.jsCode }).join('\n\n\n')
 		})
-}
+})
 
 /************************
  * Top level statements *
