@@ -234,9 +234,9 @@ var parseXML = astGenerator(function() {
 	var tagName = gToken.value,
 		attributes = _parseXMLAttributes()
 	
-	advance('symbol', ['>', '/'], 'end of XML tag')
+	advance('symbol', ['/', '>'], 'end of the XML tag')
 	if (gToken.value == '/') {
-		advance('symbol', '>', 'self-closing XML tag')
+		advance('symbol', '>', 'end of a self-closing XML tag')
 		return { type:'XML', tagName:tagName, attributes:attributes, content:[] }
 	} else {
 		var statements = []
