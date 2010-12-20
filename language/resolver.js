@@ -316,7 +316,7 @@ var createScope = function(context) {
 	// Reads will propegate up the prototype chain, while writes won't.
 	// However, writes *will* shadow values up the prototype chain
 	context = util.create(context)
-	context.aliases = util.create(context.aliases)
+	context.aliases = shallowCopy(context.aliases)
 	return context
 }
 
