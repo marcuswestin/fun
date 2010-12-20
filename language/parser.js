@@ -44,9 +44,9 @@ var parseStatement = function() {
 			return parseValueStatement({ xml:true, invocation:true, composite:true })
 		case 'keyword':
 			switch (token.value) {
-				case 'import':   return parseImport()
-				case 'let':      return parseDeclaration()
-				case 'for':      return parseForLoop()
+				case 'import':   return parseImportStatement()
+				case 'let':      return parseDeclarationStatement()
+				case 'for':      return parseForLoopStatement()
 				case 'if':       return parseIfStatement()
 				case 'debugger': return debuggerAST()
 				default:         halt('Unexpected keyword "'+token.value+'" at the beginning of a top level statement')
@@ -59,7 +59,7 @@ var parseStatement = function() {
 /***********
  * Imports *
  ***********/
-var parseImport = astGenerator(function() {
+var parseImportStatement = astGenerator(function() {
 	advance('keyword', 'import')
 	advance(['string','name'])
 	if (gToken.type == 'string') {
@@ -350,7 +350,7 @@ var _parseItemCreation = astGenerator(function() {
 /*************
 * For loops *
 *************/
-var parseForLoop = astGenerator(function() {
+var parseForLoopStatement = astGenerator(function() {
 	advance('keyword', 'for')
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	var iteratorName = advance('name', null, 'for_loop\'s iterator alias').value
