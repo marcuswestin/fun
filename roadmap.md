@@ -2,13 +2,7 @@ TODOs
 -----
 - thefunlangage.com
 - run server in browser
-- separate engines into pubsub/persistence
 - use less instead of css by default
-
-proofs of concept apps
-----------------------
-- chat w/ editable messages (type inference, item creation)
-- chat w/ multiple chatrooms
 
 unit testing
 ------------
@@ -29,7 +23,6 @@ language completeness
 ---------------------
 - template arguments
 - handler currying (arguments)
-- creating new items
 - file imports are relative to the process directory but should be relative to the file's directory
 - helpful error reporting
 	- unmatched xml tags
