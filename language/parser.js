@@ -57,7 +57,7 @@ var parseStatement = function() {
 				case 'for':      return parseForLoop()
 				case 'if':       return parseIfStatement()
 				case 'debugger': return debuggerAST()
-				default:       halt('Unexpected keyword "'+gToken.value+'" at the beginning of a statement')
+				default:         halt('Unexpected keyword "'+gToken.value+'" at the beginning of a top level statement')
 			}
 		default:
 			halt('Unknown parse statement token: ' + gToken.type)
