@@ -284,7 +284,6 @@ var resolveIfStatement = function(context, ast) {
  * Declarations *
  ****************/
 var handleDeclaration = function(context, ast) {
-	_declareAlias(context, ast)
 	var value = ast.value
 	switch(value.type) {
 		case 'TEMPLATE':
@@ -297,9 +296,14 @@ var handleDeclaration = function(context, ast) {
 				prop.value = lookup(context, prop.value)
 			})
 			break
+		case 'JAVASCRIPT_BRIDGE':
+			// do nothing
+			break
 		default:
 			// do nothing
 	}
+	_declareAlias(context, ast)
+
 }
 var _declareAlias = function(context, ast) {
 	var aliases = context.aliases,
