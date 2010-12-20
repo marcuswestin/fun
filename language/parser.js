@@ -1,5 +1,6 @@
 var sys = require('sys'),
 	util = require('./util'),
+	bind = util.bind,
 	q = util.q
 
 var L_PAREN = '(',
