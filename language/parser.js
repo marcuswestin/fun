@@ -85,14 +85,16 @@ var parseDeclarationStatement = astGenerator(function() {
  * Value statements (static literals, aliases, template invocations) *
  *********************************************************************/
 // parse a value statement - "allowed" is an object of the types of values
-//  that are allowed to be parsed here. Numbers, text and aliases are always
-//  allowed. The optional allowed value types are "invocation", "itemCreation"
+//  that are allowed to be parsed here. Numbers and text are allowed unless
+//  unless specified false. Aliases are always allowed, since we don't know
+//  what type of value they reference until the we're in the resolver stage.
+//  The optional allowed value types are "invocation", "itemCreation",
 //  "xml", "objectLiteral", "listLiteral", "itemLiteral", "templateLiteral",
 //  "handlerLiteral" and "composite"
 var parseValueStatement = function(allowed) {
-	allowed.number = true
-	allowed.text = true
-	allowed.alias = true
+	if (typeof allowed.number == 'undefined') { allowed.number = true }
+	if (typeof allowed.text == 'undefined') { allowed.text = true }
+	if (typeof allowed.alias == 'undefined') { allowed.alias = true }
 	
 	var result = _doParseValueStatement(allowed),
 		nextSymbol = peek('symbol')
@@ -333,7 +335,7 @@ var _parseMutationAssignment = astGenerator(function() {
 })
 
 var _parseMutationInvocation = astGenerator(function() {
-	var invocation = parseValueStatement({ alias: true, invocation: true })
+	var invocation = parseValueStatement({ invocation: true })
 	return {type: 'MUTATION', alias:invocation.alias, method:invocation.method, args:invocation.args }
 })
 
@@ -355,7 +357,7 @@ var parseForLoopStatement = astGenerator(function() {
 		iterator = createAST({ type:'FOR_ITERATOR_DECLARATION', namespace:[iteratorName], value: iteratorValue })
 	
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
-	var iterable = parseValueStatement({ alias:true, listLiteral:true, text:false, number:false })
+	var iterable = parseValueStatement({ listLiteral:true, text:false, number:false })
 	
 	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	var block = parseBlock(parseStatement, 'for_loop')
