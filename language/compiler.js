@@ -48,6 +48,7 @@ var compileStatement = function(context, ast) {
 	switch (ast.type) {
 		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
 		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
+		case 'COMPOSITE':        return compileCompositeStatement(context, ast)
 		case 'RUNTIME_ITERATOR': return compileRuntimeIterator(context, ast);
 		case 'XML':              return compileXML(context, ast)
 		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
@@ -132,6 +133,23 @@ var compileItemProperty = function(context, ast) {
 			id: getItemID(ast),
 			property: getPropertyName(ast),
 			type: q('BYTES')
+		})
+}
+
+/************************
+ * Composite statements *
+ ************************/
+var compileCompositeStatement = function(context, ast) {
+	return code(ast,
+		'var {{ hookName }} = fun.name()',
+		'fun.hook({{ hookName }}, {{ parentHook }})',
+		'fun.getHook({{ hookName }}).innerHTML = {{ leftValue }} {{ operator }} {{ rightValue }}',
+		{
+			hookName: name('COMPOSITE_STATEMENT_HOOK'),
+			parentHook: context.hookName,
+			leftValue: _getValue(ast.left),
+			operator: ast.operator,
+			rightValue: _getValue(ast.right)
 		})
 }
 

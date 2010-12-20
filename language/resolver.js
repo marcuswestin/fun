@@ -70,6 +70,7 @@ var resolveStatement = function(context, ast) {
 		case 'RUNTIME_ITERATOR':     return resolveRuntimeIterator(context, ast)
 		case 'ITEM_PROPERTY':        return resolveItemProperty(context, ast)
 		case 'STATIC_VALUE':         return resolveStaticValue(context, ast)
+		case 'COMPOSITE':            return resolveCompositeStatement(context, ast)
 		
 		// Inline handler - will be compiled inline. Fall through to debugger to then return the AST
 		case 'HANDLER':              resolve(createScope(context), ast.block)
@@ -138,6 +139,15 @@ var resolveStaticValue = function(context, ast) {
 		case 'number': return Types.infer(ast, [Types.byName.Number])
 		default:       halt(ast, 'Unknown static value type "'+ast.valueType+'"')
 	}
+}
+
+/************************
+ * Composite statements *
+ ************************/
+var resolveCompositeStatement = function(context, ast) {
+	ast.left = resolveStatement(context, ast.left)
+	ast.right = resolveStatement(context, ast.right)
+	return ast
 }
 
 /*******
