@@ -143,14 +143,26 @@ var compileCompositeStatement = function(context, ast) {
 	return code(ast,
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }})',
-		'fun.getHook({{ hookName }}).innerHTML = {{ leftValue }} {{ operator }} {{ rightValue }}',
+		'fun.dependOn({{ itemProperties }}, function() {',
+			'fun.getHook({{ hookName }}).innerHTML = {{ leftValue }} {{ operator }} {{ rightValue }}',
+		'})',
 		{
 			hookName: name('COMPOSITE_STATEMENT_HOOK'),
 			parentHook: context.hookName,
+			itemProperties: itemPropertiesArray(ast.left, ast.right),
 			leftValue: _getValue(ast.left),
 			operator: ast.operator,
 			rightValue: _getValue(ast.right)
 		})
+}
+
+var itemPropertiesArray = function() {
+	var itemProperties = []
+	for (var i=0, ast; ast = arguments[i]; i++) {
+		if (ast.type != 'ITEM_PROPERTY' && ast.type != 'RUNTIME_ITERATOR') { continue }
+		itemProperties.push('{id:'+getItemID(ast)+', property:'+getPropertyName(ast)+'}')
+	}
+	return '['+itemProperties.join(',')+']'
 }
 
 /*******

@@ -115,6 +115,26 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
  *******************/
 	fun.block = blockCallback
 	
+	// wait until each item in items has received a mutation before calling callback;
+	//  then call callback each time there is a mutation
+	fun.dependOn = function(items, callback) {
+		if (items.length == 0) { return callback() }
+		var seen = {},
+			waitingOn = items.length
+		
+		var onMutation = function(mutation) {
+			if (waitingOn && !seen[mutation.id+':'+mutation.property]) {
+				seen[mutation.id+':'+mutation.property] = true
+				waitingOn--
+			}
+			if (!waitingOn) { callback() }
+		}
+		
+		for (var i=0, item; item = items[i]; i++) {
+			fun.observe('BYTES', item.id, item.property, onMutation)
+		}
+	}
+	
 	fun.waitForPromises = function(promises, callback) {
 		if (promises.length == 0) { callback() }
 		else {
