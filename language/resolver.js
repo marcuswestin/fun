@@ -160,8 +160,11 @@ var resolveXML = function(context, ast) {
 }
 
 var _resolveXMLAttributes = function(context, attributes) {
-	var i = 0, attrAST
+	var i = 0, attrAST,
+		dataAttr, dataTypeAttr
 	while (attrAST = attributes[i]) {
+		var valueType = attrAST.value.type,
+			attributeName = attrAST.namespace.join('.')
 		switch(attrAST.value.type) {
 			case 'OBJECT_LITERAL':
 				var nestedAttrs = map(attrAST.value.content, function(kvp) {
@@ -174,10 +177,21 @@ var _resolveXMLAttributes = function(context, attributes) {
 				attrAST.value = lookup(context, attrAST.value)
 				break
 			default:
-				resolve(context, attrAST.value)
 				i++
 				break
 		}
+		
+		if (attributeName == 'dataType') { dataTypeAttr = attrAST }
+		else if (attributeName == 'data') { dataAttr = attrAST }
+		else if (attributeName.match(/on\w+/)) { resolve(context, attrAST.value) } // resolve the code in the handler
+	}
+	if (dataTypeAttr) {
+		assert(dataTypeAttr, !!dataAttr, 'Found dataType attribute but no data attribute')
+		var value = dataTypeAttr.value
+		assert(dataTypeAttr, value.type == 'STATIC_VALUE' && value.valueType == 'string', 'dataType should be a static string, like "number"')
+		var valueStr = value.value.toLowerCase()
+		Types.infer(dataAttr.value, [valueStr])
+		dataAttr.dataType = valueStr
 	}
 }
 

@@ -110,7 +110,44 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 	fun.text = function(name, text) {
 		_hooks[name].appendChild(document.createTextNode(text))
 	}
+	
+	fun.reflectInput = function(hookName, itemID, property, dataType) {
+		var input = _hooks[hookName]
+		fun.observe('BYTES', itemID, property, function(mutation) {
+			console.log('mutation', arguments)
+			input.value = mutation.value
+		})
+		fun.on(input, "keypress", function(e) {
+			var oldValue = input.value
+			setTimeout(function() {
+				var value = input.value
+				if (dataType == 'number') {
+					if (!value) {
+						value = input.value = 0
+					} else if (value.match(/\d+/)) {
+						value = parseInt(value)
+					} else {
+						input.value = oldValue
+						return
+					}
+				}
+				fun.mutate("set", itemID, property, [value])
+			}, 0)
+		})
+	}
 
+/* DOM events
+ ************/
+	fun.cancel = function(e) {
+		e.cancelBubble = true;
+		if(e.stopPropagation) e.stopPropagation();
+		if(e.preventDefault) e.preventDefault();
+	}
+	
+	fun.isNumberKeyPress = function(e) {
+		return 48 <= e.charCode && e.charCode <= 57
+	}
+	
 /* Utility functions
  *******************/
 	fun.block = blockCallback

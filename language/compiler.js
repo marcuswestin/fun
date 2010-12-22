@@ -191,19 +191,22 @@ var compileXML = function(context, ast) {
 var _handleXMLAttributes = function(nodeHookName, ast) {
 	var staticAttrs = {}, dynamicCode = []
 	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
-		var namespace = attribute.namespace,
-			value = attribute.value
-		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, namespace, value)
+		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, attribute)
 	}
 	return { staticAttrs: staticAttrs, dynamicCode: dynamicCode.join('\n') }
 }
 
 // modifies staticAttrs and, dynamicCode
-var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, namespace, value) {
-	var match, name = namespace.join('.')
-	if (name == 'data') {
+var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, attribute) {
+	var name = attribute.namespace.join('.'),
+		value = attribute.value,
+		match
+	
+	if (name == 'dataType') {
+		// do nothing
+	} else if (name == 'data') {
 		// TODO Individual tags should define how to handle the data attribute
-		_handleDataAttribute(nodeHookName, ast, dynamicCode, value)
+		_handleDataAttribute(nodeHookName, ast, dynamicCode, value, attribute.dataType)
 	} else if (match = name.match(/^on(\w+)$/)) {
 		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
 	} else if (value.type == 'STATIC_VALUE') {
@@ -215,22 +218,14 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 }
 
 // modifies dynamicCode
-var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value) {
+var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value, dataType) {
 	dynamicCode.push(code(ast,
-		'fun.withHook({{ hookName }}, function(hook) {',
-		'	fun.on(hook, "keypress", function() {',
-		'		setTimeout(function() {',
-		'			fun.mutate("set", {{ itemID }}, {{ property }}, [hook.value])',
-		'		}, 0)',
-		'	})',
-		'	fun.observe("BYTES", {{ itemID }}, {{ property }}, function(mutation, value) {',
-		'		hook.value = value',
-		'	})',
-		'})',
+		'fun.reflectInput({{ hookName }}, {{ itemID }}, {{ property }}, {{ type }})',
 		{
 			hookName: nodeHookName,
 			itemID: getItemID(value),
-			property: getPropertyName(value)
+			property: getPropertyName(value),
+			type: q(dataType || 'string')
 		}))
 }
 

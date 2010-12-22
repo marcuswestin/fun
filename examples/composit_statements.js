@@ -1,9 +1,9 @@
 import Local
 import Global
 
-"Global.x:" <input data=Global.x/>
+"Global.x:" <input data=Global.x dataType="number"/>
 <br />
-"Global.y:" <input data=Global.y/>
+"Global.y:" <input data=Global.y dataType="number"/>
 
 <div>
 	"Global.x + 5 = " Global.x + 5
