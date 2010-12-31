@@ -493,7 +493,7 @@ var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
 		lastArg = arguments[argsLen - 1],
 		injectObj = (typeof lastArg == 'string' ? null : lastArg),
-		snippets = Array.prototype.slice.call(arguments, 1, injectObj ? argsLen - 1 : argsLen),
+		snippets = Array.prototype.slice.call(arguments, 0, injectObj ? argsLen - 1 : argsLen),
 		code = '\n' + snippets.join('\n'),
 		match
 	
