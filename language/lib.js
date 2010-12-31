@@ -131,6 +131,8 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 						return
 					}
 				}
+				input.value = value
+				if (value == fun.cachedValue(itemID, property)) { return }
 				fun.mutate("set", itemID, property, [value])
 			}, 0)
 		})

@@ -14,7 +14,7 @@ var fs = require('fs'),
 exports.compile = util.intercept('CompileError', function(ast, modules, declarations) {
 	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
 	var context = { hookName: name('ROOT_HOOK') } // root context
-	return code(ast,
+	return code(
 		';(function funApp() {',
 		'	var {{ hookName }} = fun.name("rootHook")',
 		'	fun.setHook({{ hookName }}, document.body)',
@@ -75,7 +75,7 @@ var compileRuntimeIterator = function(context, ast) {
  *****************/
 // TODO This should be using Types[ast.value.type].emit(ast.value)
 var compileStaticValue = function(context, ast) {
-	return code(ast,
+	return code(
 		'fun.text({{ parentHook }}, {{ value }})',
 		{
 			parentHook: context.hookName,
@@ -121,7 +121,7 @@ var getPropertyName = function(ast) {
  * Item Property values *
  ************************/
 var compileItemProperty = function(context, ast) {
-	return code(ast,
+	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }})',
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
@@ -140,7 +140,7 @@ var compileItemProperty = function(context, ast) {
  * Composite statements *
  ************************/
 var compileCompositeStatement = function(context, ast) {
-	return code(ast,
+	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }})',
 		'fun.dependOn({{ itemProperties }}, function() {',
@@ -173,7 +173,7 @@ var compileXML = function(context, ast) {
 		newContext = util.shallowCopy(context, { hookName:nodeHookName })
 	
 	var attributes = _handleXMLAttributes(nodeHookName, ast)
-	return code(ast,
+	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ staticAttributes }} })',
 		'{{ dynamicAttributesCode }}',
@@ -219,7 +219,7 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 
 // modifies dynamicCode
 var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value, dataType) {
-	dynamicCode.push(code(ast,
+	dynamicCode.push(code(
 		'fun.reflectInput({{ hookName }}, {{ itemID }}, {{ property }}, {{ type }})',
 		{
 			hookName: nodeHookName,
@@ -231,7 +231,7 @@ var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value, dataT
 
 // modifies dynamicCode
 var _handleDynamicAttribute = function(nodeHookName, ast, dynamicCode, attrName, value) {
-	dynamicCode.push(code(ast,
+	dynamicCode.push(code(
 		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
 		'	fun.attr({{ hookName }}, {{ attr }}, value)',
 		'})',
@@ -252,7 +252,7 @@ var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerNa
 	} else {
 		handlerFunctionCode = compileHandlerDeclaration(handlerAST)
 	}
-	dynamicCode.push(code(ast,
+	dynamicCode.push(code(
 		'fun.withHook({{ hookName }}, function(hook) {',
 		'	fun.on(hook, "{{ handlerName }}", {{ handlerFunctionCode }})',
 		'})',
@@ -272,7 +272,7 @@ var compileIfStatement = function(context, ast) {
 		elseContext = util.shallowCopy(context, { hookName: name('ELSE_HOOK') }),
 		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right ? right.type == 'ITEM_PROPERTY' : false) }
 	
-	return code(ast,
+	return code(
 		'var {{ ifHookName }} = fun.name(),',
 		'	{{ elseHookName }} = fun.name()',
 		';(function(ifBranch, elseBranch) {',
@@ -321,7 +321,7 @@ var compileIfStatement = function(context, ast) {
 var compileForLoop = function(context, ast) {
 	var loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	
-	return code(ast,
+	return code(
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
 		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
@@ -356,7 +356,7 @@ var compileTemplateDeclaration = function(ast) {
 	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same template twice')
 	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
 	var hookName = name('TEMPLATE_HOOK')
-	return code(ast,
+	return code(
 		'function {{ templateFunctionName }}({{ hookName }}) {',
 		'	{{ code }}',
 		'}',
@@ -371,7 +371,7 @@ var _compileTemplateInvocation = function(context, invocationAST, templateAST) {
 	// ast.args is a list of invocation values/aliases
 	assert(invocationAST, invocationAST.args.length == 0, 'TODO Handle template invocation arguments')
 	assert(templateAST, templateAST.signature.length == 0, 'TODO Handle template signature')
-	return code(templateAST,
+	return code(
 		'{{ templateFunctionName }}({{ hookName }})',
 		{
 			templateFunctionName: templateAST.compiledFunctionName,
@@ -388,7 +388,7 @@ var compileMutationItemCreation = function(ast) {
 	}).join(',')
 	
 	value.promiseName = name('ITEM_CREATION_PROMISE')
-	return code(ast,
+	return code(
 		'var {{ promiseName }} = fun.create({ {{ propertiesCode }} })',
 		{
 			promiseName: value.promiseName,
@@ -403,7 +403,7 @@ var compileHandlerDeclaration = function(ast) {
 	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same handler twice')
 	ast.compiledFunctionName = name('HANDLER_FUNCTION')
 	var hookName = name('HANDLER_HOOK')
-	return code(ast,
+	return code(
 		'function {{ handlerFunctionName }}({{ hookName }}) {',
 		'	{{ code }}',
 		'}',
@@ -433,7 +433,7 @@ var compileJavascriptBridge = function(ast) {
 		args = map(ast.args, _getValue)
 	
 	switch (value.jsType) {
-		case 'function': return code(ast, '{{ functionName }}({{ args }})', { functionName: value.jsName, args: args.join(',') })
+		case 'function': return code('{{ functionName }}({{ args }})', { functionName: value.jsName, args: args.join(',') })
 		default:         console.log(ast); UNKNOWN_AST_JS_TYPE
 	}
 }
@@ -442,7 +442,7 @@ var compileItemPropertyMutation = function(ast) {
 	// TODO Need to check if any of the ast.args are asynchronously retrieved, in which case we need
 	//  to wait for them
 	var promiseNames = pick(ast.args, function(arg) { return arg.promiseName })
-	return code(ast,
+	return code(
 		'fun.waitForPromises({{ promiseNames }}, function() {',
 		'	fun.mutate({{ operation }}, {{ id }}, {{ prop }}, [{{ args }}])',
 		'})',
@@ -461,7 +461,7 @@ var _cachedValueListCode = function(args) {
 			case 'STATIC_VALUE': return q(arg.value)
 			case 'MUTATION_ITEM_CREATION': return arg.promiseName+'.fulfillment[0]' // the fulfillment is [itemID]
 			case 'RUNTIME_ITERATOR': return arg.runtimeName
-			default: return code(arg,
+			default: return code(
 				'fun.cachedValue({{ itemID }}, {{ property }})',
 				{
 					itemID: getItemID(arg),
@@ -489,7 +489,7 @@ var compileInvocation = function(context, ast) {
  * Utility functions *
  *********************/
 var emitReplaceRegex = /{{\s*(\w+)\s*}}/
-var code = function(ast /*, line1, line2, line3, ..., lineN, optionalValues */) {
+var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
 		lastArg = arguments[argsLen - 1],
 		injectObj = (typeof lastArg == 'string' ? null : lastArg),
@@ -501,8 +501,8 @@ var code = function(ast /*, line1, line2, line3, ..., lineN, optionalValues */) 
 		var wholeMatch = match[0],
 			nameMatch = match[1],
 			value = injectObj[nameMatch]
-		assert(ast, typeof value != 'function', 'Found a function passed in as a value to code()')
-		assert(ast, typeof value != 'undefined', 'Missing inject value "'+nameMatch+'"')
+		if (typeof value == 'function') { console.log(nameMatch); ILLEGAL_CODE_VALUE }
+		if (typeof value == 'undefined') { console.log(nameMatch); MISSING_INJECT_VALUE }
 		code = code.replace(wholeMatch, value)
 	}
 	return code
