@@ -125,7 +125,7 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 					if (!value) {
 						value = input.value = 0
 					} else if (value.match(/\d+/)) {
-						value = parseInt(value)
+						value = parseInt(value, 10)
 					} else {
 						input.value = oldValue
 						return
