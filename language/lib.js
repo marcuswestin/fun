@@ -114,7 +114,6 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 	fun.reflectInput = function(hookName, itemID, property, dataType) {
 		var input = _hooks[hookName]
 		fun.observe('BYTES', itemID, property, function(mutation) {
-			console.log('mutation', arguments)
 			input.value = mutation.value
 		})
 		fun.on(input, "keypress", function(e) {
