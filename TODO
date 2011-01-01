@@ -47,6 +47,14 @@ Get involved - complete a task :)
 			<button>"remove"</button onclick=removeFriend(user, friend)>
 		}
 
+- "Aliased object literal styles"
+	1) Allow for saying
+		let aStyle = { display:'block' }
+		<div style=aStyle />
+	2) Enable merging object literals, e.g.
+		let aStyle = { display:'block', color:'red' }
+		let bStyle = aStyle + { font:'Helvetica', display:'inline' }
+
 - "List/Range literals (and list comprehensions?)"
 	See examples/for_loop_literal.fun
 	1) Implement list literals (e.g. for (number in [1,2,3]) { ... })
