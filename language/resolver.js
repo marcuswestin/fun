@@ -52,6 +52,8 @@ var resolve = function(context, ast) {
 }
 
 var resolveStatement = function(context, ast) {
+	if (ast._resolved) { return ast }
+	ast._resolved = true
 	switch(ast.type) {
 		case 'IMPORT_MODULE':        handleModuleImport(context, ast)      ;break
 		case 'IMPORT_FILE':          handleFileImport(context, ast)        ;break
