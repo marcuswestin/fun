@@ -117,7 +117,7 @@ var _parseInvocation = astGenerator(function(alias) {
 	return { type:'INVOCATION', method:alias.namespace.pop(), alias:alias, args:args }
 })
 
-var _compositeOperatorSymbols = { '+':1, '-':1, '/':1 }
+var _compositeOperatorSymbols = { '+':1, '-':1, '/':1, '*':1 }
 var _parseCompositeValueStatement = astGenerator(function(left, allowed) {
 	var operator = advance('symbol').value
 	var right = parseValueStatement(allowed)
