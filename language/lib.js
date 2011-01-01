@@ -158,7 +158,7 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 	fun.dependOn = function(items, callback) {
 		if (items.length == 0) { return callback() }
 		var seen = {},
-			waitingOn = items.length
+			waitingOn = 0
 		
 		var onMutation = function(mutation) {
 			if (waitingOn && !seen[mutation.id+':'+mutation.property]) {
@@ -169,6 +169,10 @@ jsio('from shared.javascript import bind, blockCallback, getPromise');
 		}
 		
 		for (var i=0, item; item = items[i]; i++) {
+			// If the same item property is passed in twice, only mark it as being waited on once
+			if (typeof seen[item.id+':'+item.property] != 'undefined') { continue }
+			seen[item.id+':'+item.property] = false
+			waitingOn++
 			fun.observe('BYTES', item.id, item.property, onMutation)
 		}
 	}
