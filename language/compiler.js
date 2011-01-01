@@ -140,19 +140,11 @@ var compileItemProperty = function(context, ast) {
  * Composite statements *
  ************************/
 var compileCompositeStatement = function(context, ast) {
-	return code(
-		'var {{ hookName }} = fun.name()',
-		'fun.hook({{ hookName }}, {{ parentHook }})',
-		'fun.dependOn({{ itemProperties }}, function() {',
-			'fun.getHook({{ hookName }}).innerHTML = {{ leftValue }} {{ operator }} {{ rightValue }}',
-		'})',
+	var hookName = name('COMPOSITE_HOOK')
+	return hookCode(hookName, context.hookName) + statementCode(ast,
+		'fun.getHook({{ hookName }}).innerHTML = {{ STATEMENT_VALUE }}',
 		{
-			hookName: name('COMPOSITE_STATEMENT_HOOK'),
-			parentHook: context.hookName,
-			itemProperties: itemPropertiesArray(ast.left, ast.right),
-			leftValue: _getValue(ast.left),
-			operator: ast.operator,
-			rightValue: _getValue(ast.right)
+			hookName: hookName,
 		})
 }
 
@@ -505,6 +497,47 @@ var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
 		output = output.replace(wholeMatch, value)
 	}
 	return output
+}
+
+function statementCode(ast /*, line1, line2, ..., lineN, values */) {
+	var statementLines = Array.prototype.slice.call(arguments, 1, arguments.length - 1),
+		injectValues = arguments[arguments.length - 1],
+		statementValue = _compileStatementValue(ast)
+	
+	injectValues['STATEMENT_VALUE'] = name('STATEMENT_VALUE')
+	
+	return code(
+		'fun.dependOn({{ dynamicValues }}, function() {',
+		'	var {{ STATEMENT_VALUE }} = {{ statementValue }}',
+			code.apply(this, statementLines.concat(injectValues)),
+		'})',
+		{
+			STATEMENT_VALUE: injectValues['STATEMENT_VALUE'],
+			dynamicValues: itemPropertiesArray(ast.dynamicASTs),
+			statementValue: statementValue
+		})
+}
+function _compileStatementValue(ast) {
+	switch(ast.type) {
+		case 'COMPOSITE':
+			return _compileStatementValue(ast.left) + ast.operator + _compileStatementValue(ast.right)
+		case 'ITEM_PROPERTY':
+		case 'RUNTIME_ITERATOR':
+		case 'STATIC_VALUE':
+			return _getValue(ast)
+		default:
+			console.log(ast); UNKNOWN_AST_TYPE
+	}
+}
+
+function hookCode(hookName, parentHookName) {
+	return code(
+		'var {{ hookName }} = fun.name()',
+		'fun.hook({{ hookName }}, {{ parentHookName }})',
+		{
+			hookName: hookName,
+			parentHookName: parentHookName
+		})
 }
 
 var CompileError = function(file, ast, msg) {
