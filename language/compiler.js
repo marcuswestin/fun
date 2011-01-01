@@ -79,11 +79,11 @@ var compileStaticValue = function(context, ast) {
 		'fun.text({{ parentHook }}, {{ value }})',
 		{
 			parentHook: context.hookName,
-			value: _getValue(ast)
+			value: _runtimeValue(ast)
 		})
 }
 
-var _getValue = function(ast) {
+var _runtimeValue = function(ast) {
 	switch(ast.type) {
 		case 'STATIC_VALUE':     return q(ast.value)
 		case 'RUNTIME_ITERATOR': return ast.runtimeName
@@ -286,8 +286,8 @@ var compileIfStatement = function(context, ast) {
 			elseHookName: elseContext.hookName,
 			leftIsDynamic: isDynamic.left,
 			rightIsDynamic: isDynamic.right,
-			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : _getValue(left),
-			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : right ? _getValue(right) : null,
+			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : _runtimeValue(left),
+			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : right ? _runtimeValue(right) : null,
 			comparison: ast.condition.comparison || '||', // if there is no comparison/right side, just use OR
 			leftID: isDynamic.left && q(left.item.id),
 			rightID: isDynamic.right && q(right.item.id),
@@ -367,7 +367,7 @@ var compileMutationItemCreation = function(ast) {
 	// get the item creation property values -> fun.create({ prop1:val1, prop2:val2, ... })
 	//  TODO: do we need to wait for promises for the values that are itemProperties?
 	var propertiesCode = pick(value.properties.content, function(prop) {
-		return prop.name + ':' + _getValue(prop.value)
+		return prop.name + ':' + _runtimeValue(prop.value)
 	}).join(',')
 	
 	value.promiseName = name('ITEM_CREATION_PROMISE')
@@ -413,7 +413,7 @@ var _compileMutationStatement = function(ast) {
 
 var compileJavascriptBridge = function(ast) {
 	var value = ast.value,
-		args = map(ast.args, _getValue)
+		args = map(ast.args, _runtimeValue)
 	
 	switch (value.jsType) {
 		case 'function': return code('{{ functionName }}({{ args }})', { functionName: value.jsName, args: args.join(',') })
@@ -524,7 +524,7 @@ function _compileStatementValue(ast) {
 		case 'ITEM_PROPERTY':
 		case 'RUNTIME_ITERATOR':
 		case 'STATIC_VALUE':
-			return _getValue(ast)
+			return _runtimeValue(ast)
 		default:
 			console.log(ast); UNKNOWN_AST_TYPE
 	}
