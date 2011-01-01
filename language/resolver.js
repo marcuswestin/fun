@@ -63,7 +63,7 @@ var resolveStatement = function(context, ast) {
 		case 'IF_STATEMENT':         return resolveIfStatement(context, ast)
 		case 'FOR_LOOP':             return resolveForLoop(context, ast)
 		case 'INVOCATION':           return resolveInvocation(context, ast)
-
+		
 		case 'MUTATION':             return resolveMutation(context, ast)
 		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)       ;break
 		
