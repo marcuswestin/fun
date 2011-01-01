@@ -19,16 +19,17 @@ Get involved - complete a task :)
 	X 2) in parseValue, if parsed number, text or alias
 		if next token is operator (e.g. "+")
 			parseCompositeStatement(value, operator)
-	3) <input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
+	X 3) <input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
 	4) Grouped composite statements, e.g. (6 * (5 + 4))
 
 - "Deferred values"
-	1) Come up with a common way to wait on a series of values before executing a function of compiled code
+	X 1) Come up with a common way to wait on a series of values before executing a function of compiled code
 	2) If all the values are static, don't bother creating a delayed function
 
 - "Tag-based type inference"
-	1) Tags with data should have the dataType attribute <input data=Local.x dataType="number" />
+	X 1) Tags with data should have the dataType attribute <input data=Local.x dataType="number" />
 	2) Tags should have custom implementations, that declare what types of data they accept
+	3) The data should infer its type of the dataType attribute, and should default to "text"
 
 - "Template arguments"
 	1) Pass in arguments to template invocations
