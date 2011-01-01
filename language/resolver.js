@@ -45,7 +45,7 @@ var resolve = function(context, ast) {
 	if (!ast) {
 		return null
 	} else if (ast instanceof Array) {
-		return map(ast, bind(this, resolveStatement, context))
+		return map(ast, bind(this, resolve, context))
 	} else {
 		return resolveStatement(context, ast)
 	}

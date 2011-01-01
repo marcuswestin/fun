@@ -4,10 +4,10 @@ import Global
 "Global.x:" <input data=Global.x dataType="number" style={ display:'block' }/>
 "Global.y:" <input data=Global.y dataType="number" style={ display:'block' }/>
 
-let five = 5
-let two = 2
-let greeting = "hello "
-let name = "world"
+let five = 5,
+	two = 2,
+	greeting = "hello ",
+	name = "world"
 
 <table>
 	<tr>

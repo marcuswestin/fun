@@ -45,7 +45,7 @@ var parseStatement = function() {
 		case 'keyword':
 			switch (token.value) {
 				case 'import':   return parseImportStatement()
-				case 'let':      return parseDeclarationStatement()
+				case 'let':      return parseDeclarationsStatement()
 				case 'for':      return parseForLoopStatement()
 				case 'if':       return parseIfStatement()
 				case 'debugger': return debuggerAST()
@@ -72,13 +72,21 @@ var parseImportStatement = astGenerator(function() {
 /****************
  * Declarations *
  ****************/
-var parseDeclarationStatement = astGenerator(function() {
+var parseDeclarationsStatement = astGenerator(function() {
 	advance('keyword', 'let')
+	var declarations = []
 	
-	var allowedValues = { itemLiteral:true, handlerLiteral:true, templateLiteral:true, objectLiteral:true },
-		assignment = parseAssignment(allowedValues)
+	while (true) {
+		var allowedValues = { itemLiteral:true, handlerLiteral:true, templateLiteral:true, objectLiteral:true },
+			assignment = parseAssignment(allowedValues)
+		
+		declarations.push({ type:'DECLARATION', namespace:assignment[0], value:assignment[1] })
+		
+		if (!peek('symbol', ',')) { break }
+		advance('symbol', ',')
+	}
 	
-	return { type:'DECLARATION', namespace:assignment[0], value:assignment[1] }
+	return declarations
 })
 
 /*********************************************************************

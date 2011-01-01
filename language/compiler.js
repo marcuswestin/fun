@@ -37,7 +37,7 @@ exports.compile = util.intercept('CompileError', function(ast, modules, declarat
 var compile = function(context, ast) {
 	assert(ast, context && context.hookName, "compile called with invalid context")
 	if (ast instanceof Array) {
-		return map(ast, bind(this, compileStatement, context)).join('\n') + '\n'
+		return map(ast, bind(this, compile, context)).join('\n') + '\n'
 	} else {
 		return compileStatement(context, ast) + '\n'
 	}
