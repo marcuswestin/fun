@@ -491,21 +491,20 @@ var compileInvocation = function(context, ast) {
 var emitReplaceRegex = /{{\s*(\w+)\s*}}/
 var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
-		lastArg = arguments[argsLen - 1],
-		injectObj = (typeof lastArg == 'string' ? null : lastArg),
-		snippets = Array.prototype.slice.call(arguments, 0, injectObj ? argsLen - 1 : argsLen),
-		code = '\n' + snippets.join('\n'),
+		injectObj = arguments[argsLen - 1],
+		snippets = Array.prototype.slice.call(arguments, 0, argsLen - 1),
+		output = '\n' + snippets.join('\n'),
 		match
 	
-	while (match = code.match(emitReplaceRegex)) {
+	while (match = output.match(emitReplaceRegex)) {
 		var wholeMatch = match[0],
 			nameMatch = match[1],
 			value = injectObj[nameMatch]
 		if (typeof value == 'function') { console.log(nameMatch); ILLEGAL_CODE_VALUE }
 		if (typeof value == 'undefined') { console.log(nameMatch); MISSING_INJECT_VALUE }
-		code = code.replace(wholeMatch, value)
+		output = output.replace(wholeMatch, value)
 	}
-	return code
+	return output
 }
 
 var CompileError = function(file, ast, msg) {
