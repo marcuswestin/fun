@@ -27,3 +27,8 @@ let five = 5,
 		greeting + name
 	</tr>
 </table>
+
+<br />"Numbers: "
+	<input data=Local.x dataType="number" /> "+" <input data=Local.y dataType="number" /> "=" Local.x + Local.y
+<br />"Strings: "
+	<input data=Local.foo /> "+" <input data=Local.bar /> "=" Local.foo + Local.bar
