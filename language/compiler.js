@@ -148,15 +148,6 @@ var compileCompositeStatement = function(context, ast) {
 		})
 }
 
-var itemPropertiesArray = function() {
-	var itemProperties = []
-	for (var i=0, ast; ast = arguments[i]; i++) {
-		if (ast.type != 'ITEM_PROPERTY' && ast.type != 'RUNTIME_ITERATOR') { continue }
-		itemProperties.push('{id:'+getItemID(ast)+', property:'+getPropertyName(ast)+'}')
-	}
-	return '['+itemProperties.join(',')+']'
-}
-
 /*******
  * XML *
  *******/
@@ -513,9 +504,18 @@ function statementCode(ast /*, line1, line2, ..., lineN, values */) {
 		'})',
 		{
 			STATEMENT_VALUE: injectValues['STATEMENT_VALUE'],
-			dynamicValues: itemPropertiesArray(ast.dynamicASTs),
+			dynamicValues: _itemPropertiesArray(ast.dynamicASTs),
 			statementValue: statementValue
 		})
+}
+var _itemPropertiesArray = function(ASTs) {
+	if (!ASTs) { return '[]' }
+	var itemProperties = []
+	for (var i=0, ast; ast = ASTs[i]; i++) {
+		if (ast.type != 'ITEM_PROPERTY' && ast.type != 'RUNTIME_ITERATOR') { continue }
+		itemProperties.push('{id:'+getItemID(ast)+', property:'+getPropertyName(ast)+'}')
+	}
+	return '['+itemProperties.join(',')+']'
 }
 function _compileStatementValue(ast) {
 	switch(ast.type) {
