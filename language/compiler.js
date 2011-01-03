@@ -249,52 +249,32 @@ var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerNa
  * If/Else statements *
  **********************/
 var compileIfStatement = function(context, ast) {
-	var left = ast.condition.left,
-		right = ast.condition.right,
-		ifContext = util.shallowCopy(context, { hookName: name('IF_HOOK') }),
-		elseContext = util.shallowCopy(context, { hookName: name('ELSE_HOOK') }),
-		isDynamic = { left:(left.type == 'ITEM_PROPERTY'), right:(right ? right.type == 'ITEM_PROPERTY' : false) }
+	var hookName = name('IF_ELSE_HOOK'),
+		ifContext = util.shallowCopy(context, { hookName:hookName }),
+		elseContext = util.shallowCopy(context, { hookName:hookName }),
+		lastValueName = name('LAST_VALUE')
 	
-	return code(
-		'var {{ ifHookName }} = fun.name(),',
-		'	{{ elseHookName }} = fun.name()',
+	return hookCode(hookName, context.hookName)
+		+ code('var {{ lastValueName }}', { lastValueName:lastValueName })
+		+ statementCode(ast.condition,
 		';(function(ifBranch, elseBranch) {',
-		'	fun.hook({{ ifHookName }}, {{ parentHookName }})',
-		'	fun.hook({{ elseHookName }}, {{ parentHookName }})',
-		'	var ready = fun.block(evaluate, {fireOnce: false}), lastTime',
-		'	{{ leftIsDynamic }} && fun.observe("BYTES", {{ leftID }}, {{ leftProperty }}, ready.addBlock())',
-		'	{{ rightIsDynamic }} && fun.observe("BYTES", {{ rightID }}, {{ rightProperty }}, ready.addBlock())',
-		'	ready.tryNow()',
-		'	function evaluate() {',
-		'		var thisTime = {{ leftValue }} {{ comparison }} {{ rightValue }}',
-		'		if (lastTime !== undefined && thisTime == lastTime) { return }',
-		'		fun.destroyHook(lastTime ? {{ ifHookName }} : {{ elseHookName }})',
-		'		lastTime = thisTime',
-		'		thisTime ? ifBranch() : elseBranch()',
-		'	}',
+		'	if ({{ STATEMENT_VALUE }} === {{ lastValueName }}) { return }',
+		'	{{ lastValueName }} = {{ STATEMENT_VALUE }}',
+		'	fun.destroyHook({{ hookName }})',
+		'	if({{ STATEMENT_VALUE }}) { ifBranch() } else { elseBranch() }',
 		'})(',
-		'	function() {',
+		'	function(){',
 		'		{{ ifCode }}',
 		'	},',
-		'	function() {',
+		'	function(){',
 		'		{{ elseCode }}',
 		'	}',
-		');',
+		')',
 		{
-			parentHookName: context.hookName,
-			ifHookName: ifContext.hookName,
-			elseHookName: elseContext.hookName,
-			leftIsDynamic: isDynamic.left,
-			rightIsDynamic: isDynamic.right,
-			leftValue: isDynamic.left ? 'fun.cachedValue({{ leftID }}, {{ leftProperty }})' : _runtimeValue(left),
-			rightValue: isDynamic.right ? 'fun.cachedValue({{ rightID }}, {{ rightProperty }})' : right ? _runtimeValue(right) : null,
-			comparison: ast.condition.comparison || '||', // if there is no comparison/right side, just use OR
-			leftID: isDynamic.left && q(left.item.id),
-			rightID: isDynamic.right && q(right.item.id),
-			leftProperty: isDynamic.left && getPropertyName(left),
-			rightProperty: isDynamic.right && getPropertyName(right),
+			hookName: hookName,
 			ifCode: compile(ifContext, ast.ifBlock),
-			elseCode: ast.elseBlock && compile(elseContext, ast.elseBlock)
+			elseCode: ast.elseBlock && compile(elseContext, ast.elseBlock),
+			lastValueName: lastValueName
 		})
 }
 

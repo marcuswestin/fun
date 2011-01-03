@@ -32,3 +32,17 @@ let five = 5,
 	<input data=Local.x dataType="number" /> "+" <input data=Local.y dataType="number" /> "=" Local.x + Local.y
 <br />"Strings: "
 	<input data=Local.foo /> "+" <input data=Local.bar /> "=" Local.foo + Local.bar
+
+if (Global.x < 10) {
+	<br />"Global.x < 10"
+}
+
+if (Global.x * Global.y > 100) {
+	<br />"Global.x * Global.y > 100"
+} else {
+	<br />"Global.x * Global.y <= 100"
+}
+
+if (Global.x * Global.y + Global.x * five > 200) {
+	<br />"Global.x * Global.y + Global.x * five > 200"
+}

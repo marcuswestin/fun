@@ -44,8 +44,8 @@ function doTokenize (inputFile) {
     var n;                      // The number value.
     var q;                      // The quote character.
     var str;                    // The string value.
-    var prefix = '+!=<>';
-    var suffix = '=';
+    var prefix = '+-!=<>&|';
+    var suffix = '=&|';
 
     var result = [];            // An array to hold the results.
 

@@ -105,12 +105,14 @@ var parseValueStatement = function(allowed) {
 	allowed.alias = true
 	
 	var result = _doParseValueStatement(allowed),
-		nextSymbol = peek('symbol')
+		nextSymbol = peek('symbol'),
+		symbol = nextSymbol.value
 	
-	if (nextSymbol.value == L_PAREN) {
+	if (symbol == L_PAREN) {
 		assert(allowed.invocation, 'Invocation not allowed here')
 		return _parseInvocation(result)
-	} else if (allowed.composite && _compositeOperatorSymbols[nextSymbol.value]) {
+	} else if (allowed.composite && (_compositeOperatorSymbols[symbol]
+		 	|| (allowed.conditional && _compositeConditionalSymbols[symbol]))) {
 		return _parseCompositeValueStatement(result, allowed)
 	} else {
 		return result
@@ -126,6 +128,7 @@ var _parseInvocation = astGenerator(function(alias) {
 })
 
 var _compositeOperatorSymbols = { '+':1, '-':1, '/':1, '*':1 }
+var _compositeConditionalSymbols = { '<':1, '>':1, '<=':1, '>=':1, '==':1, '&&':1, '||':1 }
 var _parseCompositeValueStatement = astGenerator(function(left, allowed) {
 	var operator = advance('symbol').value
 	var right = parseValueStatement(allowed)
@@ -379,17 +382,17 @@ var parseForLoopStatement = astGenerator(function() {
 var parseIfStatement = astGenerator(function() {
 	advance('keyword', 'if')
 	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
-	var condition = _parseCondition()
+	var condition = parseValueStatement({ composite:true, conditional:true })
 	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
-
+	
 	var ifBlock = parseBlock(parseStatement, 'if statement')
-
+	
 	var elseBlock = null
 	if (peek('keyword', 'else')) {
 		advance('keyword', 'else')
 		elseBlock = parseBlock(parseStatement, 'else statement')
 	}
-
+	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 })
 var _conditionOperators = '<,<=,>,>=,==,!='.split(',')

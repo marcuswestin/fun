@@ -21,6 +21,8 @@ Get involved - complete a task :)
 			parseCompositeStatement(value, operator)
 	X 3) <input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
 	4) Grouped composite statements, e.g. (6 * (5 + 4))
+	X 5) Allow for composite statements as if/else conditionals
+	6) Allow for unary operators !, -, + at the beginning of conditional composite statements
 
 - "Deferred values"
 	X 1) Come up with a common way to wait on a series of values before executing a function of compiled code
