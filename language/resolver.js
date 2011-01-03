@@ -47,11 +47,10 @@ var resolve = function(context, ast) {
 	} else if (ast instanceof Array) {
 		return map(ast, bind(this, resolve, context))
 	} else {
-		return resolveStatement(context, ast)
+		return _resolveStatement(context, ast)
 	}
 }
-
-var resolveStatement = function(context, ast) {
+var _resolveStatement = function(context, ast) {
 	if (ast._resolved) { return ast }
 	ast._resolved = true
 	switch(ast.type) {
@@ -147,8 +146,8 @@ var resolveStaticValue = function(context, ast) {
  * Composite statements *
  ************************/
 var resolveCompositeStatement = function(context, ast) {
-	ast.left = resolveStatement(context, ast.left)
-	ast.right = resolveStatement(context, ast.right)
+	ast.left = resolve(context, ast.left)
+	ast.right = resolve(context, ast.right)
 	ast.dynamicASTs = _collectDynamicASTs(ast)
 	return ast
 }
