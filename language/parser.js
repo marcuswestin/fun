@@ -531,7 +531,7 @@ var createAST = function(astObj, startToken, endToken) {
 
 // return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
 var debuggerAST = astGenerator(function() {
-	if (gToken.type != 'keyword' || gToken.value != 'debugger') { UNEXPECTED_NON_DEBUGGER_TOKEN }
+	advance('keyword', 'debugger')
 	return { type:'DEBUGGER' }
 })
 
