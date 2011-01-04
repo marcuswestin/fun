@@ -1,5 +1,6 @@
 import Local
 import Global
+import Mouse
 
 "Global.x:" <input data=Global.x dataType="number" style={ display:'block' }/>
 "Global.y:" <input data=Global.y dataType="number" style={ display:'block' }/>
@@ -45,4 +46,8 @@ if (Global.x * Global.y > 100) {
 
 if (Global.x * Global.y + Global.x * five > 200) {
 	<br />"Global.x * Global.y + Global.x * five > 200"
+}
+
+if (Mouse.x > 100 && Mouse.y > 100) {
+	"Mouse.x > 100 && Mouse.y > 100"
 }
