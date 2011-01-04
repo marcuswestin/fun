@@ -109,7 +109,8 @@ var getPropertyName = function(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
 			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', 'getPropertyName expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
-			return q(ast.iteratorProperty)
+			// If the iterator is being referrenced directly as an item ID, rather than as a an item property, then there is no property
+			return ast.iteratorProperty && q(ast.iteratorProperty)
 		case 'ITEM_PROPERTY':
 			return q(ast.property.join('.'))
 		default:
@@ -493,7 +494,9 @@ var _itemPropertiesArray = function(ASTs) {
 	var itemProperties = []
 	for (var i=0, ast; ast = ASTs[i]; i++) {
 		if (ast.type != 'ITEM_PROPERTY' && ast.type != 'RUNTIME_ITERATOR') { continue }
-		itemProperties.push('{id:'+getItemID(ast)+', property:'+getPropertyName(ast)+'}')
+		var propertyName = getPropertyName(ast)
+		if (!propertyName) { continue }
+		itemProperties.push('{id:'+getItemID(ast)+', property:'+propertyName+'}')
 	}
 	return '['+itemProperties.join(',')+']'
 }
