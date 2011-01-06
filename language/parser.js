@@ -162,7 +162,8 @@ var _doParseValueStatement = function(allowed) {
 					assert(allowed.composite)
 					advance('symbol', L_PAREN)
 					var result = parseValueStatement(allowed)
-					advance('symbol', R_PAREN, 'end of composite statement')
+					advance('symbol', R_PAREN, 'end of parenthesized composite statement')
+					result.hasParens = true
 					return result
 				case '<':
 					assert(allowed.xml, 'XML is not allowed here')

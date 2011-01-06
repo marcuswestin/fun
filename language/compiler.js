@@ -503,7 +503,8 @@ var _itemPropertiesArray = function(ASTs) {
 function _compileStatementValue(ast) {
 	switch(ast.type) {
 		case 'COMPOSITE':
-			return _compileStatementValue(ast.left) + ast.operator + _compileStatementValue(ast.right)
+			var res = _compileStatementValue(ast.left) + ast.operator + _compileStatementValue(ast.right)
+			return ast.hasParens ? '('+res+')' : res
 		case 'ITEM_PROPERTY':
 		case 'RUNTIME_ITERATOR':
 		case 'STATIC_VALUE':

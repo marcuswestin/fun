@@ -20,7 +20,7 @@ Get involved - complete a task :)
 		if next token is operator (e.g. "+")
 			parseCompositeStatement(value, operator)
 	X 3) <input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
-	4) Grouped composite statements, e.g. (6 * (5 + 4))
+	X 4) Grouped composite statements, e.g. (6 * (5 + 4))
 	X 5) Allow for composite statements as if/else conditionals
 	6) Allow for unary operators !, -, + at the beginning of conditional composite statements
 
