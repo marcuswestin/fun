@@ -73,10 +73,11 @@ Get involved - complete a task :)
 	7) unit tests for the pubsub engine api(!)
 
 - "Fun Engines"
-	1) a mysqpl persistence engine
-	2) a 0mq pubsub engine
-	3) a couchdb persistence engine
-	4) a couchdb pubsub engine (changes api)
+	1) separate out the persistence and the storage engines from each other
+	2) a mysqpl persistence engine
+	3) a 0mq pubsub engine
+	4) a couchdb persistence engine
+	5) a couchdb pubsub engine (changes api)
 
 - "Type-safe item creation"
 	1) Whenever an item gets created, ensure that all item properties that are used elsewhere
