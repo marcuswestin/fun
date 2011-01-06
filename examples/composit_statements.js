@@ -24,6 +24,9 @@ let five = 5,
 		<th>"two - 3 / Global.y"</th>
 		two - 3 / Global.y
 	</tr><tr>
+		<th>"(Global.y + 5) * ((Global.y + Global.x))"</th>
+		(Global.y + 5) * ((Global.y + Global.x))
+	</tr><tr>
 		<th>"greeting + name"</th>
 		greeting + name
 	</tr>

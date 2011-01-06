@@ -108,7 +108,7 @@ var parseValueStatement = function(allowed) {
 		nextSymbol = peek('symbol'),
 		symbol = nextSymbol.value
 	
-	if (symbol == L_PAREN) {
+	if (symbol == L_PAREN && result.type == 'ALIAS' && !nextSymbol.hadWhitespace) {
 		assert(allowed.invocation, 'Invocation not allowed here')
 		return _parseInvocation(result)
 	} else if (allowed.composite && (_compositeOperatorSymbols[symbol]
@@ -158,6 +158,12 @@ var _doParseValueStatement = function(allowed) {
 			}
 		case 'symbol':
 			switch(token.value) {
+				case L_PAREN:
+					assert(allowed.composite)
+					advance('symbol', L_PAREN)
+					var result = parseValueStatement(allowed)
+					advance('symbol', R_PAREN, 'End of composite statement')
+					return result
 				case '<':
 					assert(allowed.xml, 'XML is not allowed here')
 					return parseXML()

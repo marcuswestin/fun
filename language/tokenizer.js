@@ -55,19 +55,23 @@ function doTokenize (inputFile) {
         throw new TokenizeError(inputFile, line, col, msg);
     }
 
+    var hadWhitespace = false;
     var make = function (type, value) {
 
 // Make a token object.
 
-        return {
+        var result = {
             type: type,
             value: value,
             from: from,
             span: i - from,
             line: line,
             column: from - lineStart + 1,
-            file: inputFile
+            file: inputFile,
+            hadWhitespace: hadWhitespace
         };
+        hadWhitespace = false;
+        return result
     };
     
 // Allow for keyword lookup with "if (str in keywords) { ... }"
@@ -89,6 +93,7 @@ function doTokenize (inputFile) {
 
 // Keep track of the line number
 
+            hadWhitespace = true;
             line += 1;
             i += 1;
             lineStart = i;
@@ -97,6 +102,7 @@ function doTokenize (inputFile) {
 // Ignore whitespace.
 
         } else if (c <= ' ') {
+            hadWhitespace = true;
             i += 1;
             c = inputString.charAt(i);
 
