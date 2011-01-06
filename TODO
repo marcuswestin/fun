@@ -7,6 +7,23 @@ Get involved - complete a task :)
 	2) write another one
 	3) tell the world about them
 
+- "Template arguments"
+	1) Pass in arguments to template invocations
+		let aTemplate = template(item) { "Hello " item.name }
+		let anotherTemplate = template(name) { "Hello " name }
+		aTemplate(@1)
+		aTemplate("world")
+
+- "Handler arguments"
+	1) Pass in arguments to handler invocations
+		let removeFriend = handler(user, friend) {
+			user.friends.remove(friend)
+		}
+		for (friend in user.friends) {
+			<button>"remove"</button onclick=removeFriend(user, friend)>
+		}
+
+
 - "thefunlanguage.com"
 	1) just put something up there
 	2) run server in browser for demos
@@ -32,22 +49,6 @@ Get involved - complete a task :)
 	X 1) Tags with data should have the dataType attribute <input data=Local.x dataType="number" />
 	2) Tags should have custom implementations, that declare what types of data they accept
 	3) The data should infer its type of the dataType attribute, and should default to "text"
-
-- "Template arguments"
-	1) Pass in arguments to template invocations
-		let aTemplate = template(item) { "Hello " item.name }
-		let anotherTemplate = template(name) { "Hello " name }
-		aTemplate(@1)
-		aTemplate("world")
-
-- "Handler arguments"
-	1) Pass in arguments to handler invocations
-		let removeFriend = handler(user, friend) {
-			user.friends.remove(friend)
-		}
-		for (friend in user.friends) {
-			<button>"remove"</button onclick=removeFriend(user, friend)>
-		}
 
 - "Aliased object literal styles"
 	1) Allow for saying
