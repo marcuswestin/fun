@@ -123,7 +123,7 @@ var _parseInvocationArgFn = bind(this, parseValueStatement, { itemLiteral:true, 
 var _parseInvocation = astGenerator(function(alias) {
 	advance('symbol', L_PAREN)
 	var args = parseList(_parseInvocationArgFn, R_PAREN)
-	advance('symbol', R_PAREN)
+	advance('symbol', R_PAREN, 'end of invocation')
 	return { type:'INVOCATION', method:alias.namespace.pop(), alias:alias, args:args }
 })
 
@@ -162,7 +162,7 @@ var _doParseValueStatement = function(allowed) {
 					assert(allowed.composite)
 					advance('symbol', L_PAREN)
 					var result = parseValueStatement(allowed)
-					advance('symbol', R_PAREN, 'End of composite statement')
+					advance('symbol', R_PAREN, 'end of composite statement')
 					return result
 				case '<':
 					assert(allowed.xml, 'XML is not allowed here')
@@ -319,7 +319,7 @@ var parseJavascriptBridge = astGenerator(function() {
 	var jsType = advance('string').value
 	advance('symbol', ',')
 	var jsName = advance('string').value
-	advance('symbol', R_PAREN)
+	advance('symbol', R_PAREN, 'end of javascript bridge')
 	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
 })
 
