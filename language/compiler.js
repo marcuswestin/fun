@@ -46,18 +46,18 @@ var compile = function(context, ast) {
 var compileStatement = function(context, ast) {
 	if (!ast) { return '' }
 	switch (ast.type) {
-		case 'STATIC_VALUE':     return compileStaticValue(context, ast)
-		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
-		case 'COMPOSITE':        return compileCompositeStatement(context, ast)
-		case 'RUNTIME_ITERATOR': return compileRuntimeIterator(context, ast)
-		case 'TEMPLATE_ARGUMENT':return compileTemplateArgument(context, ast)
-		case 'XML':              return compileXML(context, ast)
-		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
-		case 'FOR_LOOP':         return compileForLoop(context, ast)
-		case 'INVOCATION':       return compileInvocation(context, ast)
-		case 'DEBUGGER':         return 'debugger'
+		case 'STATIC_VALUE':      return compileStaticValue(context, ast)
+		case 'ITEM_PROPERTY':     return compileItemProperty(context, ast)
+		case 'COMPOSITE':         return compileCompositeStatement(context, ast)
+		case 'RUNTIME_ITERATOR':  return compileRuntimeIterator(context, ast)
+		case 'TEMPLATE_ARGUMENT': return compileTemplateArgument(context, ast)
+		case 'XML':               return compileXML(context, ast)
+		case 'IF_STATEMENT':      return compileIfStatement(context, ast)
+		case 'FOR_LOOP':          return compileForLoop(context, ast)
+		case 'INVOCATION':        return compileInvocation(context, ast)
+		case 'DEBUGGER':          return 'debugger'
 		
-		default:                 console.log(ast); UNKNOWN_AST_TYPE
+		default:                  console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 
@@ -95,12 +95,12 @@ var compileStaticValue = function(context, ast) {
 
 var _runtimeValue = function(ast) {
 	switch(ast.type) {
-		case 'STATIC_VALUE':     return q(ast.value)
-		case 'RUNTIME_ITERATOR': return ast.runtimeName
-		case 'TEMPLATE_ARGUMENT':return ast.runtimeName
-		case 'LIST':             return q(ast.content)
-		case 'ITEM_PROPERTY':    return 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
-		default:                 console.log(ast); UNKNOWN_AST_TYPE
+		case 'STATIC_VALUE':      return q(ast.value)
+		case 'RUNTIME_ITERATOR':  return ast.runtimeName
+		case 'TEMPLATE_ARGUMENT': return ast.runtimeName
+		case 'LIST':              return q(ast.content)
+		case 'ITEM_PROPERTY':     return 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
+		default:                  console.log(ast); UNKNOWN_AST_TYPE
 	}
 }
 

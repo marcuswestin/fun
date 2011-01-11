@@ -19,11 +19,11 @@ util.each(Types.definitions, function(definition) {
 var inferredTypes = {}
 function getValueID(valueAST) {
 	switch(valueAST.type) {
-		case 'STATIC_VALUE':     return valueAST.valueType + ':' + valueAST.value
-		case 'ITEM_PROPERTY':    return 'item_property:' + valueAST.item.id + ':' + valueAST
-		case 'RUNTIME_ITERATOR': return 'iterator:' + getValueID(valueAST.iterable)
-		case 'TEMPLATE_ARGUMENT':return 'template_argument:' + valueAST.runtimeName
-		default:                 console.log(valueAST); UNDEFINED_VALUEAST
+		case 'STATIC_VALUE':      return valueAST.valueType + ':' + valueAST.value
+		case 'ITEM_PROPERTY':     return 'item_property:' + valueAST.item.id + ':' + valueAST
+		case 'RUNTIME_ITERATOR':  return 'iterator:' + getValueID(valueAST.iterable)
+		case 'TEMPLATE_ARGUMENT': return 'template_argument:' + valueAST.runtimeName
+		default:                  console.log(valueAST); UNDEFINED_VALUEAST
 	}
 }
 
