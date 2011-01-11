@@ -17,10 +17,12 @@ util.shallowCopy = function(obj, merge) {
 	return result
 }
 
-util.create = function(oldObject) {
+util.create = function(oldObject, props) {
 	function F() {}
 	F.prototype = oldObject;
-	return new F();
+	var newObject = new F();
+	for (var key in props) { newObject[key] = props[key] }
+	return newObject
 }
 
 util.intercept = function(errorName, fn) {
