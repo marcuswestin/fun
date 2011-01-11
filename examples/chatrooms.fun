@@ -12,7 +12,7 @@ let Templates = {
 				<span class="name"> room.name </span onclick=handler() {
 					Local.currentRoom.set(room)
 				}>
-				if (room == Local.currentRoom) { " --> " }
+				if (room == Local.currentRoom) { <span class="currentRoomArrow">" --> "</span> }
 			</div>
 		}
 	},
