@@ -119,12 +119,12 @@ var parseValueStatement = function(allowed) {
 	}
 }
 
-var _parseInvocationArgFn = bind(this, parseValueStatement, { itemLiteral:true, handlerLiteral: true })
+var _parseInvocationArgFn = bind(this, parseValueStatement, { composite:true, itemLiteral:true, handlerLiteral: true })
 var _parseInvocation = astGenerator(function(alias) {
 	advance('symbol', L_PAREN)
 	var args = parseList(_parseInvocationArgFn, R_PAREN)
 	advance('symbol', R_PAREN, 'end of invocation')
-	return { type:'INVOCATION', method:alias.namespace.pop(), alias:alias, args:args }
+	return { type:'INVOCATION', alias:alias, args:args }
 })
 
 var _compositeOperatorSymbols = { '+':1, '-':1, '/':1, '*':1 }
@@ -352,9 +352,15 @@ var _parseMutationAssignment = astGenerator(function() {
 	return {type: 'MUTATION_DECLARATION', namespace:namespace, value:value}
 })
 
+var _parseMutationInvocationArgFn = bind(this, parseValueStatement, {number:true, text:true})
 var _parseMutationInvocation = astGenerator(function() {
-	var invocation = parseValueStatement({ invocation: true })
-	return {type: 'MUTATION', alias:invocation.alias, method:invocation.method, args:invocation.args }
+	var alias = parseAlias(),
+		method = alias.namespace.pop()
+	advance('symbol', L_PAREN)
+	var args = parseList(_parseMutationInvocationArgFn, R_PAREN)
+	advance('symbol', R_PAREN, 'end of mutation method')
+	
+	return {type:'MUTATION', method:method, alias:alias, args:args}
 })
 
 var _parseItemCreation = astGenerator(function() {

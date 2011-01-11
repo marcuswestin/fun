@@ -17,8 +17,8 @@ var tokenizer = require('./tokenizer'),
 var util = require('./util'),
 	bind = util.bind,
 	map = util.map,
-	name = util.name,
-	shallowCopy = util.shallowCopy
+	each = util.each,
+	name = util.name
 
 // TODO Read types from types
 // TODO read tags from tags
@@ -107,9 +107,11 @@ var _lookupAlias = function(context, ast, allowMiss) {
 		
 		switch(value.type) {
 			case 'RUNTIME_ITERATOR':
-				return util.shallowCopy(value, { iteratorProperty: namespace.slice(i+1).join('.') })
+				return util.create(value, { iteratorProperty: namespace.slice(i+1).join('.') })
+			case 'TEMPLATE_ARGUMENT':
+				return util.create(value, { property:namespace.slice(i+1).join('.') })
 			case 'ITEM':
-				return util.shallowCopy(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
+				return util.create(ast, { type: 'ITEM_PROPERTY', item:value, property:namespace.slice(i+1) })
 			case 'JAVASCRIPT_BRIDGE':
 				return value
 			case 'ALIAS':
@@ -247,6 +249,11 @@ var _importFile = function(path, context, a) {
 var resolveInvocation = function(context, ast) {
 	if (ast.alias) { ast.invocable = lookup(context, ast.alias) }
 	assert(ast, ast.invocable, 'Found an invocation without a reference to a invocable')
+	var args = ast.args = resolve(context, ast.args),
+		signature = ast.invocable.signature
+	for (var i=0; i<args.length; i++) {
+		signature[i].valueType = args[i].type
+	}
 	return ast
 }
 
@@ -326,11 +333,10 @@ var handleDeclaration = function(context, ast) {
 	switch(value.type) {
 		case 'TEMPLATE':
 		case 'HANDLER':
-			context.declarations.push(value)
-			resolve(createScope(context), value.block)
+			_resolveInvocable(context, value)
 			break
 		case 'MUTATION_ITEM_CREATION':
-			util.each(value.properties.content, function(prop) {
+			each(value.properties.content, function(prop) {
 				prop.value = lookup(context, prop.value)
 			})
 			break
@@ -340,15 +346,20 @@ var handleDeclaration = function(context, ast) {
 		default:
 			// do nothing
 	}
-	_declareAlias(context, ast)
+	_declareAlias(context, ast, ast.namespace, ast.value)
 }
-var _declareAlias = function(context, ast) {
-	var aliases = context.aliases,
-		namespace = ast.namespace,
-		valueAST = ast.value
-	
+var _resolveInvocable = function(context, ast) {
+	context.declarations.push(ast)
+	var newScope = createScope(context)
+	ast.signature = map(ast.signature, function(argumentName) {
+		var argument = {type:'TEMPLATE_ARGUMENT', runtimeName:name('TEMPLATE_ARG_NAME')}
+		_declareAlias(newScope, ast, [argumentName], argument)
+		return argument
+	})
+	ast.block = resolve(newScope, ast.block)
+}
+var _declareAlias = function(context, ast, namespace, valueAST) {
 	if (valueAST.type == 'OBJECT_LITERAL') {
-		var baseNamespace = ast.namespace
 		for (var i=0, kvp; kvp = valueAST.content[i]; i++) {
 			var nestedDeclarationAST = util.create(ast)
 			nestedDeclarationAST.namespace = namespace.concat(kvp.name)
@@ -356,9 +367,9 @@ var _declareAlias = function(context, ast) {
 			handleDeclaration(context, nestedDeclarationAST)
 		}
 	} else {
-		var namespaceKey = ast.namespace.join('.')
-		assert(ast, !aliases[namespaceKey], 'Repeat declaration of "'+namespaceKey+'"')
-		aliases[namespaceKey] = valueAST
+		var namespaceKey = namespace.join('.')
+		assert(ast, !context.aliases[namespaceKey], 'Repeat declaration of "'+namespaceKey+'"')
+		context.aliases[namespaceKey] = valueAST
 	}
 }
 
@@ -377,7 +388,7 @@ var createScope = function(context) {
 	// Reads will propegate up the prototype chain, while writes won't.
 	// However, writes *will* shadow values up the prototype chain
 	context = util.create(context)
-	context.aliases = shallowCopy(context.aliases)
+	context.aliases = util.shallowCopy(context.aliases)
 	return context
 }
 

@@ -50,6 +50,7 @@ var compileStatement = function(context, ast) {
 		case 'ITEM_PROPERTY':    return compileItemProperty(context, ast)
 		case 'COMPOSITE':        return compileCompositeStatement(context, ast)
 		case 'RUNTIME_ITERATOR': return compileRuntimeIterator(context, ast)
+		case 'TEMPLATE_ARGUMENT':return compileTemplateArgument(context, ast)
 		case 'XML':              return compileXML(context, ast)
 		case 'IF_STATEMENT':     return compileIfStatement(context, ast)
 		case 'FOR_LOOP':         return compileForLoop(context, ast)
@@ -70,6 +71,15 @@ var compileRuntimeIterator = function(context, ast) {
 	}
 }
 
+var compileTemplateArgument = function(context, ast) {
+	switch(ast.valueType) {
+		case 'RUNTIME_ITERATOR':
+			return compileItemProperty(context, ast)
+		default:
+			return compileStaticValue(context, ast)
+	}
+}
+
 /*****************
  * Static values *
  *****************/
@@ -87,6 +97,7 @@ var _runtimeValue = function(ast) {
 	switch(ast.type) {
 		case 'STATIC_VALUE':     return q(ast.value)
 		case 'RUNTIME_ITERATOR': return ast.runtimeName
+		case 'TEMPLATE_ARGUMENT':return ast.runtimeName
 		case 'LIST':             return q(ast.content)
 		case 'ITEM_PROPERTY':    return 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
 		default:                 console.log(ast); UNKNOWN_AST_TYPE
@@ -96,7 +107,7 @@ var _runtimeValue = function(ast) {
 var getItemID = function(ast) {
 	switch(ast.type) {
 		case 'RUNTIME_ITERATOR':
-			assert(ast, ast.iterable.type == 'ITEM_PROPERTY', 'getItemID expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
+		case 'TEMPLATE_ARGUMENT':
 			return ast.runtimeName
 		case 'ITEM_PROPERTY':
 			return q(ast.item.id)
@@ -113,6 +124,8 @@ var getPropertyName = function(ast) {
 			return ast.iteratorProperty && q(ast.iteratorProperty)
 		case 'ITEM_PROPERTY':
 			return q(ast.property.join('.'))
+		case 'TEMPLATE_ARGUMENT':
+			return q(ast.property)
 		default:
 			console.log(ast); UNKNOWN_AST_TYPE
 	}
@@ -320,27 +333,32 @@ var compileTemplateDeclaration = function(ast) {
 	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same template twice')
 	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
 	var hookName = name('TEMPLATE_HOOK')
+	
 	return code(
-		'function {{ templateFunctionName }}({{ hookName }}) {',
+		'function {{ templateFunctionName }}({{ hookName }} {{ argNames }}) {',
 		'	{{ code }}',
 		'}',
 		{
 			templateFunctionName: ast.compiledFunctionName,
 			hookName: hookName,
-			code: compile({hookName:hookName}, ast.block)
+			code: compile({hookName:hookName}, ast.block),
+			argNames: _commaPrefixJoin(ast.signature, function(arg) { return arg.runtimeName })
 		})
 }
 
 var _compileTemplateInvocation = function(context, invocationAST, templateAST) {
-	// ast.args is a list of invocation values/aliases
-	assert(invocationAST, invocationAST.args.length == 0, 'TODO Handle template invocation arguments')
-	assert(templateAST, templateAST.signature.length == 0, 'TODO Handle template signature')
 	return code(
-		'{{ templateFunctionName }}({{ hookName }})',
+		'{{ templateFunctionName }}({{ hookName }} {{ argumentValues }})',
 		{
 			templateFunctionName: templateAST.compiledFunctionName,
-			hookName: context.hookName
+			hookName: context.hookName,
+			argumentValues: _commaPrefixJoin(invocationAST.args, _compileStatementValue)
 		})
+}
+
+var _commaPrefixJoin = function(arr, fn) {
+	if (arr.length == 0) { return '' }
+	return ', ' + map(arr, _compileStatementValue).join(', ')
 }
 
 var compileMutationItemCreation = function(ast) {
@@ -507,6 +525,7 @@ function _compileStatementValue(ast) {
 			return ast.hasParens ? '('+res+')' : res
 		case 'ITEM_PROPERTY':
 		case 'RUNTIME_ITERATOR':
+		case 'TEMPLATE_ARGUMENT':
 		case 'STATIC_VALUE':
 			return _runtimeValue(ast)
 		default:
