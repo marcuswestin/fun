@@ -31,7 +31,10 @@ void(function() {
 		s.src = '//connect.facebook.net/en_US/all.js'
 		s.async = true
 		fbRootDiv.appendChild(s)
+		
+		fun.mutate('SET', 'LOCAL', '__Facebook_connected__', [false])
 	}
 	
 	_init()
+	
 })();
