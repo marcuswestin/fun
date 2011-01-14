@@ -48,6 +48,7 @@ var parseStatement = function() {
 				case 'let':      return parseDeclarationsStatement()
 				case 'for':      return parseForLoopStatement()
 				case 'if':       return parseIfStatement()
+				case 'switch':   return parseSwitchStatement()
 				case 'debugger': return debuggerAST()
 				default:         halt('Unexpected keyword "'+token.value+'" at the beginning of a top level statement')
 			}
@@ -421,6 +422,37 @@ var _parseCondition = astGenerator(function() {
 	}
 
 	return { left:left, comparison:comparison, right:right }
+})
+
+/********************
+ * Switch statement *
+ ********************/
+var parseSwitchStatement = astGenerator(function() {
+	advance('keyword', 'switch')
+	advance('symbol', L_PAREN, 'beginning of the switch statement\'s value')
+	var value = parseValueStatement({ composite:true })
+	advance('symbol', R_PAREN, 'end of the switch statement\'s value')
+	var cases = parseBlock(_parseCase, 'switch case statement')
+	return { type:'SWITCH_STATEMENT', value:value, cases:cases }
+})
+
+var _parseCase = astGenerator(function() {
+	advance('keyword', ['case', 'default'])
+	var values = [],
+		statements = []
+	if (gToken.value == 'case') {
+		while (true) {
+			values.push(parseValueStatement({ text:true, number:true, alias:false }))
+			if (!peek('symbol', ',')) { break }
+			advance('symbol', ',')
+		}
+	}
+	advance('symbol', ':')
+	while (true) {
+		statements.push(parseStatement())
+		if (peek('keyword', ['case', 'default']) || peek('symbol', R_CURLY)) { break }
+	}
+	return { type:'SWITCH_CASE', values:values, statements:statements }
 })
 
 /****************************

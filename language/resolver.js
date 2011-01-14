@@ -60,6 +60,7 @@ var _resolveStatement = function(context, ast) {
 		
 		case 'XML':                  return resolveXML(context, ast)
 		case 'IF_STATEMENT':         return resolveIfStatement(context, ast)
+		case 'SWITCH_STATEMENT':     return resolveSwitchStatement(context, ast)
 		case 'FOR_LOOP':             return resolveForLoop(context, ast)
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 		
@@ -322,6 +323,14 @@ var resolveIfStatement = function(context, ast) {
 	if (ast.elseBlock) {
 		ast.elseBlock = resolve(createScope(context), ast.elseBlock)
 	}
+	return ast
+}
+
+/*********************
+ * Switch statements *
+ *********************/
+var resolveSwitchStatement = function(context, ast) {
+	console.log("TODO: implement resolveSwitchStatement")
 	return ast
 }
 

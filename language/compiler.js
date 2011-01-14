@@ -53,6 +53,7 @@ var compileStatement = function(context, ast) {
 		case 'TEMPLATE_ARGUMENT': return compileTemplateArgument(context, ast)
 		case 'XML':               return compileXML(context, ast)
 		case 'IF_STATEMENT':      return compileIfStatement(context, ast)
+		case 'SWITCH_STATEMENT':  return compileSwitchStatement(context, ast)
 		case 'FOR_LOOP':          return compileForLoop(context, ast)
 		case 'INVOCATION':        return compileInvocation(context, ast)
 		case 'DEBUGGER':          return 'debugger'
@@ -290,6 +291,14 @@ var compileIfStatement = function(context, ast) {
 			elseCode: ast.elseBlock && compile(elseContext, ast.elseBlock),
 			lastValueName: lastValueName
 		})
+}
+
+/*********************
+ * Switch statements *
+ *********************/
+var compileSwitchStatement = function(context, ast) {
+	console.log('TODO: implement compileSwitchStatement')
+	return 'console.log("TODO: implement compileSwitchStatement")'
 }
 
 /*************
