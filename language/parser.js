@@ -93,7 +93,7 @@ var parseDeclarationsStatement = astGenerator(function() {
  * Value statements (static literals, aliases, template invocations) *
  *********************************************************************/
 // parse a value statement - "allowed" is an object of the types of values
-//  that are allowed to be parsed here. Numbers and text are allowed unless
+//  that are allowed to be parsed here. Aliases, numbers and text are allowed
 //  unless specified false. Aliases are always allowed, since we don't know
 //  what type of value they reference until the we're in the resolver stage.
 //  The optional allowed value types are "invocation", "itemCreation",
@@ -102,7 +102,7 @@ var parseDeclarationsStatement = astGenerator(function() {
 var parseValueStatement = function(allowed) {
 	if (typeof allowed.number == 'undefined') { allowed.number = true }
 	if (typeof allowed.text == 'undefined') { allowed.text = true }
-	allowed.alias = true
+	if (typeof allowed.alias == 'undefined') { allowed.alias = true }
 	
 	var result = _doParseValueStatement(allowed),
 		nextSymbol = peek('symbol'),
