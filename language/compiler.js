@@ -297,9 +297,39 @@ var compileIfStatement = function(context, ast) {
  * Switch statements *
  *********************/
 var compileSwitchStatement = function(context, ast) {
-	console.log('TODO: implement compileSwitchStatement')
-	return 'console.log("TODO: implement compileSwitchStatement")'
+	var switchContext = util.shallowCopy(context, { hookName:name('SWITCH_HOOK') })
+		lastValueName = name('LAST_VALUE')
+
+	return hookCode(switchContext.hookName, context.hookName)
+		+ code('var {{ lastValueName }}', { lastValueName:lastValueName })
+		+ statementCode(ast.controlValue,
+		';(function(branches) {',
+		'	if ({{ STATEMENT_VALUE }} === {{ lastValueName }}) { return }',
+		'	{{ lastValueName }} = {{ STATEMENT_VALUE }}',
+		'	fun.destroyHook({{ hookName }})',
+		'	switch ({{ STATEMENT_VALUE }}) {',
+				map(ast.cases, function(switchCase, i) {
+					var labels = switchCase.isDefault
+							? 'default:\n'
+							: map(switchCase.values, function(value) {
+								return 'case ' + _runtimeValue(value) + ':\n'
+							}).join('')
+					return labels
+						+ 'branches['+i+'](); break'
+				}).join('\n'),
+		'	}',
+		'})([',
+			map(ast.cases, function(switchCase) {
+				return 'function(){ ' + compile(switchContext, switchCase.statements) + '}'
+			}).join(',\n'),
+		'])',
+		{
+			hookName: switchContext.hookName,
+			lastValueName: lastValueName
+		})
 }
+
+
 
 /*************
  * For loops *
