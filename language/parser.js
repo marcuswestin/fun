@@ -430,10 +430,10 @@ var _parseCondition = astGenerator(function() {
 var parseSwitchStatement = astGenerator(function() {
 	advance('keyword', 'switch')
 	advance('symbol', L_PAREN, 'beginning of the switch statement\'s value')
-	var value = parseValueStatement({ composite:true })
+	var controlValue = parseValueStatement({ composite:true })
 	advance('symbol', R_PAREN, 'end of the switch statement\'s value')
 	var cases = parseBlock(_parseCase, 'switch case statement')
-	return { type:'SWITCH_STATEMENT', value:value, cases:cases }
+	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
 })
 
 var _parseCase = astGenerator(function() {

@@ -315,7 +315,7 @@ var resolveIfStatement = function(context, ast) {
  * Switch statements *
  *********************/
 var resolveSwitchStatement = function(context, ast) {
-	ast.value = lookup(context, ast.value)
+	ast.controlValue = resolve(context, ast.controlValue)
 	each(ast.cases, function(aCase) {
 		aCase.statements = map(aCase.statements, bind(this, resolve, context))
 	})
