@@ -9,8 +9,8 @@ Get involved - complete a task :)
 
 - "Template arguments"
 	1) Pass in arguments to template invocations
-		let aTemplate = template(item) { "Hello " item.name }
-		let anotherTemplate = template(name) { "Hello " name }
+		X let aTemplate = template(item) { "Hello " item.name }
+		X let anotherTemplate = template(name) { "Hello " name }
 		aTemplate(@1)
 		aTemplate("world")
 
