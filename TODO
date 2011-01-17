@@ -31,6 +31,17 @@ Get involved - complete a task :)
 	4) list engines
 	5) technical docs
 
+- "Custom events"
+	1) allow for custom events other than XML elements' "on*" events, e.g.
+		App.onLoad = handler() { ... }
+		// or
+		App.onLoad(handler() { ... })
+		// or
+		App.onLoad.add(handler() { ... })
+	2) Implement some, e.g
+		Global.onConnect = handler() { ... }
+		Global.onDisconnect = handler() { ... }
+
 - "Composite statements"
 	X 1) rename parseValueOrAlias to parseValue
 	X 2) in parseValue, if parsed number, text or alias
