@@ -1,1 +1,21 @@
-html, body { color:#333; font-family:Verdana; font-size:14px; }
+/* reset */
+body, html { color:#333; font-family:Verdana; font-size:14px; }
+a { text-decoration:none; color:#138; }
+
+/* app */
+#app { width:990px; margin: 50px auto; }
+
+/* section: header */
+.header { border-bottom:1px solid #999; }
+	.logo { font-size: 60px; margin-bottom:0; }
+	.slogan { float:left; margin-top:5px; }
+	.made-by { float:right; font-size:20px; margin-top:5px; }
+
+/* section: header spacing */
+.spacing { clear:both; height:20px; }
+
+/* section: navigation */
+.navigation { border-right: 1px solid #999; width:250px; float:left; margin: 0 30px 0 0; }
+	.navigation-item { margin:0 0 8px 10px; cursor:pointer; color:#137; }
+
+/* section: content */
