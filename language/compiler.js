@@ -265,8 +265,7 @@ var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerNa
  **********************/
 var compileIfStatement = function(context, ast) {
 	var hookName = name('IF_ELSE_HOOK'),
-		ifContext = util.shallowCopy(context, { hookName:hookName }),
-		elseContext = util.shallowCopy(context, { hookName:hookName }),
+		ifElseContext = util.shallowCopy(context, { hookName:hookName }),
 		lastValueName = name('LAST_VALUE')
 	
 	return hookCode(hookName, context.hookName)
@@ -287,8 +286,8 @@ var compileIfStatement = function(context, ast) {
 		')',
 		{
 			hookName: hookName,
-			ifCode: compile(ifContext, ast.ifBlock),
-			elseCode: ast.elseBlock && compile(elseContext, ast.elseBlock),
+			ifCode: compile(ifElseContext, ast.ifBlock),
+			elseCode: ast.elseBlock && compile(ifElseContext, ast.elseBlock),
 			lastValueName: lastValueName
 		})
 }
