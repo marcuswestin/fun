@@ -151,22 +151,7 @@ var resolveStaticValue = function(context, ast) {
 var resolveCompositeStatement = function(context, ast) {
 	ast.left = resolve(context, ast.left)
 	ast.right = resolve(context, ast.right)
-	ast.dynamicASTs = _collectDynamicASTs(ast)
 	return ast
-}
-
-var _collectDynamicASTs = function(ast) {
-	switch(ast.type) {
-		case 'COMPOSITE':
-			return _collectDynamicASTs(ast.left).concat(_collectDynamicASTs(ast.right))
-		case 'ITEM_PROPERTY':
-		case 'RUNTIME_ITERATOR':
-			return [ast]
-		case 'STATIC_VALUE':
-			return []
-		default:
-			console.log(ast); UNKNOWN_AST_TYPE
-	}
 }
 
 /*******

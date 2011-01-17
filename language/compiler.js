@@ -501,7 +501,8 @@ var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
 function statementCode(ast /*, line1, line2, ..., lineN, values */) {
 	var statementLines = Array.prototype.slice.call(arguments, 1, arguments.length - 1),
 		injectValues = arguments[arguments.length - 1],
-		statementValue = _compileStatementValue(ast)
+		statementValue = _compileStatementValue(ast),
+		dynamicASTs = _collectDynamicASTs(ast)
 	
 	injectValues['STATEMENT_VALUE'] = name('STATEMENT_VALUE')
 	
@@ -512,9 +513,22 @@ function statementCode(ast /*, line1, line2, ..., lineN, values */) {
 		'})',
 		{
 			STATEMENT_VALUE: injectValues['STATEMENT_VALUE'],
-			dynamicValues: _itemPropertiesArray(ast.dynamicASTs),
+			dynamicValues: _itemPropertiesArray(dynamicASTs),
 			statementValue: statementValue
 		})
+}
+var _collectDynamicASTs = function(ast) {
+	switch(ast.type) {
+		case 'COMPOSITE':
+			return _collectDynamicASTs(ast.left).concat(_collectDynamicASTs(ast.right))
+		case 'ITEM_PROPERTY':
+		case 'RUNTIME_ITERATOR':
+			return [ast]
+		case 'STATIC_VALUE':
+			return []
+		default:
+			console.log(ast); UNKNOWN_AST_TYPE
+	}
 }
 var _itemPropertiesArray = function(ASTs) {
 	if (!ASTs) { return '[]' }
