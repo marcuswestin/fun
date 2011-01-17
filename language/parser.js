@@ -437,10 +437,11 @@ var parseSwitchStatement = astGenerator(function() {
 })
 
 var _parseCase = astGenerator(function() {
-	advance('keyword', ['case', 'default'])
-	var values = [],
+	var labelToken = advance('keyword', ['case', 'default']),
+		values = [],
 		statements = []
-	if (gToken.value == 'case') {
+	
+	if (labelToken.value == 'case') {
 		while (true) {
 			values.push(parseValueStatement({ text:true, number:true, alias:false }))
 			if (!peek('symbol', ',')) { break }
