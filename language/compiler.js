@@ -318,8 +318,8 @@ var compileSwitchStatement = function(context, ast) {
 				}).join('\n'),
 		'	}',
 		'})([',
-			map(ast.cases, function(switchCase) {
-				return 'function(){ ' + compile(switchContext, switchCase.statements) + '}'
+			map(ast.cases, function(switchCase, i) {
+				return 'function branches'+i+'(){ ' + compile(switchContext, switchCase.statements) + '}'
 			}).join(',\n'),
 		'])',
 		{
