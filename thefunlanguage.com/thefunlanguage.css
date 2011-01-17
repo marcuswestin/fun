@@ -15,7 +15,8 @@ a { text-decoration:none; color:#138; }
 .spacing { clear:both; height:20px; }
 
 /* section: navigation */
-.navigation { border-right: 1px solid #999; width:250px; float:left; margin: 0 30px 0 0; }
+.navigation { border-right: 1px solid #999; width:250px; float:left; }
 	.navigation-item { margin:0 0 8px 10px; cursor:pointer; color:#137; }
 
 /* section: content */
+.content { margin:0 0 0 280px; }
