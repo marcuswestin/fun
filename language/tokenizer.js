@@ -205,8 +205,8 @@ function doTokenize (inputFile) {
             i += 1;
             for (;;) {
                 c = inputString.charAt(i);
-                if (c < ' ') {
-                    halt(c === '\n' || c === '\r' || c === '' ?
+                if (c < ' ' && (c !== '\n' && c !== '\r' && c !== '\t')) {
+                    halt(c === '' ?
                         "Unterminated string." :
                         "Control character in string.", make('', str));
                 }
