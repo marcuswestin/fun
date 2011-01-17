@@ -444,7 +444,7 @@ var _parseCase = astGenerator(function() {
 	
 	if (labelToken.value == 'case') {
 		while (true) {
-			values.push(parseValueStatement({ text:true, number:true, alias:false }))
+			values.push(parseValueStatement({ text:true, number:true }))
 			if (!peek('symbol', ',')) { break }
 			advance('symbol', ',')
 		}

@@ -316,6 +316,10 @@ var resolveIfStatement = function(context, ast) {
 var resolveSwitchStatement = function(context, ast) {
 	ast.controlValue = resolve(context, ast.controlValue)
 	each(ast.cases, function(aCase) {
+		aCase.values = map(aCase.values, bind(this, resolve, context))
+		each(aCase.values, function(aCase) {
+			assert(aCase, aCase.type == 'STATIC_VALUE', "Switch statements' case values must be numbers (e.g. 2, 3, 4) or text (e.g. 'hello')")
+		})
 		aCase.statements = map(aCase.statements, bind(this, resolve, context))
 	})
 	var defaultCases = util.pick(ast.cases, function(aCase) { return aCase.isDefault })
