@@ -9,7 +9,7 @@ a { text-decoration:none; color:#138; }
 .header { border-bottom:1px solid #999; }
 	.logo { font-size: 60px; margin-bottom:0; }
 	.slogan { float:left; margin-top:5px; }
-	.made-by { float:right; font-size:20px; margin-top:5px; }
+	.made-by { float:right; font-size:18px; margin-top:5px; }
 
 /* section: header spacing */
 .spacing { clear:both; height:20px; }
