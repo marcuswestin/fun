@@ -438,6 +438,7 @@ var parseSwitchStatement = astGenerator(function() {
 
 var _parseCase = astGenerator(function() {
 	var labelToken = advance('keyword', ['case', 'default']),
+		isDefault = (labelToken.value == 'default'),
 		values = [],
 		statements = []
 	
@@ -453,7 +454,7 @@ var _parseCase = astGenerator(function() {
 		statements.push(parseStatement())
 		if (peek('keyword', ['case', 'default']) || peek('symbol', R_CURLY)) { break }
 	}
-	return { type:'SWITCH_CASE', values:values, statements:statements }
+	return { type:'SWITCH_CASE', values:values, statements:statements, isDefault:isDefault }
 })
 
 /****************************

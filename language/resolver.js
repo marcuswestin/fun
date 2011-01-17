@@ -319,6 +319,8 @@ var resolveSwitchStatement = function(context, ast) {
 	each(ast.cases, function(aCase) {
 		aCase.statements = map(aCase.statements, bind(this, resolve, context))
 	})
+	var defaultCases = util.pick(ast.cases, function(aCase) { return aCase.isDefault })
+	assert(ast, defaultCases.length < 2, "Found two default cases in switch statement - well, that doesn't make sense")
 	return ast
 }
 
