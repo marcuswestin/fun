@@ -481,6 +481,7 @@ var _cachedValueListCode = function(args) {
 			case 'STATIC_VALUE': return q(arg.value)
 			case 'MUTATION_ITEM_CREATION': return arg.promiseName+'.fulfillment[0]' // the fulfillment is [itemID]
 			case 'RUNTIME_ITERATOR': return arg.runtimeName
+			case 'TEMPLATE_ARGUMENT': return arg.runtimeName
 			default: return code(
 				'fun.cachedValue({{ itemID }}, {{ property }})',
 				{
