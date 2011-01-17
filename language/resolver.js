@@ -303,7 +303,6 @@ var resolveRuntimeIterator = function(context, ast) {
  *****************/
 var resolveIfStatement = function(context, ast) {
 	ast.condition = resolve(context, ast.condition)
-	ast.condition.dynamicASTs = _collectDynamicASTs(ast.condition)
 	ast.ifBlock = resolve(createScope(context), ast.ifBlock)
 	if (ast.elseBlock) {
 		ast.elseBlock = resolve(createScope(context), ast.elseBlock)
