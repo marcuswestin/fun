@@ -1,5 +1,5 @@
 void(function() {
-	window.HistoryModule = {
+	window.LocationModule = {
 		navigate: _navigate
 	}
 	
@@ -9,17 +9,17 @@ void(function() {
 	function _navigate(state) {
 		_lastState = state
 		location.hash = '#'+state
-		fun.mutate('SET', 'LOCAL', '__History_state__', [state])
+		fun.mutate('SET', 'LOCAL', '__Location_state__', [state])
 	}
 	
-	function _pollHistory() {
+	function _pollHash() {
 		var currentState = location.hash.substr(1)
 		if (currentState == _lastState) { return }
 		_navigate(currentState)
 	}
 	
 	function _init() {
-		setInterval(_pollHistory, _pollInterval)
+		setInterval(_pollHash, _pollInterval)
 	}
 	
 	_init()
