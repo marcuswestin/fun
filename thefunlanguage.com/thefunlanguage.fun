@@ -1,4 +1,5 @@
 import Local
+import History
 import "../thefunlanguage.com/contents"
 
 <link rel="stylesheet" href="thefunlanguage.com/thefunlanguage.css" />
@@ -8,7 +9,7 @@ let contentStates = { learnMore: 'learnMore', tryHere: 'tryHere', download: 'dow
 
 let navigationItem = template(text, state) {
 	<div class="navigation-item"> text </div onclick=handler() {
-		Local.contentState.set(state)
+		History.navigate(state)
 	}>
 }
 
@@ -30,7 +31,7 @@ let navigationItem = template(text, state) {
 	</div>
 	
 	<div class="content">
-		switch(Local.contentState) {
+		switch(History.state) {
 			case contentStates.learnMore: contents.learnMore()
 			case contentStates.tryHere:   contents.tryHere()
 			case contentStates.download:  contents.download()
