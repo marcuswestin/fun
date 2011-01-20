@@ -3,7 +3,7 @@ void(function() {
 		navigate: _navigate
 	}
 	
-	var _lastState = location.hash.substr(1),
+	var _lastState = null,
 		_pollInterval = 50
 	
 	function _navigate(state) {
@@ -19,6 +19,7 @@ void(function() {
 	}
 	
 	function _init() {
+		_pollHash()
 		setInterval(_pollHash, _pollInterval)
 	}
 	
