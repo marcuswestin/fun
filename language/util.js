@@ -101,6 +101,12 @@ util.grabLine = function(file, lineNumber, column, length) {
 		+ _repeat(' ', column - 1) + _repeat('^', length)
 }
 
+util.listToObject = function(list) {
+	var res = {}
+	for (var i=0; i<list.length; i++) { res[list[i]] = true }
+	return res
+}
+
 /* unexposed utility functions
  *****************************/
 function _repeat(str, times) {

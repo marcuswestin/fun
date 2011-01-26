@@ -8,12 +8,12 @@ Get involved - complete a task :)
 	3) tell the world about them
 
 - "Composite alias values - mouse drag offset"
-	1) Allow for composite values when parsing a declaration
+	X 1) Allow for composite values when parsing a declaration
 		let MouseYPlus100 = Mouse.y + 100
-	2) Allow for composite values in XML attributes
+	X 2) Allow for composite values in XML attributes
 		<div style={ position:'absolute', top:mouseYPlus100, width:100, height:100, background:'red' } />
-	3) Allow for inline composite values in XML attributes
-		<div style={ position:'absolute', top:Mouse.y + 100, width:100, height:100, background:'red' />
+	X 3) Allow for inline composite values in XML attributes
+		<div style={ position:'absolute', top:Mouse.y + 100, width:100, height:100, background:'red' } />
 
 - "Template arguments"
 	1) Pass in arguments to template invocations

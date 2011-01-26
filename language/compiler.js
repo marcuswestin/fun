@@ -229,14 +229,9 @@ var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value, dataT
 
 // modifies dynamicCode
 var _handleDynamicAttribute = function(nodeHookName, ast, dynamicCode, attrName, value) {
-	dynamicCode.push(code(
-		'fun.observe({{ type }}, {{ id }}, {{ property }}, function(mutation, value) {',
-		'	fun.attr({{ hookName }}, {{ attr }}, value)',
-		'})',
+	dynamicCode.push(statementCode(value,
+		'fun.attr({{ hookName }}, {{ attr }}, {{ STATEMENT_VALUE }})',
 		{
-			type: q('BYTES'),
-			id: getItemID(value),
-			property: getPropertyName(value),
 			attr: q(attrName),
 			hookName: nodeHookName
 		}))

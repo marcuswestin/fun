@@ -172,7 +172,8 @@ var _resolveXMLAttributes = function(context, attributes) {
 		switch(attrAST.value.type) {
 			case 'OBJECT_LITERAL':
 				var nestedAttrs = map(attrAST.value.content, function(kvp) {
-					return { namespace:attrAST.namespace.concat(kvp.name), value:kvp.value }
+					var value = resolve(context, kvp.value)
+					return { namespace:attrAST.namespace.concat(kvp.name), value:value }
 				})
 				// splice out the nestedAST rather than increment i
 				attributes.splice.apply(attributes, [i, 1].concat(nestedAttrs))

@@ -1,7 +1,8 @@
 var sys = require('sys'),
 	util = require('./util'),
 	bind = util.bind,
-	q = util.q
+	q = util.q,
+	listToObject = util.listToObject
 
 var L_PAREN = '(', R_PAREN = ')',
 	L_CURLY = '{', R_CURLY = '}',
@@ -112,8 +113,10 @@ var parseValueStatement = function(allowed) {
 	if (symbol == L_PAREN && result.type == 'ALIAS' && !nextSymbol.hadWhitespace) {
 		assert(allowed.invocation, 'Invocation not allowed here')
 		return _parseInvocation(result)
-	} else if (allowed.composite && (_compositeOperatorSymbols[symbol]
-		 	|| (allowed.conditional && _compositeConditionalSymbols[symbol]))) {
+	} else if (allowed.composite
+			&& _compositeTypes[result.type]
+			&& (_compositeOperatorSymbols[symbol]
+		 		|| (allowed.conditional && _compositeConditionalSymbols[symbol]))) {
 		return _parseCompositeValueStatement(result, allowed)
 	} else {
 		return result
@@ -128,8 +131,9 @@ var _parseInvocation = astGenerator(function(alias) {
 	return { type:'INVOCATION', alias:alias, args:args }
 })
 
-var _compositeOperatorSymbols = { '+':1, '-':1, '/':1, '*':1 }
-var _compositeConditionalSymbols = { '<':1, '>':1, '<=':1, '>=':1, '==':1, '&&':1, '||':1 }
+var _compositeTypes = listToObject(['STATIC_VALUE', 'ALIAS'])
+var _compositeOperatorSymbols = listToObject(['+','-','/','*'])
+var _compositeConditionalSymbols = listToObject(['<','>','<=','>=','==','&&','||',])
 var _parseCompositeValueStatement = astGenerator(function(left, allowed) {
 	var operator = advance('symbol').value
 	var right = parseValueStatement(allowed)
@@ -278,7 +282,7 @@ var _parseXMLAttributes = function() {
 	return XMLAttributes
 }
 var _parseXMLAttribute = astGenerator(function() {
-	var allowedValues = {},
+	var allowedValues = { composite:true },
 		attribute = peek().value
 	if (attribute == 'style') {
 		allowedValues.objectLiteral = true
