@@ -253,19 +253,16 @@ var parseXML = astGenerator(function() {
 	var tagName = gToken.value,
 		attributes = _parseXMLAttributes()
 	
-	advance('symbol', ['/', '>'], 'end of the XML tag')
-	if (gToken.value == '/') {
-		advance('symbol', '>', 'end of a self-closing XML tag')
+	advance('symbol', ['/>', '>'], 'end of the XML tag')
+	if (gToken.value == '/>') {
 		return { type:'XML', tagName:tagName, attributes:attributes, content:[] }
 	} else {
 		var statements = []
 		while(true) {
-			if (peek('symbol', '<') && peek('symbol', '/', 2)) { break }
+			if (peek('symbol', '</')) { break }
 			statements.push(parseStatement())
 		}
-		
-		advance('symbol', '<')
-		advance('symbol', '/')
+		advance('symbol', '</')
 		advance('name', tagName, 'matching XML tags')
 		// allow for attributes on closing tag, e.g. <button>"Click"</button onClick=handler(){ ... }>
 		attributes = attributes.concat(_parseXMLAttributes())
@@ -276,7 +273,7 @@ var parseXML = astGenerator(function() {
 })
 var _parseXMLAttributes = function() {
 	var XMLAttributes = []
-	while (!peek('symbol', ['/','>'])) {
+	while (!peek('symbol', ['/>','>'])) {
 		XMLAttributes.push(_parseXMLAttribute())
 	}
 	return XMLAttributes
