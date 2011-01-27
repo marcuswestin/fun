@@ -135,8 +135,8 @@ var _compositeTypes = listToObject(['STATIC_VALUE', 'ALIAS'])
 var _compositeOperatorSymbols = listToObject(['+','-','/','*'])
 var _compositeConditionalSymbols = listToObject(['<','>','<=','>=','==','&&','||',])
 var _parseCompositeValueStatement = astGenerator(function(left, allowed) {
-	var operator = advance('symbol').value
-	var right = parseValueStatement(allowed)
+	var operator = advance('symbol').value,
+		right = parseValueStatement(allowed)
 	return { type:'COMPOSITE', operator:operator, left:left, right:right }
 })
 
