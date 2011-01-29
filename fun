@@ -12,7 +12,7 @@ var argv = require('./lib/node-optimist')
 	.argv
 
 var sourceFile = argv._[0],
-	port = argv.port || 1764, // sum('fun', function(letter) { return letter.charCodeAt(0) - 'a'.charCodeAt(0) + 1 }
+	port = argv.port || 1764,
 	host = argv.host || '127.0.0.1',
 	engine = argv.engine || 'development'
 
