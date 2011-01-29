@@ -8,9 +8,10 @@ import "../thefunlanguage.com/contents"
 let contentStates = { learnMore: 'learnMore', tryHere: 'tryHere', download: 'download', hackFun: 'hackFun' }
 
 let navigationItem = template(text, state) {
-	<div class="navigation-item"> text </div onclick=handler() {
-		Location.navigate(state)
-	}>
+	<div class="navigation-item" onclick=handler() { Location.navigate(state) }>
+		text
+		if (Location.state == state) { " -->" }
+	</div>
 }
 
 <div id="app">
@@ -24,10 +25,10 @@ let navigationItem = template(text, state) {
 	
 	<div class="navigation">
 		<h2>"I want to"</h2>
-		navigationItem('Learn more about Fun', contentStates.learnMore)
-		navigationItem('Try Fun here in my browser', contentStates.tryHere)
-		navigationItem('Download & user Fun', contentStates.download)
-		navigationItem('Hack Fun', contentStates.hackFun)
+		navigationItem('Learn about Fun', contentStates.learnMore)
+		navigationItem('Play with Fun', contentStates.tryHere)
+		// navigationItem('Download Fun', contentStates.download)
+		navigationItem('Hack on Fun', contentStates.hackFun)
 	</div>
 	
 	<div class="content">
@@ -36,7 +37,6 @@ let navigationItem = template(text, state) {
 			case contentStates.tryHere:   contents.tryHere()
 			case contentStates.download:  contents.download()
 			case contentStates.hackFun:   contents.hackFun()
-			default:                      <h3>"Welcome"</h3>
 		}
 	</div>
 </div>
