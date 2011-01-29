@@ -4,6 +4,12 @@ var fs = require('fs'),
 	sys = require('sys'),
 	http = require('http')
 
+var tokenizer = require('./language/tokenizer'),
+	parser = require('./language/parser'),
+	resolver = require('./language/resolver'),
+	compiler = require('./language/compiler'),
+	util = require('./language/util')
+
 /* Commandline options
  *********************/
 var argv = require('./lib/node-optimist')
@@ -11,10 +17,22 @@ var argv = require('./lib/node-optimist')
 	.demandCount(1)
 	.argv
 
+// Variables
 var sourceFile = argv._[0],
 	port = argv.port || 1764,
 	host = argv.host || '127.0.0.1',
-	engine = argv.engine || 'development'
+	engine = argv.engine || 'development',
+	compiledJS, htmlOutput
+
+/* Ladies and gentlemen, START YOUR ENGINES!
+ *******************************************/
+compileFunCode()
+startHTTPServer()
+startFinServer()
+
+sys.puts('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
+
+
 
 /* HTTP server
  *************/
@@ -75,13 +93,7 @@ function startFinServer() {
 
 /* Compilation
  *************/
-var tokenizer = require('./language/tokenizer'),
-	parser = require('./language/parser'),
-	resolver = require('./language/resolver'),
-	compiler = require('./language/compiler'),
-	util = require('./language/util')
 
-var compiledJS, htmlOutput
 function compileFunCode() {
 	sys.puts('tokenize...')
 	var tokens = tokenizer.tokenize(sourceFile)
@@ -106,20 +118,3 @@ function compileFunCode() {
 		'</html>'
 	].join('\n')
 }
-
-if (engine == 'development') {
-	fs.watchFile(sourceFile, function(currStat, prevStat) {
-		if (currStat.mtime.getTime() == prevStat.mtime.getTime()) { return }
-		sys.puts('detected change to ' + sourceFile + ' - recompiling')
-		compileFunCode()
-		sys.puts('done recompiling')
-	})
-}
-
-/* Compile the code and start the servers
- ****************************************/
-compileFunCode()
-startHTTPServer()
-startFinServer()
-
-sys.puts('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)

@@ -1,6 +1,7 @@
 /* reset */
-body, html { color:#333; font-family:Verdana; font-size:14px; }
+body, html { color:#333; font-family:Helvetica, Verdana; font-size:14px; }
 a { text-decoration:none; color:#138; }
+p, li { line-height: 24px; }
 
 /* app */
 #app { width:990px; margin: 50px auto; }
