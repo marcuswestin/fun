@@ -33,11 +33,12 @@ Get involved - complete a task :)
 
 
 - "thefunlanguage.com"
-	1) just put something up there
+	X 1) just put something up there
 	2) run server in browser for demos
 	3) in-browser editor for demos
 	4) list engines
 	5) technical docs
+	6) add just-compile option to fun, so that you can get a static version of webpages that don't use the Global keyword
 
 - "Custom events"
 	1) allow for custom events other than XML elements' "on*" events, e.g.
@@ -64,10 +65,13 @@ Get involved - complete a task :)
 	X 1) Come up with a common way to wait on a series of values before executing a function of compiled code
 	2) If all the values are static, don't bother creating a delayed function
 
-- "Tag-based type inference"
+- "Type checking"
 	X 1) Tags with data should have the dataType attribute <input data=Local.x dataType="number" />
 	2) Tags should have custom implementations, that declare what types of data they accept
 	3) The data should infer its type of the dataType attribute, and should default to "text"
+	4) Template and handler arguments need to have a type associated with them
+	5) MIGRATE all type checking from the parser to the resolver. Right now the parser is selective about what type of
+		value can be where. The resolver should do all of that checking.
 
 - "Aliased object literal styles"
 	1) Allow for saying
