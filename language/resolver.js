@@ -240,6 +240,10 @@ var resolveInvocation = function(context, ast) {
 		signature = ast.invocable.signature
 	for (var i=0; i<args.length; i++) {
 		signature[i].valueType = args[i].type
+		// TODO Assure that the value types of the signature are consistent from invocation to invocation
+		// if (!signature[i].valueType) { signature[i].valueType = args[i].type }
+		// else { assert(ast, signature[i].valueType == args[i].type) }
+		// Types.infer(ast.invocable.signature[i], Types.get(ast.args[i]))
 	}
 	return ast
 }
