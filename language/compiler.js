@@ -551,6 +551,9 @@ var _collectDynamicASTs = function(ast) {
 			return [ast]
 		case 'STATIC_VALUE':
 			return []
+		case 'TEMPLATE_ARGUMENT':
+			// need to know the type of the argument - in the meantime, assume that no type means its a literal value
+			return ast.property.length ? [ast] : []
 		default:
 			console.log(ast); UNKNOWN_AST_TYPE
 	}
