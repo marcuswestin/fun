@@ -54,6 +54,7 @@ if (Global.x * Global.y + Global.x * five > 200) {
 	<br />"Global.x * Global.y + Global.x * five > 200"
 }
 
-if (Mouse.x > 100 && Mouse.y > 100) {
-	"Mouse.x > 100 && Mouse.y > 100"
-}
+// TODO Make this work:
+// if (!(Mouse.x > 100 && Mouse.y > 100)) {
+// 	"Mouse.x > 100 && Mouse.y > 100"
+// }
