@@ -410,20 +410,6 @@ var parseIfStatement = astGenerator(function() {
 	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
 })
-var _conditionOperators = '<,<=,>,>=,==,!='.split(',')
-var _parseCondition = astGenerator(function() {
-	// TODO Parse compound statements, e.g. if (age < 30 && (income > 10e6 || looks=='awesome'))
-	// Only strings, numbers, and aliases allowed
-	var left = parseStatement()
-
-	var comparison, right
-	if (peek('symbol', _conditionOperators)) {
-		comparison = advance('symbol', _conditionOperators).value
-		var right = parseStatement()
-	}
-
-	return { left:left, comparison:comparison, right:right }
-})
 
 /********************
  * Switch statement *
