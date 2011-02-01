@@ -10,7 +10,7 @@ clean:
 
 lib/fin:
 	git clone git://github.com/marcuswestin/fin.git lib/fin
-	cd lib/fin; make
+	cd lib/fin; git checkout 4b37e2a491748d200734; make
 
 lib/node-optimist:
 	curl -L https://github.com/substack/node-optimist/zipball/56b2b1de8d11f8a2b91979d8ae2d6db02d8fe64d > /tmp/node-optimist.zip
