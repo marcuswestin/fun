@@ -14,29 +14,39 @@ var tokenizer = require('./language/tokenizer'),
  *********************/
 var argv = require('./lib/node-optimist')
 	.usage('Usage: $0 app.fun [--host=127.0.0.1 --port=1764 --engine=[development,redis]]')
-	.demandCount(1)
 	.argv
 
 // Variables
 var sourceFile = argv._[0],
 	port = argv.port || 1764,
 	host = argv.host || '127.0.0.1',
-	engine = argv.engine || 'development',
-	compiledJS, htmlOutput
+	engine = argv.engine || 'development'
 
 /* Ladies and gentlemen, START YOUR ENGINES!
- *******************************************/
-compileFunCode()
-startHTTPServer()
-startFinServer()
+ * Look at the command line arguments and act
+ * accordingly.
+ ********************************************/
+if (argv.h || argv.help) {
+	printHelp()
+} else if (argv.s || argv['static']) {
+	output(compileFunCode())
+} else {
+	var clientAppCode = compileFunCode()
+	startHTTPServer(clientAppCode)
+	startFinServer()
 
-sys.puts('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
+	comment('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
+}
 
+/* These are the functions that actually do something,
+ * based on what you passed in as arguments to fun
+ *****************************************************/
 
+function printHelp() {
+	output(fs.readFileSync('./help.txt'))
+}
 
-/* HTTP server
- *************/
-function startHTTPServer() {
+function startHTTPServer(clientAppCode) {
 	var funJS = fs.readFileSync(__dirname + '/language/lib.js')
 	http.createServer(function(req, res) {
 		var url = req.url, match
@@ -55,13 +65,11 @@ function startHTTPServer() {
 			})
 		} else {
 			res.writeHead(200, {'Content-Type':'text/html'})
-			res.end(htmlOutput)
+			res.end(clientAppCode)
 		}
 	}).listen(port, host)
 }
 
-/* Fin/js.io server
- ******************/
 function startFinServer() {
 	require('./lib/fin/lib/js.io/packages/jsio')
 	
@@ -91,21 +99,18 @@ function startFinServer() {
 	// finServer.listen('tcp', { port: 5556, timeout: 0 }) 
 }
 
-/* Compilation
- *************/
-
 function compileFunCode() {
-	sys.puts('tokenize...')
+	comment('tokenize...')
 	var tokens = tokenizer.tokenize(sourceFile)
-	sys.puts('parse...')
+	comment('parse...')
 	var ast = parser.parse(tokens)
-	sys.puts('resolve...')
+	comment('resolve...')
 	var resolved = resolver.resolve(ast)
-	sys.puts('compile...')
+	comment('compile...')
 	
 	compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
 	compiledJS = util.indent(compiledJS)
-	htmlOutput = [
+	return [
 		'<!doctype html>',
 		'<html>',
 		'<head>',
@@ -117,4 +122,14 @@ function compileFunCode() {
 		'</body>',
 		'</html>'
 	].join('\n')
+}
+
+/* Utility functions
+ *******************/
+function output() {
+	sys.puts.apply(this, arguments)
+}
+
+function comment() {
+	sys.debug.apply(this, arguments)
 }
