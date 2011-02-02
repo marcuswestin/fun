@@ -17,7 +17,7 @@ var // system modules
 /* Commandline options
  *********************/
 var argv = require('./lib/node-optimist')
-	.usage('Usage: $0 app.fun [--host=127.0.0.1 --port=1764 --engine=[development,redis]]')
+	.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=1764 --engine=[development,redis]]')
 	.argv
 
 // Variables
