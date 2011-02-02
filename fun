@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
-var fs = require('fs'),
+var // system modules
+	fs = require('fs'),
 	sys = require('sys'),
 	http = require('http'),
-	path = require('path')
-
-var tokenizer = require('./language/tokenizer'),
+	path = require('path'),
+	// lib modules
+	browserRequireCompiler = require('./lib/fin/lib/browser-require/compiler'),
+	// fun parser modules
+	tokenizer = require('./language/tokenizer'),
 	parser = require('./language/parser'),
 	resolver = require('./language/resolver'),
 	compiler = require('./language/compiler'),
@@ -28,27 +31,20 @@ var sourceFile = argv._[0],
  * accordingly.
  ********************************************/
 if (argv.h || argv.help) {
-	printHelp()
+	output(fs.readFileSync('./help.txt'))
 } else if (argv.s || argv['static']) {
-	output(compileFunCode())
+	output(compileFunCode().js)
 } else {
-	var clientAppCode = compileFunCode(),
-		httpServer = startHTTPServer(clientAppCode)
-	
-	startFinServer(httpServer)
-	
+	var funApp = compileFunCode()
+	var httpServer = startHTTPServer(funApp)
+	startFinServer(engine, httpServer)
 	comment('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
 }
 
 /* These are the functions that actually do something,
  * based on what you passed in as arguments to fun
  *****************************************************/
-
-function printHelp() {
-	output(fs.readFileSync('./help.txt'))
-}
-
-function startHTTPServer(clientAppCode) {
+function startHTTPServer(application) {
 	var contentTypes = {
 		'.js':   'application/javascript',
 		'.css':  'text/css',
@@ -59,7 +55,10 @@ function startHTTPServer(clientAppCode) {
 		var requestPath = req.url.replace(/\.\./g, '') // don't want visitors to climb the path
 		if (requestPath == '/') {
 			res.writeHead(200)
-			res.end(clientAppCode)
+			res.end(application.html)
+		} else if (requestPath == '/app.js') {
+			res.writeHead(200)
+			res.end(application.js)
 		} else {
 			fs.readFile(__dirname + requestPath, function(err, text) {
 				var extension = path.extname(requestPath)
@@ -74,50 +73,47 @@ function startHTTPServer(clientAppCode) {
 	return httpServer
 }
 
-function startFinServer(httpServer) {	
-	var finServer = require('./lib/fin/js/server/SocketServer'),
-		storageEngine
-	
-	switch (engine) {
-		case 'development':
-			storageEngine = require('./lib/fin/engines/development')
-			break
-		case 'redis':
-			storageEngine = require('./lib/fin/engines/redis')
-			break
-		default:
-			throw new Error('Unkown store "'+store+'"')
+function startFinServer(engineName, httpServer) {	
+	var engines = {
+		development: './lib/fin/engines/development',
+		redis: './lib/fin/engines/redis'
 	}
+	if (!engines[engineName]) { throw new Error('Unkown engine "'+engineName+'"') }
+	var finServer = require('./lib/fin/js/server/SocketServer'),
+		engine = require(engines[engineName])
 	
-	finServer.start(httpServer, storageEngine)
+	return finServer.start(httpServer, engine)
 }
 
 function compileFunCode() {
-	comment('tokenize...')
-	var tokens = tokenizer.tokenize(sourceFile)
-	comment('parse...')
-	var ast = parser.parse(tokens)
-	comment('resolve...')
-	var resolved = resolver.resolve(ast)
-	comment('compile...')
+	var tokens = tokenizer.tokenize(sourceFile),
+		ast = parser.parse(tokens),
+		resolved = resolver.resolve(ast),
+		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
 	
-	compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
-	compiledJS = util.indent(compiledJS)
-	return [
+	var appJS = [
+		'window.fun=require("/language/lib")',
+		'window.fin=require("/lib/fin/fin")',
+		util.indent(compiledJS)
+	].join('\n')
+	
+	var appHTML = [
 		'<!doctype html>',
 		'<html>',
 		'<head>',
-		'	<script src="/lib/fin/lib/browser-require/require.js"></script>',
 		'</head>',
 		'<body>',
-		'	<script>',
-		'		var fun = require("/language/lib")',
-		'		var fin = require("/lib/fin/fin")',
-				compiledJS,
-		'	</script>',
+		'	<script src="/lib/fin/lib/browser-require/require.js" main="app"></script>',
 		'</body>',
 		'</html>'
 	].join('\n')
+	
+	var result = {
+		js: appJS,
+		html: appHTML
+	}
+	
+	return result
 }
 
 /* Utility functions
