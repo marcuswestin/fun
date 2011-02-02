@@ -100,8 +100,7 @@ function compileFunCode() {
 	var appHTML = [
 		'<!doctype html>',
 		'<html>',
-		'<head>',
-		'</head>',
+		'<head></head>',
 		'<body>',
 		'	<script src="/lib/fin/lib/browser-require/require.js" main="app"></script>',
 		'</body>',
