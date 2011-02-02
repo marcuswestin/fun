@@ -2,7 +2,8 @@
 
 var fs = require('fs'),
 	sys = require('sys'),
-	http = require('http')
+	http = require('http'),
+	path = require('path')
 
 var tokenizer = require('./language/tokenizer'),
 	parser = require('./language/parser'),
@@ -31,10 +32,11 @@ if (argv.h || argv.help) {
 } else if (argv.s || argv['static']) {
 	output(compileFunCode())
 } else {
-	var clientAppCode = compileFunCode()
-	startHTTPServer(clientAppCode)
-	startFinServer()
-
+	var clientAppCode = compileFunCode(),
+		httpServer = startHTTPServer(clientAppCode)
+	
+	startFinServer(httpServer)
+	
 	comment('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
 }
 
@@ -47,39 +49,35 @@ function printHelp() {
 }
 
 function startHTTPServer(clientAppCode) {
-	var funJS = fs.readFileSync(__dirname + '/language/lib.js')
-	http.createServer(function(req, res) {
-		var url = req.url, match
-		if (match = url.match(/\/fin\/(.*)/)) {
-			fs.readFile(__dirname + '/lib/fin/' + match[1], function(err, text) {
-				res.writeHead(err ? 404 : 200, {'Content-Type':'application/javascript'})
-				res.end(text || '')
-			})
-		} else if (url == '/fun/fun.js') {
-			res.writeHead(200, {'Content-Type':'application/javascript'})
-			res.end(funJS)
-		} else if (match = url.match(/(.*\.css)$/)) {
-			fs.readFile(__dirname + match[1], function(err, text) {
-				res.writeHead(err ? 404 : 200, {})
-				res.end(text || '')
-			})
-		} else {
-			res.writeHead(200, {'Content-Type':'text/html'})
+	var contentTypes = {
+		'.js':   'application/javascript',
+		'.css':  'text/css',
+		'.html': 'text/html'
+	}
+	
+	var httpServer = http.createServer(function(req, res) {
+		var requestPath = req.url.replace(/\.\./g, '') // don't want visitors to climb the path
+		if (requestPath == '/') {
+			res.writeHead(200)
 			res.end(clientAppCode)
+		} else {
+			fs.readFile(__dirname + requestPath, function(err, text) {
+				var extension = path.extname(requestPath)
+				res.writeHead(err ? 404 : 200, {
+					'Content-Type':contentTypes[extension]
+				})
+				res.end(text || '')
+			})
 		}
-	}).listen(port, host)
+	})
+	httpServer.listen(port, host)
+	return httpServer
 }
 
-function startFinServer() {
-	require('./lib/fin/lib/js.io/packages/jsio')
+function startFinServer(httpServer) {	
+	var finServer = require('./lib/fin/js/server/SocketServer'),
+		storageEngine
 	
-	jsio.addPath('lib/fin/js', 'shared')
-	jsio.addPath('lib/fin/js', 'server')
-	
-	jsio('import server.Server')
-	jsio('import server.Connection')
-	
-	var storageEngine
 	switch (engine) {
 		case 'development':
 			storageEngine = require('./lib/fin/engines/development')
@@ -90,13 +88,8 @@ function startFinServer() {
 		default:
 			throw new Error('Unkown store "'+store+'"')
 	}
-	var finServer = new server.Server(server.Connection, storageEngine)
 	
-	// for browser clients
-	finServer.listen('csp', { port: 5555 }) 
-	
-	// // for robots
-	// finServer.listen('tcp', { port: 5556, timeout: 0 }) 
+	finServer.start(httpServer, storageEngine)
 }
 
 function compileFunCode() {
@@ -114,11 +107,14 @@ function compileFunCode() {
 		'<!doctype html>',
 		'<html>',
 		'<head>',
-		'	<script src="/fin/fin.js"></script>',
-		'	<script src="/fun/fun.js"></script>',
+		'	<script src="/lib/fin/lib/browser-require/require.js"></script>',
 		'</head>',
 		'<body>',
-		'	<script>' + compiledJS + '</script>',
+		'	<script>',
+		'		var fun = require("/language/lib")',
+		'		var fin = require("/lib/fin/fin")',
+				compiledJS,
+		'	</script>',
 		'</body>',
 		'</html>'
 	].join('\n')

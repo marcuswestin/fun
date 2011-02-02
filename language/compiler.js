@@ -334,7 +334,7 @@ var compileForLoop = function(context, ast) {
 	return code(
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
-		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, bind(fun, "splitListMutation", onMutation))',
+		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, fun.bind(fun, "splitListMutation", onMutation))',
 		'function onMutation({{ iteratorRuntimeName }}, op) {',
 		'	var {{ emitHookName }} = fun.name()',
 		'	fun.hook({{ emitHookName }}, {{ loopHookName }}, { prepend: (op=="unshift") })',

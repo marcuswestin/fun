@@ -1,12 +1,38 @@
-// from lib.js
-fun = {}
-jsio('from shared.javascript import bind, blockCallback, getPromise');
+var util = require('/lib/fin/js/shared/util')
+
+var bind = util.bind,
+	blockCallback = util.blockCallback
+
+var fun = module.exports = {}
 ;(function() {
 	
 	var doc = document
 	
 	var _unique = 0
 	fun.name = function(readable) { return '_' + (readable || '') + '$' + (_unique++) }
+	
+	fun.bind = bind
+
+	// var namePromise = getPromise()
+	// namePromise(function(name){ alert('hello '+name) })
+	// namePromise(function(name){ alert('hello '+name) })
+	// namePromise.fulfill('world') // alerts "hello world" twice
+	// alert('hello '+namePromise.fulfillment[0]) // alerts "hello world" once
+	function getPromise() {
+		var waiters = []
+		var promise = function(onFulfilled) {
+			if (promise.fulfillment) { onFulFilled.apply(this, promise.fulfillment) }
+			else { waiters.push(onFulfilled) }
+		}
+		promise.fulfill = function() {
+			promise.fulfillment = arguments
+			for (var i=0; i < waiters.length; i++) {
+				waiters[i].apply(promise.fulfillment)
+			}
+			delete waiters
+		}
+		return promise
+	}
 
 /* Hooks
  *******/
