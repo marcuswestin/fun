@@ -9,7 +9,7 @@ var fun = module.exports = {}
 	var doc = document
 	
 	var _unique = 0
-	fun.name = function(readable) { return '_' + (readable || '') + '$' + (_unique++) }
+	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
 	
 	fun.bind = bind
 
