@@ -33,9 +33,15 @@ var sourceFile = argv._[0],
 if (argv.h || argv.help) {
 	output(fs.readFileSync('./help.txt'))
 } else if (argv.s || argv['static']) {
-	output(compileFunCode().js)
+	var funApp = compileFunCode(sourceFile),
+		funAppJS = browserRequireCompiler.compileJS(funApp.js, __dirname),
+		staticFunApp = funApp.html.replace(
+			'<script src="./lib/fin/lib/browser-require/require.js" main="app" id="browser-require"></script>',
+			'<script>\n' + funAppJS + '\n</script>')
+	
+	output(staticFunApp)
 } else {
-	var funApp = compileFunCode()
+	var funApp = compileFunCode(sourceFile)
 	var httpServer = startHTTPServer(funApp)
 	startFinServer(engine, httpServer)
 	comment('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
@@ -85,16 +91,16 @@ function startFinServer(engineName, httpServer) {
 	return finServer.start(httpServer, engine)
 }
 
-function compileFunCode() {
+function compileFunCode(sourceFile) {
 	var tokens = tokenizer.tokenize(sourceFile),
 		ast = parser.parse(tokens),
 		resolved = resolver.resolve(ast),
 		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
 	
 	var appJS = [
-		'window.fun=require("/language/lib")',
-		'window.fin=require("/lib/fin/fin")',
-		util.indent(compiledJS)
+		'window.fun=require("./language/lib")',
+		'window.fin=require("./lib/fin/fin")',
+		browserRequireCompiler.indentJS(compiledJS)
 	].join('\n')
 	
 	var appHTML = [
@@ -102,7 +108,7 @@ function compileFunCode() {
 		'<html>',
 		'<head></head>',
 		'<body>',
-		'	<script src="/lib/fin/lib/browser-require/require.js" main="app"></script>',
+		'	<script src="./lib/fin/lib/browser-require/require.js" main="app" id="browser-require"></script>',
 		'</body>',
 		'</html>'
 	].join('\n')

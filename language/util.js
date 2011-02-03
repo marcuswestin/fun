@@ -76,21 +76,6 @@ var bind = util.bind = function(context, method) {
 	}
 }
 
-util.indent = function(code) {
-	var lines = code.replace(/\t/g, '').split('\n'),
-		result = [],
-		indentation = 0
-	
-	for (var i=0, line; i < lines.length; i++) {
-		line = lines[i]
-		
-		if (line.match(/^\s*\}/)) { indentation-- }
-		result.push(_repeat('\t', indentation) + line)
-		if (line.match(/\{\s*$/)) { indentation++ }
-	}
-	return result.join('\n')
-}
-
 util.grabLine = function(file, lineNumber, column, length) {
 	length = length || 1
 	var code = fs.readFileSync(file).toString(),
