@@ -24,7 +24,6 @@ let navigationItem = template(text, state) {
 	<div class="spacing" />
 	
 	<div class="navigation">
-		<h2>"I want to"</h2>
 		navigationItem('Learn about Fun', contentStates.learnMore)
 		navigationItem('Play with Fun', contentStates.tryHere)
 		navigationItem('Hack on Fun', contentStates.hackFun)
