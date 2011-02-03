@@ -5,6 +5,7 @@ var // system modules
 	sys = require('sys'),
 	http = require('http'),
 	path = require('path'),
+	comment = require('util').debug,
 	// lib modules
 	browserRequireCompiler = require('./lib/fin/lib/browser-require/compiler'),
 	// fun parser modules
@@ -33,13 +34,26 @@ var sourceFile = argv._[0],
 if (argv.h || argv.help) {
 	output(fs.readFileSync('./help.txt'))
 } else if (argv.s || argv['static']) {
+	comment('compiling fun code...')
 	var funApp = compileFunCode(sourceFile),
-		funAppJS = browserRequireCompiler.compileJS(funApp.js, __dirname),
-		staticFunApp = funApp.html.replace(
-			'<script src="./lib/fin/lib/browser-require/require.js" main="app" id="browser-require"></script>',
-			'<script>\n' + funAppJS + '\n</script>')
+		funAppJS = browserRequireCompiler.compileJS(funApp.js, __dirname)
+	comment('done!')
 	
-	output(staticFunApp)
+	function printStaticFunApp(jsCode) {
+		var staticFunApp = funApp.html.replace(
+			'<script src="./lib/fin/lib/browser-require/require.js" main="app" id="browser-require"></script>',
+			'<script>\n' + jsCode + '\n</script>')
+
+		output(staticFunApp)
+	}
+	
+	if (argv.compress) {
+		comment('compressing output with google closure compiler...')
+		browserRequireCompiler.compressJS(funAppJS, printStaticFunApp)
+		comment('done!')
+	} else {
+		printStaticFunApp(funAppJS)
+	}
 } else {
 	var funApp = compileFunCode(sourceFile)
 	var httpServer = startHTTPServer(funApp)
