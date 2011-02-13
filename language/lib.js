@@ -1,4 +1,4 @@
-var util = require('../lib/fin/js/shared/util')
+var util = require('../lib/fin/api/fin/util')
 
 var bind = util.bind,
 	blockCallback = util.blockCallback

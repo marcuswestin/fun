@@ -99,10 +99,10 @@ function startFinServer(engineName, httpServer) {
 		redis: './lib/fin/engines/redis'
 	}
 	if (!engines[engineName]) { throw new Error('Unkown engine "'+engineName+'"') }
-	var finServer = require('./lib/fin/js/server/SocketServer'),
+	var finServer = require('./lib/fin/api/server'),
 		engine = require(engines[engineName])
 	
-	return finServer.start(httpServer, engine)
+	return finServer.start(engine, httpServer)
 }
 
 function compileFunCode(sourceFile) {
@@ -113,7 +113,7 @@ function compileFunCode(sourceFile) {
 	
 	var appJS = [
 		'window.fun=require("./language/lib")',
-		'window.fin=require("./lib/fin/fin")',
+		'window.fin=require("./lib/fin/api/client")',
 		browserRequireCompiler.indentJS(compiledJS)
 	].join('\n')
 	
