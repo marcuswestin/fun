@@ -1,5 +1,22 @@
 
 let contents = {
+	welcome: template() {
+		<h1>"Welcome"</h1>
+		
+		<p>"Fun makes it easy to create realtime webapps. How easy? This easy:"</p>
+		
+		<pre><code>"
+import Local
+import Global
+
+<input data=Local.message />
+<button onclick=handler(){
+	let newMessage = new {  }
+} />
+		
+		"</code></pre>
+	},
+	
 	learnMore: template() {
 		<h1>"What is realtime, and how does Fun make it easy?"</h1>
 
@@ -61,9 +78,6 @@ let contents = {
 		<div>"Try Fun here in your browser"</div>
 	},
 	
-	download: template(){
-		<h3>"Download Fun"</h3>
-	},
 	hackFun: template(){
 		<h3>"Hack on Fun"</h3>
 		"Clone the source tree and get started with an example:"
