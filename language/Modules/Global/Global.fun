@@ -1,1 +1,1 @@
-let Global = @GLOBAL
+let Global = @0

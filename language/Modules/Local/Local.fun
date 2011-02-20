@@ -1,1 +1,1 @@
-let Local = @LOCAL
+let Local = @-1

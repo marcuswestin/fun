@@ -9,7 +9,7 @@ void(function() {
 	function _navigate(state) {
 		_lastState = state
 		location.hash = '#'+state
-		fun.mutate('SET', 'LOCAL', '__Location_state__', [state])
+		fun.mutate('SET', fun.local, '__Location_state__', [state])
 	}
 	
 	function _pollHash() {

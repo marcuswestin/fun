@@ -204,8 +204,10 @@ var parseStaticValue = astGenerator(function() {
  *****************/
 var parseItemLiteral = astGenerator(function() {
 	advance('symbol', '@')
-	advance(['name', 'number'])
-	var itemID = gToken.value
+	// HACK - fun needs to support negative value parsing in general. This is to allow for Global value ID -1 quickly
+	var negative = 1
+	if (peek('symbol', '-')) { negative = -1; advance('symbol', '-') }
+	var itemID = advance(['name', 'number']).value * negative
 	// TODO parse property, e.g. @GLOBAL.foo.bar.cat
 	return { type:'ITEM', id: itemID }
 })

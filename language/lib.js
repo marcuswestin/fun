@@ -1,10 +1,14 @@
-var util = require('../lib/fin/api/fin/util')
+var util = require('../lib/fin/api/fin/util'),
+	fin = require('../lib/fin/api/client')
 
 var bind = util.bind,
 	blockCallback = util.blockCallback
 
 var fun = module.exports = {}
 ;(function() {
+	
+	fun.local = fin._localID
+	fun.global = fin._globalID
 	
 	var doc = document
 	
@@ -73,7 +77,7 @@ var fun = module.exports = {}
  *********************/
 	fun.mutate = function(op, id, propName, args) {
 		var doMutate = bind(fin, 'mutate', op.toLowerCase(), id, propName, args)
-		if (id == 'LOCAL') { doMutate() }
+		if (id == fun.local) { doMutate() }
 		else { fin.connect(doMutate) }
 	}
 	fun.cachedValue = function(id, propName) {
@@ -93,7 +97,7 @@ var fun = module.exports = {}
 	fun.observe = function(type, id, propName, callback) {
 		var methodName = (type == 'BYTES' ? 'observe' : type == 'LIST' ? 'observeList' : null),
 			doObserve = bind(fin, methodName, id, propName, callback)
-		if (id == 'LOCAL') { doObserve() }
+		if (id == fun.local) { doObserve() }
 		else { fin.connect(doObserve) }
 	}
 	fun.splitListMutation = function(callback, mutation) {
