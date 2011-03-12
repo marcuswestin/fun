@@ -58,6 +58,7 @@ var _resolveStatement = function(context, ast) {
 		case 'IMPORT_FILE':          handleFileImport(context, ast)        ;break
 		case 'DECLARATION':          handleDeclaration(context, ast)       ;break
 		
+		case 'CLASS_DECLARATION':    return resolveClassDeclaration(context, ast)
 		case 'XML':                  return resolveXML(context, ast)
 		case 'IF_STATEMENT':         return resolveIfStatement(context, ast)
 		case 'SWITCH_STATEMENT':     return resolveSwitchStatement(context, ast)
@@ -200,6 +201,15 @@ var _resolveXMLAttributes = function(context, attributes) {
 	}
 }
 
+/**********************
+ * Class declarations *
+ **********************/
+var resolveClassDeclaration = function(context, ast) {
+	// TODO Validate properties
+	_declareAlias(context, ast, ast.namespace, ast)
+	return ast
+}
+
 /*******************************
  * Imports (modules and files) *
  *******************************/
@@ -218,7 +228,8 @@ var handleModuleImport = function(context, ast) {
 }
 
 var handleFileImport = function(context, ast) {
-	var filePath = __dirname + '/' + ast.path + '.fun'
+	// TODO resolve files relative to current file path
+	var filePath = process.cwd() + '/examples/' + ast.path + '.fun'
 	assert(ast, path.existsSync(filePath), 'Could not find file for import: "'+filePath+'"')
 	context.fileDependencies.push(filePath)
 	_importFile(filePath, context, true)

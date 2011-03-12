@@ -1,3 +1,14 @@
+class User {
+	1 name: Text,
+	2 age: Number,
+}
+
+class Message {
+	1 sender: User,
+	2 body: Text,
+	3 subject: Text,
+}
+
 import Local
 import Global
 

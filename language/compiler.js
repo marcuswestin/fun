@@ -46,6 +46,7 @@ var compile = function(context, ast) {
 var compileStatement = function(context, ast) {
 	if (!ast) { return '' }
 	switch (ast.type) {
+		case 'CLASS_DECLARATION': return compileClassDeclaration(context, ast)
 		case 'STATIC_VALUE':      return compileStaticValue(context, ast)
 		case 'ITEM_PROPERTY':     return compileItemProperty(context, ast)
 		case 'COMPOSITE':         return compileCompositeStatement(context, ast)
@@ -79,6 +80,24 @@ var compileTemplateArgument = function(context, ast) {
 		default:
 			return compileStaticValue(context, ast)
 	}
+}
+
+/* Class declarations
+ ********************/
+var compileClassDeclaration = function(context, ast) {
+	return code(
+		'models.process({ "{{ className }}":{{ propertiesCode }} \n})',
+		{
+			className: ast.namespace.join('.'),
+			propertiesCode: _compileProperties(ast.properties)
+		})
+}
+
+var _compileProperties = function(properties) {
+	return ' {\n'+map(properties, function(prop) {
+		return prop.name + ': { id:'+prop.id+', type:"'+prop.type+'"'+
+			(prop.of ? 'of:"'+prop.of+'"' : '') + '}'
+	}).join(',\n') + '}'
 }
 
 /*****************

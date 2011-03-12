@@ -114,6 +114,7 @@ function compileFunCode(sourceFile) {
 	var appJS = [
 		'window.fun=require("./language/lib")',
 		'window.fin=require("./lib/fin/api/client")',
+		'window.models=require("./lib/fin/api/models")',
 		browserRequireCompiler.indentJS(compiledJS)
 	].join('\n')
 	

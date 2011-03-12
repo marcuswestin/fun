@@ -37,9 +37,11 @@ exports.parse = util.intercept('ParseError', function(tokens) {
 var parseStatement = function() {
 	var token = peek()
 	switch(token.type) {
+		case 'name':
+			if (token.value == 'class') { return parseClassDeclaration() }
+			// fall through
 		case 'string':
 		case 'number':
-		case 'name':
 		case 'symbol':
 			// allow for inline XML, template invocations, and composite statements in top level statements
 			return parseValueStatement({ xml:true, invocation:true, composite:true })
@@ -89,6 +91,28 @@ var parseDeclarationsStatement = astGenerator(function() {
 	}
 	
 	return declarations
+})
+
+/**********************
+ * Class declarations *
+ **********************/
+var parseClassDeclaration = astGenerator(function() {
+	advance('name', 'class')
+	var namespace = [advance('name').value]
+	advance('symbol', L_CURLY)
+	var properties = parseList(function() {
+		var propertyID = advance('number').value
+		var propertyName = advance('name').value
+		advance('symbol', ':')
+		var type = advance('name').value
+		if (peek('name', 'of')) {
+			advance('name', 'of')
+			var collectionOf = advance('name').value
+		}
+		return { id:propertyID, name:propertyName, type:type, of:collectionOf }
+	}, R_CURLY)
+	advance('symbol', R_CURLY)
+	return { type:'CLASS_DECLARATION', namespace:namespace, properties:properties }
 })
 
 /*********************************************************************
