@@ -76,7 +76,7 @@ var fun = module.exports = {}
 /* Mutations/Creations
  *********************/
 	fun.mutate = function(op, id, propName, args) {
-		var doMutate = bind(fin, 'mutate', op.toLowerCase(), id, propName, args)
+		var doMutate = bind(fin, '_mutate', op.toLowerCase(), id, propName, args)
 		if (id == fun.local) { doMutate() }
 		else { fin.connect(doMutate) }
 	}
