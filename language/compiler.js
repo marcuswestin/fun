@@ -59,7 +59,7 @@ var compileStatement = function(context, ast) {
 		case 'INVOCATION':        return compileInvocation(context, ast)
 		case 'DEBUGGER':          return 'debugger'
 		
-		default:                  console.log(ast); UNKNOWN_AST_TYPE
+		default:                  console.log(ast); UNKNOWN_STATEMENT_AST_TYPE
 	}
 }
 
@@ -120,7 +120,7 @@ var _runtimeValue = function(ast) {
 		case 'TEMPLATE_ARGUMENT': return ast.runtimeName
 		case 'LIST':              return q(ast.content)
 		case 'ITEM_PROPERTY':     return 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
-		default:                  console.log(ast); UNKNOWN_AST_TYPE
+		default:                  console.log(ast); UNKNOWN_RUNTIME_VALUE_AST_TYPE
 	}
 }
 
@@ -132,7 +132,7 @@ var getItemID = function(ast) {
 		case 'ITEM_PROPERTY':
 			return q(ast.item.id)
 		default:
-			console.log(ast); UNKNOWN_AST_TYPE
+			console.log(ast); UNKNOWN_ITEM_AST_TYPE
 	}
 }
 
@@ -147,7 +147,7 @@ var getPropertyName = function(ast) {
 		case 'TEMPLATE_ARGUMENT':
 			return q(ast.property)
 		default:
-			console.log(ast); UNKNOWN_AST_TYPE
+			console.log(ast); UNKNOWN_PROPERTY_AST_TYPE
 	}
 }
 
@@ -574,7 +574,7 @@ var _collectDynamicASTs = function(ast) {
 			// need to know the type of the argument - in the meantime, assume that no type means its a literal value
 			return ast.property.length ? [ast] : []
 		default:
-			console.log(ast); UNKNOWN_AST_TYPE
+			console.log(ast); UNKNOWN_DYNAMIC_AST_TYPE
 	}
 }
 var _itemPropertiesArray = function(ASTs) {
@@ -599,7 +599,7 @@ function _compileStatementValue(ast) {
 		case 'STATIC_VALUE':
 			return _runtimeValue(ast)
 		default:
-			console.log(ast); UNKNOWN_AST_TYPE
+			console.log(ast); UNKNOWN_VALUE_AST_TYPE
 	}
 }
 
