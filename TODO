@@ -2,6 +2,26 @@ TASKS
 
 Get involved - complete a task :)
 
+- Add valueType to each AST with a value
+- No static values!
+	let greeting = 'hey'
+	greeting
+	<button>"shout"</button onclick=handler() { greeting.set('HEY!') }>
+- Resolve what a emit value or mutation reference is based on its value type
+- Make chat.fun derive global.messages and message.text from the declared classes rather than syntactically
+- Add enum type?
+	enum State {
+		1 happiness
+		2 sadness
+		3 giddiness
+	}
+	let aState = new State(1)
+	switch(aState) {
+		case State.happiness:
+		case State.sadness:
+	}
+	<button>"switch state"</button onclick=handler() { aState.set(State.sadness) }>
+
 - "Write apps"
 	1) write an app
 	2) write another one
