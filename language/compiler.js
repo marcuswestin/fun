@@ -96,7 +96,7 @@ var compileClassDeclaration = function(context, ast) {
 var _compileProperties = function(properties) {
 	return ' {\n'+map(properties, function(prop) {
 		return prop.name + ': { id:'+prop.id+', type:"'+prop.type+'"'+
-			(prop.of ? 'of:"'+prop.of+'"' : '') + '}'
+			(prop.of ? ', of:"'+prop.of+'"' : '') + '}'
 	}).join(',\n') + '}'
 }
 
