@@ -115,12 +115,13 @@ var compileStaticValue = function(context, ast) {
 }
 
 var _runtimeValue = function(ast) {
+	var prefix = ast.prefix || ''
 	switch(ast.type) {
-		case 'STATIC_VALUE':      return q(ast.value)
-		case 'RUNTIME_ITERATOR':  return ast.runtimeName
-		case 'TEMPLATE_ARGUMENT': return ast.runtimeName
-		case 'LIST':              return q(ast.content)
-		case 'ITEM_PROPERTY':     return 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
+		case 'STATIC_VALUE':      return prefix + q(ast.value)
+		case 'RUNTIME_ITERATOR':  return prefix + ast.runtimeName
+		case 'TEMPLATE_ARGUMENT': return prefix + ast.runtimeName
+		case 'LIST':              return prefix + q(ast.content)
+		case 'ITEM_PROPERTY':     return prefix + 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
 		default:                  console.log(ast); UNKNOWN_RUNTIME_VALUE_AST_TYPE
 	}
 }

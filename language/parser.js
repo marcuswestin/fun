@@ -164,13 +164,11 @@ var _parseItemLiteral = function() {
 	return { type:'ITEM', id:idAST.value }
 }
 
-var _prefixOperators = '-'.split('')
+var _prefixOperators = '-!~'.split('')
 var _parseRawValueExpression = function() {
 	var prefix = (peek('symbol', _prefixOperators) ? advance('symbol').value : null)
 	expression = _doParseRawValueExpression()
-	switch (prefix) {
-		case '-': expression.value = -expression.value; break
-	}
+	expression.prefix = prefix
 	return expression
 }
 
