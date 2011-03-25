@@ -139,7 +139,7 @@ var parseExpression = astGenerator(function() {
 	}
 	
 	// HACK! Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
-	if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) { nameValuePair.value = _parseJavascriptBridge() }
+	if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) { return _parseJavascriptBridge() }
 
 	if (peek('symbol', '@')) { return _parseItemLiteral() }
 
