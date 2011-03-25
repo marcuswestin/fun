@@ -17,8 +17,9 @@ var tokenizer = require('./tokenizer'),
 var util = require('./util'),
 	bind = util.bind,
 	map = util.map,
-	each = util.each,
-	name = util.name
+	each = util.each
+
+var GLOBAL_ID = 0
 
 // TODO Read types from types
 // TODO read tags from tags
@@ -51,8 +52,8 @@ var resolve = function(context, ast) {
 	}
 }
 var _resolveStatement = function(context, ast) {
-	if (ast._resolved) { return ast }
-	ast._resolved = true
+	if (ast.resolved) { return ast }
+	ast.resolved = true
 	switch(ast.type) {
 		case 'IMPORT_MODULE':        handleModuleImport(context, ast)      ;break
 		case 'IMPORT_FILE':          handleFileImport(context, ast)        ;break
@@ -72,8 +73,9 @@ var _resolveStatement = function(context, ast) {
 		
 		case 'RUNTIME_ITERATOR':     return resolveRuntimeIterator(context, ast)
 		case 'ITEM_PROPERTY':        return resolveItemProperty(context, ast)
-		case 'STATIC_VALUE':         return resolveStaticValue(context, ast)
 		case 'COMPOSITE':            return resolveCompositeStatement(context, ast)
+
+		case 'STATIC_VALUE':         return ast
 		
 		// Inline handler - will be compiled inline. Fall through to debugger to then return the AST
 		case 'HANDLER':              resolve(createScope(context), ast.block)
@@ -206,8 +208,13 @@ var _resolveXMLAttributes = function(context, attributes) {
  **********************/
 var resolveClassDeclaration = function(context, ast) {
 	// TODO Validate properties
-	_declareAlias(context, ast, ast.namespace, ast)
+	_declareAlias(context, ast, ast.name, ast)
+	if (ast.name == 'Global') { _resolveGlobalDeclaration(context, ast) }
 	return ast
+}
+
+var _resolveGlobalDeclaration = function(context, ast) {
+	_declareAlias(context, ast, 'global', { type:'ITEM', id:GLOBAL_ID, class:ast })
 }
 
 /*******************************
@@ -241,22 +248,52 @@ var _importFile = function(path, context, a) {
 	resolve(context, newAST)
 }
 
+var log = function(obj) {
+	for (var key in obj) {
+		console.log(key+':', obj[key])
+	}
+}
 /***************
  * Invocations *
  ***************/
 var resolveInvocation = function(context, ast) {
 	if (ast.alias) { ast.invocable = lookup(context, ast.alias) }
-	assert(ast, ast.invocable, 'Found an invocation without a reference to a invocable')
-	var args = ast.args = resolve(context, ast.args),
-		signature = ast.invocable.signature
+	var invocable = ast.invocable
+	assert(ast, invocable, 'Found an invocation without a reference to a invocable')
+	var args = ast.args = resolve(context, ast.args)
+	
+	var invocableContext = createScope(invocable.contextAtDeclaration)
+	var signature = invocable.signature
+	
+	_resolveSignature(invocableContext, signature)
+	
+	assert(ast, args.length == signature.length, 'Signature length mismatch')
 	for (var i=0; i<args.length; i++) {
-		signature[i].valueType = args[i].type
-		// TODO Assure that the value types of the signature are consistent from invocation to invocation
-		// if (!signature[i].valueType) { signature[i].valueType = args[i].type }
-		// else { assert(ast, signature[i].valueType == args[i].type) }
-		// Types.infer(ast.invocable.signature[i], Types.get(ast.args[i]))
+		if (!signature[i].valueType) { signature[i].valueType = args[i].valueType }
+		if (args[i].type == 'RUNTIME_ITERATOR') {
+			console.log("*** TODO: deferred type inference of runtime iterators")
+			continue
+		}
+		assert(args[i], signature[i].valueType == args[i].valueType, 'Signature type mismatch')
 	}
+	
+	_resolveInvocable(invocableContext, invocable)
 	return ast
+}
+
+var _resolveSignature = function(context, signatureAST) {
+	if (signatureAST.resolved) { return }
+	each(signatureAST, function(argumentAST) {
+		argumentAST.runtimeName = util.name('TEMPLATE_ARGUMENT_NAME')
+		_declareAlias(context, argumentAST, argumentAST.name, argumentAST)
+	})
+}
+
+var _resolveInvocable = function(context, ast) {
+	if (ast.resolved) { return }
+	ast.resolved = true
+	ast.block = resolve(context, ast.block)
+	context.declarations.push(ast)
 }
 
 /*************
@@ -298,10 +335,9 @@ var resolveMutation = function(context, ast) {
  * For loops *
  *************/
 var resolveForLoop = function(context, ast) {
-	ast.iteratorRuntimeName = ast.iterator.value.runtimeName = name('RUNTIME_ITERATOR_NAME')
+	ast.iteratorRuntimeName = ast.iterator.value.runtimeName = util.name('RUNTIME_ITERATOR_NAME')
 	ast.iterable = lookup(context, ast.iterable)
 	ast.iterator.value.iterable = ast.iterable
-	Types.infer(ast.iterable, [Types.byName.List])
 	var loopContext = createScope(context)
 	handleDeclaration(loopContext, ast.iterator)
 	ast.block = resolve(loopContext, ast.block)
@@ -351,7 +387,7 @@ var handleDeclaration = function(context, ast) {
 	switch(value.type) {
 		case 'TEMPLATE':
 		case 'HANDLER':
-			_resolveInvocable(context, value)
+			value.contextAtDeclaration = context
 			break
 		case 'MUTATION_ITEM_CREATION':
 			each(value.properties.content, function(prop) {
@@ -361,34 +397,29 @@ var handleDeclaration = function(context, ast) {
 		case 'JAVASCRIPT_BRIDGE':
 			// do nothing
 			break
+		case 'RUNTIME_ITERATOR':
+			if (value.iterable.type == 'LIST') {
+				context.declarations.push(value.iterable)
+			}
+			break
 		default:
 			// do nothing
 	}
-	_declareAlias(context, ast, ast.namespace, ast.value)
+	_declareAlias(context, ast, ast.name, ast.value)
 }
-var _resolveInvocable = function(context, ast) {
-	context.declarations.push(ast)
-	var newScope = createScope(context)
-	ast.signature = map(ast.signature, function(argumentName) {
-		var argument = {type:'TEMPLATE_ARGUMENT', runtimeName:name('TEMPLATE_ARG_NAME')}
-		_declareAlias(newScope, ast, [argumentName], argument)
-		return argument
-	})
-	ast.block = resolve(newScope, ast.block)
-}
-var _declareAlias = function(context, ast, namespace, valueAST) {
+var _declareAlias = function(context, ast, name, valueAST) {
 	if (valueAST.type == 'OBJECT_LITERAL') {
 		for (var i=0, kvp; kvp = valueAST.content[i]; i++) {
 			var nestedDeclarationAST = util.create(ast)
-			nestedDeclarationAST.namespace = namespace.concat(kvp.name)
+			nestedDeclarationAST.name = name + '.' + kvp.name
 			nestedDeclarationAST.value = kvp.value
 			handleDeclaration(context, nestedDeclarationAST)
 		}
-	} else {
-		var namespaceKey = namespace.join('.')
-		assert(ast, !context.aliases[namespaceKey], 'Repeat declaration of "'+namespaceKey+'"')
-		context.aliases[namespaceKey] = valueAST
+		return
 	}
+	
+	assert(ast, !context.aliases[name], 'Repeat declaration of "'+name+'"')
+	context.aliases[name] = valueAST
 }
 
 /***********
@@ -412,6 +443,9 @@ var createScope = function(context) {
 
 var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
+console.log(ast)
+console.log(msg)
+asd
 	var info = ast.info || {}
 	if (info.file) { sys.puts(util.grabLine(info.file, info.line, info.column, info.span)) }
 	throw new ResolveError(ast, msg)

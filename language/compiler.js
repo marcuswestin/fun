@@ -9,7 +9,8 @@ var fs = require('fs'),
 	pick = util.pick,
 	name = util.name,
 	boxComment = util.boxComment,
-	q = util.q
+	q = util.q,
+	LOCAL_ID = -1
 
 exports.compile = util.intercept('CompileError', function(ast, modules, declarations) {
 	// TODO No longer a nead for an entire context object. Just make it hookname, and pass that through
@@ -88,7 +89,7 @@ var compileClassDeclaration = function(context, ast) {
 	return code(
 		'models.process({ "{{ className }}":{{ propertiesCode }} \n})',
 		{
-			className: ast.namespace.join('.'),
+			className: ast.name,
 			propertiesCode: _compileProperties(ast.properties)
 		})
 }
@@ -131,6 +132,8 @@ var getItemID = function(ast) {
 			return ast.runtimeName
 		case 'ITEM_PROPERTY':
 			return q(ast.item.id)
+		case 'LIST':
+			return LOCAL_ID
 		default:
 			console.log(ast); UNKNOWN_ITEM_AST_TYPE
 	}
@@ -146,6 +149,8 @@ var getPropertyName = function(ast) {
 			return q(ast.property.join('.'))
 		case 'TEMPLATE_ARGUMENT':
 			return q(ast.property)
+		case 'LIST':
+			return q(ast.localName)
 		default:
 			console.log(ast); UNKNOWN_PROPERTY_AST_TYPE
 	}
@@ -377,8 +382,24 @@ var compileDeclaration = function(declaration) {
 	switch (declaration.type) {
 		case 'TEMPLATE':  return compileTemplateDeclaration(declaration)
 		case 'HANDLER':   return compileHandlerDeclaration(declaration)
+		case 'LIST':      return compileListLiteral(declaration)
 		default:          halt(declaration, 'Found declaration that requires compilation of unknown type')
 	}
+}
+
+var compileListLiteral = function(ast) {
+	return map(ast.content, function(contentAST) {
+		// TODO wait for content AST IDs
+		return code(
+			'fun.mutate({{ op }}, {{ id }}, {{ prop }}, [{{ args }}])',
+			{
+				op: q('push'),
+				id: q(LOCAL_ID),
+				prop: q(ast.localName),
+				args: _cachedValueListCode([contentAST])
+			}
+		)
+	})
 }
 
 var compileTemplateDeclaration = function(ast) {
@@ -418,7 +439,7 @@ var compileMutationItemCreation = function(ast) {
 	// get the item creation property values -> fun.create({ prop1:val1, prop2:val2, ... })
 	//  TODO: do we need to wait for promises for the values that are itemProperties?
 	var propertiesCode = pick(value.properties.content, function(prop) {
-		return prop.name + ':' + _runtimeValue(prop.value)
+		return prop.key + ':' + _runtimeValue(prop.value)
 	}).join(',')
 	
 	value.promiseName = name('ITEM_CREATION_PROMISE')
