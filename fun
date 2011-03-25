@@ -7,7 +7,7 @@ var // system modules
 	path = require('path'),
 	comment = require('util').debug,
 	// lib modules
-	browserRequireCompiler = require('./lib/fin/lib/browser-require/compiler'),
+	browserRequireCompiler = require('./lib/fin/lib/require/compiler'),
 	// fun parser modules
 	tokenizer = require('./language/tokenizer'),
 	parser = require('./language/parser'),
@@ -41,7 +41,7 @@ if (argv.h || argv.help) {
 	
 	function printStaticFunApp(jsCode) {
 		var staticFunApp = funApp.html.replace(
-			'<script src="./lib/fin/lib/browser-require/require.js" main="app" id="browser-require"></script>',
+			'<script src="./lib/fin/lib/require/require.js" main="app" id="browser-require"></script>',
 			'<script>\n' + jsCode + '\n</script>')
 
 		output(staticFunApp)
