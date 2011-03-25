@@ -1,8 +1,7 @@
 var sys = require('sys'),
 	util = require('./util'),
 	bind = util.bind,
-	q = util.q,
-	listToObject = util.listToObject
+	q = util.q
 
 var L_PAREN = '(', R_PAREN = ')',
 	L_CURLY = '{', R_CURLY = '}',
@@ -218,7 +217,7 @@ var _parseJavascriptBridge = astGenerator(function() {
 	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
 })
 
-var _compositeConditionalSymbols = listToObject(['<','>','<=','>=','==','&&','||',])
+var _compositeConditionalSymbols = util.listToObject(['<','>','<=','>=','==','&&','||',])
 
 /************************************
  * JSON - list and object listerals *
