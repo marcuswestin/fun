@@ -12,7 +12,7 @@ var gToken, gIndex, gTokens, gState
 
 var ParseError = function(file, msg) {
 	var token = peek()
-	this.name = 'ParseError';
+	this.name = 'ParseError'
 	this.message = ['on line', token.line + ',', 'column', token.column, 'of', '"'+file+'":', msg].join(' ')
 }
 ParseError.prototype = Error.protoype
