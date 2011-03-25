@@ -8,8 +8,6 @@ var L_PAREN = '(', R_PAREN = ')',
 	L_CURLY = '{', R_CURLY = '}',
 	L_ARRAY = '[', R_ARRAY = ']'
 	
-var JAVASCRIPT_BRIDGE_TOKEN = '__javascriptBridge'
-
 var gToken, gIndex, gTokens, gState
 
 var ParseError = function(file, msg) {
@@ -37,14 +35,46 @@ exports.parse = util.intercept('ParseError', function(tokens) {
 	return ast
 })
 
+/************************************************************
+ * Setup statements - comes before any of the imitting code *
+ ************************************************************/
 function parseSetupStatement() {
-	if (peek('name', 'class'))  { return parseClassDeclaration() }
-	if (peek('name', 'import')) { return parseImportStatement() }
+	if (peek('name', 'class'))  { return _parseClassDeclaration() }
+	if (peek('name', 'import')) { return _parseImportStatement() }
 }
 
-/**************************************
- * Top level statements & expressions *
- **************************************/
+var _parseClassDeclaration = astGenerator(function() {
+	advance('name', 'class')
+	var name = advance('name').value
+	advance('symbol', L_CURLY)
+	var properties = parseList(function() {
+		var propertyID = advance('number').value
+		var propertyName = advance('name').value
+		advance('symbol', ':')
+		var type = advance('name').value
+		if (peek('name', 'of')) {
+			advance('name', 'of')
+			var collectionOf = advance('name').value
+		}
+		return { id:propertyID, name:propertyName, type:type, of:collectionOf }
+	}, R_CURLY)
+	advance('symbol', R_CURLY)
+	return { type:'CLASS_DECLARATION', name:name, properties:properties }
+})
+
+var _parseImportStatement = astGenerator(function() {
+	advance('name', 'import')
+	advance(['string','name'])
+	if (gToken.type == 'string') {
+		return { type: 'IMPORT_FILE', path: gToken.value }
+	} else {
+		return { type: 'IMPORT_MODULE', name: gToken.value }
+	}
+})
+
+/***********************************************************
+ * Declaration/Control statements and emitting expressions *
+ ***********************************************************/
 var parseStatement = function() {
 	var token = peek()
 	switch (token.type) {
@@ -82,19 +112,6 @@ var parseAliasOrInvocation = function() {
 	return { type:'INVOCATION', alias:alias, args:args }
 }
 
-/***********
- * Imports *
- ***********/
-var parseImportStatement = astGenerator(function() {
-	advance('name', 'import')
-	advance(['string','name'])
-	if (gToken.type == 'string') {
-		return { type: 'IMPORT_FILE', path: gToken.value }
-	} else {
-		return { type: 'IMPORT_MODULE', name: gToken.value }
-	}
-})
-
 /****************
  * Declarations *
  ****************/
@@ -118,31 +135,9 @@ var parseDeclarationStatement = astGenerator(function() {
 	return declarations
 })
 
-/**********************
- * Class declarations *
- **********************/
-var parseClassDeclaration = astGenerator(function() {
-	advance('name', 'class')
-	var name = advance('name').value
-	advance('symbol', L_CURLY)
-	var properties = parseList(function() {
-		var propertyID = advance('number').value
-		var propertyName = advance('name').value
-		advance('symbol', ':')
-		var type = advance('name').value
-		if (peek('name', 'of')) {
-			advance('name', 'of')
-			var collectionOf = advance('name').value
-		}
-		return { id:propertyID, name:propertyName, type:type, of:collectionOf }
-	}, R_CURLY)
-	advance('symbol', R_CURLY)
-	return { type:'CLASS_DECLARATION', name:name, properties:properties }
-})
-
-/*********************************************************************
- * Value statements (static literals, aliases, template invocations) *
- *********************************************************************/
+/************************************************
+ * Expressions (literals, aliases, invocations) *
+ ************************************************/
 var _rawValueOperators = '+-*/%'.split('')
 var parseValueExpression = astGenerator(function() {
 	if (peek('symbol', L_PAREN)) {
@@ -153,7 +148,7 @@ var parseValueExpression = astGenerator(function() {
 	}
 	
 	// HACK! Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
-	if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) { nameValuePair.value = parseJavascriptBridge() }
+	if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) { nameValuePair.value = _parseJavascriptBridge() }
 
 	if (peek('symbol', '@')) { return _parseItemLiteral() }
 
@@ -164,12 +159,6 @@ var parseValueExpression = astGenerator(function() {
 	var rValue = parseValueExpression()
 	return { type:'COMPOSITE', operator:operatir, left:lValue, right:rValue }
 })
-
-var _prefixOperators = '-'.split('')
-var parsePrefix = function() {
-	if (!peek('symbol', _prefixOperators)) { return null }
-	return advance('symbol').value
-}
 
 // @-1.currentUser.name
 var _parseItemLiteral = function() {
@@ -184,8 +173,9 @@ var _parseItemLiteral = function() {
 	return { type:'ITEM', id:idAST.value }
 }
 
+var _prefixOperators = '-'.split('')
 var _parseRawValueExpression = function() {
-	var prefix = parsePrefix()
+	var prefix = (peek('symbol', _prefixOperators) ? advance('symbol').value : null)
 	expression = _doParseRawValueExpression()
 	switch (prefix) {
 		case '-': expression.value = -expression.value; break
@@ -214,11 +204,19 @@ var _parseStaticValue = astGenerator(function() {
 	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
 })
 
-var _compositeConditionalSymbols = listToObject(['<','>','<=','>=','==','&&','||',])
-
-var parseAlias = astGenerator(function(msg) {
-	return { type: 'ALIAS', namespace: parseNamespace(msg) }
+// HACK expects __javascriptBridge("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun
+var JAVASCRIPT_BRIDGE_TOKEN = '__javascriptBridge'
+var _parseJavascriptBridge = astGenerator(function() {
+	advance('name', JAVASCRIPT_BRIDGE_TOKEN)
+	advance('symbol', L_PAREN)
+	var jsType = advance('string').value
+	advance('symbol', ',')
+	var jsName = advance('string').value
+	advance('symbol', R_PAREN, 'end of javascript bridge')
+	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
 })
+
+var _compositeConditionalSymbols = listToObject(['<','>','<=','>=','==','&&','||',])
 
 /************************************
  * JSON - list and object listerals *
@@ -291,9 +289,9 @@ var _parseXMLAttribute = astGenerator(function() {
 	return { namespace:namespace, value:value }
 })
 
-/*******************************
- * Template & Handler literals *
- *******************************/
+/************************************
+ * Invocables (Templates & Handlers *
+ ************************************/
 var parseTemplateLiteral = astGenerator(function() {
 	var callable = _parseCallable(parseStatement, 'template')
 	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
@@ -317,20 +315,6 @@ var _parseCallableArg = astGenerator(function() {
 	return { type:'TEMPLATE_ARGUMENT', name:advance('name').value }
 })
 
-/******************************
- * Javascript bridge literals *
- ******************************/
-// HACK expects __javascriptBridge("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun
-var parseJavascriptBridge = astGenerator(function() {
-	advance('name', JAVASCRIPT_BRIDGE_TOKEN)
-	advance('symbol', L_PAREN)
-	var jsType = advance('string').value
-	advance('symbol', ',')
-	var jsName = advance('string').value
-	advance('symbol', R_PAREN, 'end of javascript bridge')
-	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
-})
-
 /************************************************
  * Top level mutation statements (handler code) *
  ************************************************/
@@ -339,8 +323,8 @@ var parseMutationStatement = function() {
 	switch(token.type) {
 		case 'keyword':
 			switch(token.value) {
-				case 'let':       return _parseMutationDeclaration()
 				case 'debugger':  return debuggerAST()
+				case 'let':       return _parseMutationDeclaration()
 				case 'new':       return _parseItemCreation()
 				default:          console.log(token); UNKNOWN_MUTATION_KEYWORD
 			}
@@ -487,16 +471,30 @@ var parseNamespace = function(msg) {
 	return namespace
 }
 
+// return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
+var debuggerAST = astGenerator(function() {
+	advance('keyword', 'debugger')
+	return { type:'DEBUGGER' }
+})
+
+var parseAlias = astGenerator(function(msg) {
+	return { type: 'ALIAS', namespace: parseNamespace(msg) }
+})
+
 /*********************
  * Utility functions *
  *********************/
-var assert = function(ok, msg) { if (!ok) halt(msg); return true }
-var halt = function(msg, useNextToken) {
+function assert(ok, msg) {
+	if (!ok) halt(msg)
+}
+
+function halt(msg, useNextToken) {
 	var token = useNextToken ? peek() : gToken
-	sys.puts(util.grabLine(token.file, token.line, token.column, token.span));
+	sys.puts(util.grabLine(token.file, token.line, token.column, token.span))
 	throw new ParseError(token.file, msg)
 }
-var advance = function(type, value, expressionType) {
+
+function advance(type, value, expressionType) {
 	var nextToken = gTokens[gIndex + 1]
 	if (!nextToken) { halt('Unexpected end of file') }
 	function check(v1, v2) {
@@ -512,18 +510,20 @@ var advance = function(type, value, expressionType) {
 	gToken = gTokens[++gIndex]
 	return gToken
 }
-var peek = function(type, value, steps) {
+
+function peek(type, value, steps) {
 	var token = gTokens[gIndex + (steps || 1)]
 	if (!token) { return false }
 	if (type && findInArray(type, token.type) != token.type) { return false }
 	if (value && findInArray(value, token.value) != token.value) { return false }
 	return token
 }
+
 // Find an item in an array and return it
 //  if target is in array, return target
 //  if target is not in array, return array
 //  if array is not an array, return array
-var findInArray = function(array, target) {
+function findInArray(array, target) {
 	if (!(array instanceof Array)) { return array }
 	for (var i=0, item; item = array[i]; i++) {
 		if (item == target) { return item }
@@ -543,7 +543,7 @@ function astGenerator(generatorFn) {
 
 // Creates a proper AST object, annotated with info about where
 //  in the source file it appeared (based on startToken and endToken)
-var createAST = function(astObj, startToken, endToken) {
+function createAST(astObj, startToken, endToken) {
 	if (!startToken) { startToken = gToken }
 	if (!endToken) { endToken = gToken }
 	astObj.info = {
@@ -556,10 +556,4 @@ var createAST = function(astObj, startToken, endToken) {
 	}
 	return astObj
 }
-
-// return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
-var debuggerAST = astGenerator(function() {
-	advance('keyword', 'debugger')
-	return { type:'DEBUGGER' }
-})
 
