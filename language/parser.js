@@ -493,9 +493,6 @@ var parseNamespace = function(msg) {
 var assert = function(ok, msg) { if (!ok) halt(msg); return true }
 var halt = function(msg, useNextToken) {
 	var token = useNextToken ? peek() : gToken
-console.log(token)
-console.log(msg)
-asd
 	sys.puts(util.grabLine(token.file, token.line, token.column, token.span));
 	throw new ParseError(token.file, msg)
 }

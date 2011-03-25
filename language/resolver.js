@@ -443,9 +443,6 @@ var createScope = function(context) {
 
 var assert = function(ast, ok, msg) { if (!ok) halt(ast, msg) }
 var halt = function(ast, msg) {
-console.log(ast)
-console.log(msg)
-asd
 	var info = ast.info || {}
 	if (info.file) { sys.puts(util.grabLine(info.file, info.line, info.column, info.span)) }
 	throw new ResolveError(ast, msg)
