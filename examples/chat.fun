@@ -1,16 +1,12 @@
-class User {
-	1 name: Text,
-	2 age: Number,
+class Global {
+	1 messages: List of Message
 }
 
 class Message {
-	1 sender: User,
-	2 body: Text,
-	3 subject: Text,
+	1 body: Text
 }
 
 import Local
-import Global
 
 <link rel="stylesheet" href="examples/chat.css" />
 
@@ -19,10 +15,10 @@ import Global
 	<button>"Send"</button onClick=handler() {
 		let newMessage = new { text: Local.message }
 		Local.message.set("")
-		Global.messages.unshift(newMessage)
+		global.messages.unshift(newMessage)
 	}>
 	<div class="messages">
-		for (message in Global.messages) {
+		for (message in global.messages) {
 			<div class="message"> message.text </div>
 		}
 	</div>
