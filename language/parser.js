@@ -130,7 +130,7 @@ var parseDeclarationStatement = astGenerator(function() {
  * Expressions (literals, aliases, invocations) *
  ************************************************/
 var _rawValueOperators = '+-*/%'.split('')
-var parseExpression = astGenerator(function() {
+var parseExpression = function() {
 	if (peek('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
 		var value = parseExpression()
@@ -145,11 +145,15 @@ var parseExpression = astGenerator(function() {
 
 	var lValue = _parseRawValueExpression()
 	if (!peek('symbol', _rawValueOperators)) { return lValue }
+	return _parseCompositeExpression(lValue)
+}
+
+var _parseCompositeExpression = function(lValue) {
+	var operator = advance('symbol').value,
+		rValue = parseExpression()
 	
-	var operator = advance('symbol').value
-	var rValue = parseExpression()
 	return { type:'COMPOSITE', operator:operator, left:lValue, right:rValue }
-})
+}
 
 // @-1.currentUser.name
 var _parseItemLiteral = function() {
