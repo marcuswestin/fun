@@ -87,16 +87,16 @@ var parseStatement = function() {
 				case 'debugger': return debuggerAST()
 				default:         halt('Unexpected keyword "'+token.value+'"')
 			}
-		case 'string':           return parseValueExpression()
-		case 'number':           return parseValueExpression()
+		case 'string':           return parseExpression()
+		case 'number':           return parseExpression()
 		case 'name':             return parseAliasOrInvocation()
 		case 'symbol':
 			switch(token.value) {
 				case L_PAREN:
 				case L_ARRAY:
 				case L_CURLY:
-				case '-':        return parseValueExpression()
-				case '<':        return parseXMLExpression()
+				case '-':        return parseExpression()
+				case '<':        return parseXML()
 				default:         halt('Unexpected symbol "'+token.value+'"')
 			}
 		default:                 halt('Unexpected token type "'+token.type+'"')
@@ -107,7 +107,7 @@ var parseAliasOrInvocation = function() {
 	var alias = parseAlias()
 	if (!peek('symbol', L_PAREN)) { return alias }
 	advance('symbol', L_PAREN)
-	var args = parseList(parseValueExpression, R_PAREN)
+	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of invocation')
 	return { type:'INVOCATION', alias:alias, args:args }
 }
@@ -125,7 +125,7 @@ var parseDeclarationStatement = astGenerator(function() {
 		var value =
 			peek('keyword', 'template') ? parseTemplateLiteral() :
 			peek('keyword', 'handler') ?  parseHandlerLiteral() :
-			                              parseValueExpression()
+			                              parseExpression()
 		declarations.push({ type:'DECLARATION', name:name, value:value })
 		
 		if (!peek('symbol', ',')) { break }
@@ -139,10 +139,10 @@ var parseDeclarationStatement = astGenerator(function() {
  * Expressions (literals, aliases, invocations) *
  ************************************************/
 var _rawValueOperators = '+-*/%'.split('')
-var parseValueExpression = astGenerator(function() {
+var parseExpression = astGenerator(function() {
 	if (peek('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
-		var value = parseValueExpression()
+		var value = parseExpression()
 		advance('symbol', R_PAREN)
 		return value
 	}
@@ -156,7 +156,7 @@ var parseValueExpression = astGenerator(function() {
 	if (!peek('symbol', _rawValueOperators)) { return lValue }
 	
 	var operator = advance('symbol').value
-	var rValue = parseValueExpression()
+	var rValue = parseExpression()
 	return { type:'COMPOSITE', operator:operatir, left:lValue, right:rValue }
 })
 
@@ -223,7 +223,7 @@ var _compositeConditionalSymbols = listToObject(['<','>','<=','>=','==','&&','||
  ************************************/
 var parseListLiteral = astGenerator(function() {
 	advance('symbol', L_ARRAY)
-	var content = parseList(parseValueExpression, R_ARRAY)
+	var content = parseList(parseExpression, R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
 	return { type:'LIST', content:content, localName:util.name('LIST_LITERAL') }
 })
@@ -235,7 +235,7 @@ var parseObjectLiteral = astGenerator(function() {
 		if (peek('symbol', R_CURLY)) { break }
 		var key = advance(['name','string']).value
 		advance('symbol', ':')
-		var value = parseValueExpression()
+		var value = parseExpression()
 		content.push({ key:key, value:value })
 		if (!peek('symbol', ',')) { break }
 		advance('symbol',',')
@@ -247,7 +247,7 @@ var parseObjectLiteral = astGenerator(function() {
 /****************
  * XML literals *
  ****************/
-var parseXMLExpression = astGenerator(function() {
+var parseXML= astGenerator(function() {
 	advance('symbol', '<', 'XML tag opening')
 	advance('name', null, 'XML tag name')
 	var tagName = gToken.value,
@@ -285,7 +285,7 @@ var _parseXMLAttribute = astGenerator(function() {
 	var value =
 		singleName == 'style' ? parseObjectLiteral() :
 		singleName.match(/on\w+/) ? parseHandlerLiteral() :
-		parseValueExpression()
+		parseExpression()
 	return { namespace:namespace, value:value }
 })
 
@@ -339,7 +339,7 @@ var _parseMutationDeclaration = astGenerator(function() {
 	advance('symbol', '=')
 	var value = (peek('keyword', 'new')
 		? _parseItemCreation()
-		: parseValueExpression())
+		: parseExpression())
 	return {type: 'MUTATION_DECLARATION', name:name, value:value}
 })
 
@@ -347,7 +347,7 @@ var _parseMutationInvocation = astGenerator(function() {
 	var alias = parseAlias(),
 		method = alias.namespace.pop()
 	advance('symbol', L_PAREN)
-	var args = parseList(parseValueExpression, R_PAREN)
+	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of mutation method')
 	return {type:'MUTATION', method:method, alias:alias, args:args}
 })
@@ -370,7 +370,7 @@ var parseForLoopStatement = astGenerator(function() {
 		iterator = createAST({ type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: iteratorValue })
 	
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
-	var iterable = parseValueExpression()
+	var iterable = parseExpression()
 	
 	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	var block = parseBlock(parseStatement, 'for_loop')
@@ -404,7 +404,7 @@ var parseIfStatement = astGenerator(function() {
 var parseSwitchStatement = astGenerator(function() {
 	advance('keyword', 'switch')
 	advance('symbol', L_PAREN, 'beginning of the switch statement\'s value')
-	var controlValue = parseValueExpression()
+	var controlValue = parseExpression()
 	advance('symbol', R_PAREN, 'end of the switch statement\'s value')
 	var cases = parseBlock(_parseCase, 'switch case statement')
 	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
@@ -418,7 +418,7 @@ var _parseCase = astGenerator(function() {
 	
 	if (labelToken.value == 'case') {
 		while (true) {
-			values.push(parseValueExpression())
+			values.push(parseExpression())
 			if (!peek('symbol', ',')) { break }
 			advance('symbol', ',')
 		}
