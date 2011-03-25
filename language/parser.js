@@ -84,7 +84,7 @@ var parseStatement = function() {
 				case 'for':      return parseForLoopStatement()
 				case 'if':       return parseIfElseStatement()
 				case 'switch':   return parseSwitchStatement()
-				case 'debugger': return debuggerAST()
+				case 'debugger': return parseDebuggerStatement()
 				default:         halt('Unexpected keyword "'+token.value+'"')
 			}
 		case 'string':           return parseExpression()
@@ -323,7 +323,7 @@ var parseMutationStatement = function() {
 	switch(token.type) {
 		case 'keyword':
 			switch(token.value) {
-				case 'debugger':  return debuggerAST()
+				case 'debugger':  return parseDebuggerStatement()
 				case 'let':       return _parseMutationDeclaration()
 				case 'new':       return _parseItemCreation()
 				default:          console.log(token); UNKNOWN_MUTATION_KEYWORD
@@ -472,7 +472,7 @@ var parseNamespace = function(msg) {
 }
 
 // return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
-var debuggerAST = astGenerator(function() {
+var parseDebuggerStatement = astGenerator(function() {
 	advance('keyword', 'debugger')
 	return { type:'DEBUGGER' }
 })
