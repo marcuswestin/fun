@@ -148,7 +148,7 @@ var parseExpression = astGenerator(function() {
 	
 	var operator = advance('symbol').value
 	var rValue = parseExpression()
-	return { type:'COMPOSITE', operator:operatir, left:lValue, right:rValue }
+	return { type:'COMPOSITE', operator:operator, left:lValue, right:rValue }
 })
 
 // @-1.currentUser.name
