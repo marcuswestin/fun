@@ -248,11 +248,6 @@ var _importFile = function(path, context, a) {
 	resolve(context, newAST)
 }
 
-var log = function(obj) {
-	for (var key in obj) {
-		console.log(key+':', obj[key])
-	}
-}
 /***************
  * Invocations *
  ***************/
