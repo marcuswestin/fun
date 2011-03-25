@@ -148,15 +148,15 @@ var parseExpression = function() {
 	return _parseCompositeExpression(lValue)
 }
 
-var _parseCompositeExpression = function(lValue) {
+var _parseCompositeExpression = astGenerator(function(lValue) {
 	var operator = advance('symbol').value,
 		rValue = parseExpression()
 	
 	return { type:'COMPOSITE', operator:operator, left:lValue, right:rValue }
-}
+})
 
 // @-1.currentUser.name
-var _parseItemLiteral = function() {
+var _parseItemLiteral = astGenerator(function() {
 	advance('symbol', '@')
 	var idAST = _parseRawValueExpression()
 	assert(idAST.type == 'STATIC_VALUE' && typeof idAST.value == 'number', 'Item literals need numeric IDs, e.g. @1')
@@ -166,7 +166,7 @@ var _parseItemLiteral = function() {
 		return { type:'ITEM_PROPERTY', id:idAST.value, namespace:namespace }
 	}
 	return { type:'ITEM', id:idAST.value }
-}
+})
 
 var _prefixOperators = '-!~'.split('')
 var _parseRawValueExpression = function() {
@@ -197,14 +197,14 @@ var _parseStaticValue = astGenerator(function() {
 	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
 })
 
-var _parseAliasOrInvocation = function() {
+var _parseAliasOrInvocation = astGenerator(function() {
 	var alias = parseAlias()
 	if (!peek('symbol', L_PAREN)) { return alias }
 	advance('symbol', L_PAREN)
 	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of invocation')
 	return { type:'INVOCATION', alias:alias, args:args }
-}
+})
 
 // HACK expects __javascriptBridge("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun
 var JAVASCRIPT_BRIDGE_TOKEN = '__javascriptBridge'
