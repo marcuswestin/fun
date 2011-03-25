@@ -32,9 +32,6 @@ exports.compile = util.intercept('CompileError', function(ast, modules, declarat
 		})
 })
 
-/************************
- * Top level statements *
- ************************/
 var compile = function(context, ast) {
 	assert(ast, context && context.hookName, "compile called with invalid context")
 	if (ast instanceof Array) {
@@ -44,6 +41,9 @@ var compile = function(context, ast) {
 	}
 }
 
+/************************
+ * Top level statements *
+ ************************/
 var compileStatement = function(context, ast) {
 	if (!ast) { return '' }
 	switch (ast.type) {
