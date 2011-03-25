@@ -97,6 +97,7 @@ var lookup = function(context, aliasOrValue, allowMiss) {
 	if (aliasOrValue.type != 'ALIAS') { return aliasOrValue }
 	else { return _lookupAlias(context, aliasOrValue, allowMiss) }
 }
+
 var _lookupAlias = function(context, ast, allowMiss) {
 	var lookupNamespace = [],
 		namespace = ast.namespace,
