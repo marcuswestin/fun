@@ -21,11 +21,6 @@ var util = require('./util'),
 
 var GLOBAL_ID = 0
 
-// TODO Read types from types
-// TODO read tags from tags
-var Tags = require('./Tags'),
-	Types = require('./Types')
-
 exports.resolve = util.intercept('ResolveError', function(ast, context) {
 	if (!context) {
 		context = { modules:{}, declarations:[], fileDependencies:[], aliases: {} }
@@ -71,8 +66,8 @@ var _resolveStatement = function(context, ast) {
 		
 		case 'ALIAS':                return lookup(context, ast)
 		
-		case 'RUNTIME_ITERATOR':     return resolveRuntimeIterator(context, ast)
-		case 'ITEM_PROPERTY':        return resolveItemProperty(context, ast)
+		case 'RUNTIME_ITERATOR':     return ast
+		case 'ITEM_PROPERTY':        return ast
 		case 'COMPOSITE':            return resolveCompositeStatement(context, ast)
 
 		case 'STATIC_VALUE':         return ast
@@ -129,25 +124,6 @@ var _lookupAlias = function(context, ast, allowMiss) {
 	else { halt(ast, 'Lookup of undeclared alias "'+namespace.join('.')+'"') }
 }
 
-/*******************
- * Item Properties *
- *******************/
-var resolveItemProperty = function(context, ast) {
-	// TODO Can we infer the type of item properties?
-	return Types.infer(ast, [])
-}
-
-/*****************
- * Static values *
- *****************/
-var resolveStaticValue = function(context, ast) {
-	switch(ast.valueType) {
-		case 'string': return Types.infer(ast, [Types.byName.Text])
-		case 'number': return Types.infer(ast, [Types.byName.Number])
-		default:       halt(ast, 'Unknown static value type "'+ast.valueType+'"')
-	}
-}
-
 /************************
  * Composite statements *
  ************************/
@@ -197,9 +173,7 @@ var _resolveXMLAttributes = function(context, attributes) {
 		assert(dataTypeAttr, !!dataAttr, 'Found dataType attribute but no data attribute')
 		var value = dataTypeAttr.value
 		assert(dataTypeAttr, value.type == 'STATIC_VALUE' && value.valueType == 'string', 'dataType should be a static string, like "number"')
-		var valueStr = value.value.toLowerCase()
-		Types.infer(dataAttr.value, [valueStr])
-		dataAttr.dataType = valueStr
+		dataAttr.dataType = value.value.toLowerCase()
 	}
 }
 
@@ -313,14 +287,6 @@ var resolveMutation = function(context, ast) {
 		}
 	}
 	
-	switch(ast.value.type) {
-		case 'ITEM_PROPERTY':
-			Types.inferByMethod(ast.value, ast.method)
-			break
-		case 'JAVASCRIPT_BRIDGE':
-			break // do nothing
-	}
-	
 	delete ast.alias
 	
 	return ast
@@ -337,12 +303,6 @@ var resolveForLoop = function(context, ast) {
 	handleDeclaration(loopContext, ast.iterator)
 	ast.block = resolve(loopContext, ast.block)
 	return ast
-}
-
-var resolveRuntimeIterator = function(context, ast) {
-	// TODO give types to runtime iterators, so that you can have complex items in lists
-	// TODO Infer type of iterator from the iterable
-	return Types.infer(ast, [Types.Text])
 }
 
 /*****************
