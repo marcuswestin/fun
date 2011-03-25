@@ -2,6 +2,28 @@ TASKS
 
 Get involved - complete a task :)
 
+All expressions should have type:EXPRESSION | INVOCATION | COMPOSITE - each expression should also have a valueType. An alias has the type of what its aliasing. An invocable's signature's argument has the type of what is passed in. A composite has the type of its left operand(?).
+
+--------------
+
+There's ambiguity between
+	anInvocation(a + b)
+and
+	aValue (a + b)
+
+------------
+
+Fix prefixes.
+	-3
+and
+	displayNumber(-2)
+work, but 
+	for (number in [1,2,3]) { displayNumber(-number) }
+does not, nor does
+	-number
+
+--------------
+
 - Add valueType to each AST with a value
 - No static values!
 	let greeting = 'hey'
