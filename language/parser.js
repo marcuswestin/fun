@@ -87,9 +87,9 @@ var parseStatement = function() {
 				case 'debugger': return parseDebuggerStatement()
 				default:         halt('Unexpected keyword "'+token.value+'"')
 			}
-		case 'string':           return parseExpression()
-		case 'number':           return parseExpression()
-		case 'name':             return parseAliasOrInvocation()
+		case 'string':
+		case 'number':
+		case 'name':             return parseExpression()
 		case 'symbol':
 			switch(token.value) {
 				case L_PAREN:
@@ -101,15 +101,6 @@ var parseStatement = function() {
 			}
 		default:                 halt('Unexpected token type "'+token.type+'"')
 	}
-}
-
-var parseAliasOrInvocation = function() {
-	var alias = parseAlias()
-	if (!peek('symbol', L_PAREN)) { return alias }
-	advance('symbol', L_PAREN)
-	var args = parseList(parseExpression, R_PAREN)
-	advance('symbol', R_PAREN, 'end of invocation')
-	return { type:'INVOCATION', alias:alias, args:args }
 }
 
 /****************
@@ -188,7 +179,7 @@ var _doParseRawValueExpression = function() {
 	switch(token.type) {
 		case 'number':
 		case 'string': return _parseStaticValue()
-		case 'name':   return parseAlias()
+		case 'name':   return _parseAliasOrInvocation()
 		case 'symbol':
 			switch (token.value) {
 				case L_CURLY: return parseObjectLiteral()
@@ -203,6 +194,15 @@ var _parseStaticValue = astGenerator(function() {
 	advance(['string','number'])
 	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
 })
+
+var _parseAliasOrInvocation = function() {
+	var alias = parseAlias()
+	if (!peek('symbol', L_PAREN)) { return alias }
+	advance('symbol', L_PAREN)
+	var args = parseList(parseExpression, R_PAREN)
+	advance('symbol', R_PAREN, 'end of invocation')
+	return { type:'INVOCATION', alias:alias, args:args }
+}
 
 // HACK expects __javascriptBridge("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun
 var JAVASCRIPT_BRIDGE_TOKEN = '__javascriptBridge'
