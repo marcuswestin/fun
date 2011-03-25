@@ -37,22 +37,33 @@ exports.resolve = util.intercept('ResolveError', function(ast, context) {
 /************************
  * Top level statements *
  ************************/
+var _expressionTypes = util.listToObject(['STATIC_VALUE', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION'])
 var resolve = function(context, ast) {
 	if (!ast) {
 		return null
 	} else if (ast instanceof Array) {
 		return map(ast, bind(this, resolve, context))
+	} else if (_expressionTypes[ast.type]) {
+		return _resolveExpression(context, ast)
 	} else {
 		return _resolveStatement(context, ast)
 	}
 }
 
-var _expressionTypes = util.listToObject(['STATIC_VALUE', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION'])
-var _resolveStatement = function(context, ast) {
-	if (ast.resolved) { return ast }
-	ast.resolved = true
+var _resolveExpression = function(context, ast) {
+	switch (ast.type) {
+		case 'TEMPLATE_ARGUMENT':    return ast
+		case 'INVOCATION':           return resolveInvocation(context,ast)
+		case 'ALIAS':                return lookup(context, ast)
+		case 'RUNTIME_ITERATOR':     return ast
+		case 'ITEM_PROPERTY':        return ast
+		case 'COMPOSITE':            return resolveCompositeStatement(context, ast)
+		case 'STATIC_VALUE':         return ast
+		default:                     console.log(ast.type); UNKNOWN_EXPRESSION_TYPE
+	}
+}
 
-	if (_expressionTypes[ast.type]) { return resolveExpression(context, ast) }
+var _resolveStatement = function(context, ast) {
 	switch(ast.type) {
 		case 'IMPORT_MODULE':        handleModuleImport(context, ast)      ;break
 		case 'IMPORT_FILE':          handleFileImport(context, ast)        ;break
@@ -71,22 +82,6 @@ var _resolveStatement = function(context, ast) {
 		case 'DEBUGGER':             return ast
 		
 		default:                     console.log(ast); UNKNOWN_AST_TYPE
-	}
-}
-
-/***************
- * Expressions *
- ***************/
-var resolveExpression = function(context, ast) {
-	switch (ast.type) {
-		case 'TEMPLATE_ARGUMENT':    return ast
-		case 'INVOCATION':           return resolveInvocation(context,ast)
-		case 'ALIAS':                return resolveExpression(context, lookup(context, ast))
-		case 'RUNTIME_ITERATOR':     return ast
-		case 'ITEM_PROPERTY':        return ast
-		case 'COMPOSITE':            return resolveCompositeStatement(context, ast)
-		case 'STATIC_VALUE':         return ast
-		default:                     console.log(ast.type); UNKNOWN_EXPRESSION_TYPE
 	}
 }
 
