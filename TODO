@@ -2,9 +2,6 @@ TASKS
 
 Get involved - complete a task :)
 
-Use NPM to install dependencies (npm install, see Locker)
-------------
-
 All expressions should have type:EXPRESSION | INVOCATION | COMPOSITE - each expression should also have a valueType. An alias has the type of what its aliasing. An invocable's signature's argument has the type of what is passed in. A composite has the type of its left operand(?).
 
 --------------
