@@ -1,2 +1,7 @@
+intended v0.2.0
++ Publish fun with npm
++ Significantly improved parsing
++ Use latest fin
+
 v0.1.0
 + First versioned version of fun. Lots of stuff works, lots of stuff is hacky, lots of stuff to be done.

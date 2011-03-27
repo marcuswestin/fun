@@ -1,0 +1,26 @@
+{
+  "name": "fun",
+  "description": "A programming language for realtime web applications",
+  "version": "0.1.0-31-g4bacf63",
+  "homepage": "https://github.com/marcuswestin/fun",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/marcuswestin/fun.git"
+  },
+  "author": "Marcus Westin <narcvs@gmail.com> (http://marcuswest.in)",
+  "main": "fun",
+  "bin": {
+    "fun": "./bin/fun"
+  },
+  "dependencies": {
+    "optimist": "= 0.1.6",
+    "fin": "= 0.2.10",
+    "require": "= 0.1.10"
+  },
+  "directories": {
+    "lib": "."
+  },
+  "engines": {
+    "node": ">= 0.4.0"
+  }
+}

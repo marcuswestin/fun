@@ -1,10 +1,4 @@
-var util = require('../lib/fin/api/fin/util'),
-	fin = require('../lib/fin/api/client')
-
-var bind = util.bind,
-	blockCallback = util.blockCallback
-
-var fun = module.exports = {}
+window.fun = {}
 ;(function() {
 	
 	fun.local = fin._localID
@@ -15,8 +9,6 @@ var fun = module.exports = {}
 	var _unique = 0
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
 	
-	fun.bind = bind
-
 	// var namePromise = getPromise()
 	// namePromise(function(name){ alert('hello '+name) })
 	// namePromise(function(name){ alert('hello '+name) })
@@ -76,9 +68,9 @@ var fun = module.exports = {}
 /* Mutations/Creations
  *********************/
 	fun.mutate = function(op, id, propName, args) {
-		var doMutate = bind(fin, '_mutate', op.toLowerCase(), id, propName, args)
+		var doMutate = function() { fin._mutate(op.toLowerCase(), id, propName, args) }
 		if (id == fun.local) { doMutate() }
-		else { fin.connect(doMutate) }
+		else { fun.connect(doMutate) }
 	}
 	fun.cachedValue = function(id, propName) {
 		var mutation = fin.getCachedMutation(id, propName)
@@ -86,9 +78,9 @@ var fun = module.exports = {}
 	}
 	fun.create = function(properties) {
 		var promise = getPromise()
-		fin.connect(bind(fin, 'create', properties, function() {
-			promise.fulfill.apply(this, arguments)
-		}))
+		fun.connect(function() {
+			fin.create(properties, function() { promise.fulfill.apply(this, arguments) })
+		})
 		return promise
 	}
 	
@@ -96,9 +88,9 @@ var fun = module.exports = {}
  **************/
 	fun.observe = function(type, id, propName, callback) {
 		var methodName = (type == 'BYTES' ? 'observe' : type == 'LIST' ? 'observeList' : null),
-			doObserve = bind(fin, methodName, id, propName, callback)
+			doObserve = function() { fin[methodName](id, propName, callback) }
 		if (id == fun.local) { doObserve() }
-		else { fin.connect(doObserve) }
+		else { fun.connect(doObserve) }
 	}
 	fun.splitListMutation = function(callback, mutation) {
 		var args = mutation.args
@@ -181,8 +173,22 @@ var fun = module.exports = {}
 	
 /* Utility functions
  *******************/
-	fun.block = blockCallback
-	
+	var connected = false, connectCallbacks
+	fun.connect = function(callback) {
+		if (connected) { callback() }
+		else if (connectCallbacks) { connectCallbacks.push(callback) }
+		else {
+			connectCallbacks = [callback]
+			fin.connect('localhost', 8080, function() {
+				connected = true
+				for (var i=0; i<connectCallbacks.length; i++) {
+					connectCallbacks[i]()
+				}
+				connectCallbacks = null
+			})
+		}
+	}
+
 	// wait until each item in items has received a mutation before calling callback;
 	//  then call callback each time there is a mutation
 	fun.dependOn = function(items, callback) {
@@ -208,12 +214,13 @@ var fun = module.exports = {}
 	}
 	
 	fun.waitForPromises = function(promises, callback) {
-		if (promises.length == 0) { callback() }
-		else {
-			var block = blockCallback(callback)
-			for (var i=0; i<promises.length; i++) {
-				promises[i](block.addBlock())
-			}
+		var waitingFor = promises.length + 1
+		function tryNow() {
+			if (!--waitingFor) { callback() }
 		}
+		for (var i=0; i<promises.length; i++) {
+			promises[i](tryNow)
+		}
+		tryNow()
 	}
 })()

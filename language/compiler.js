@@ -85,7 +85,7 @@ var compileTemplateArgument = function(context, ast) {
  ********************/
 var compileClassDeclaration = function(context, ast) {
 	return code(
-		'models.process({ "{{ className }}":{{ propertiesCode }} \n})',
+		'fin.models.process({ "{{ className }}":{{ propertiesCode }} \n})',
 		{
 			className: ast.name,
 			propertiesCode: _compileProperties(ast.properties)
@@ -357,7 +357,7 @@ var compileForLoop = function(context, ast) {
 	return code(
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
-		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, fun.bind(fun, "splitListMutation", onMutation))',
+		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, function(mutation, value) { fun.splitListMutation(onMutation, mutation, value) })',
 		'function onMutation({{ iteratorRuntimeName }}, op) {',
 		'	var {{ emitHookName }} = fun.name()',
 		'	fun.hook({{ emitHookName }}, {{ loopHookName }}, { prepend: (op=="unshift") })',

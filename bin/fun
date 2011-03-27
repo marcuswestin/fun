@@ -6,26 +6,24 @@ var // system modules
 	http = require('http'),
 	path = require('path'),
 	comment = require('util').debug,
-	// lib modules
-	browserRequireCompiler = require('./lib/fin/lib/require/compiler'),
-	// fun parser modules
-	tokenizer = require('./language/tokenizer'),
-	parser = require('./language/parser'),
-	resolver = require('./language/resolver'),
-	compiler = require('./language/compiler'),
-	util = require('./language/util')
+	optimist = require('optimist'),
+	fin = require('fin'),
+	browserRequireCompiler = require('require/compiler'),
+	tokenizer = require('../language/tokenizer'),
+	parser = require('../language/parser'),
+	resolver = require('../language/resolver'),
+	compiler = require('../language/compiler'),
+	util = require('../language/util')
 
 /* Commandline options
  *********************/
-var argv = require('./lib/node-optimist')
-	.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=8080 --engine=[development,redis]]')
-	.argv
+var argv = optimist.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=8080 --engine=[development,redis]]').argv
 
 // Variables
 var sourceFile = argv._[0],
 	port = argv.port || 8080,
 	host = argv.host || '127.0.0.1',
-	engine = argv.engine || 'development'
+	engineName = argv.engine || 'development'
 
 /* Ladies and gentlemen, START YOUR ENGINES!
  * Look at the command line arguments and act
@@ -35,15 +33,13 @@ if (argv.h || argv.help) {
 	output(fs.readFileSync('./help.txt'))
 } else if (argv.s || argv['static']) {
 	comment('compiling fun code...')
-	var funApp = compileFunCode(sourceFile),
-		funAppJS = browserRequireCompiler.compileJS(funApp.js, __dirname)
+	var funAppHTML = compileFunCode(sourceFile)
 	comment('done!')
 	
 	function printStaticFunApp(jsCode) {
-		var staticFunApp = funApp.html.replace(
-			'<script src="./lib/fin/lib/require/require.js" main="app" id="browser-require"></script>',
+		var staticFunApp = funAppHTML.replace(
+			'<script src="http://localhost:8080/fin-models-api.js"></script>',
 			'<script>\n' + jsCode + '\n</script>')
-
 		output(staticFunApp)
 	}
 	
@@ -55,16 +51,18 @@ if (argv.h || argv.help) {
 		printStaticFunApp(funAppJS)
 	}
 } else {
-	var funApp = compileFunCode(sourceFile)
-	var httpServer = startHTTPServer(funApp)
-	startFinServer(engine, httpServer)
-	comment('\nFun! '+sourceFile+' is running using the "'+engine+'" engine on '+host+':'+port)
+	var engine = require('fin/engines/'+engineName),
+		funAppHTML = compileFunCode(sourceFile),
+		httpServer = startHTTPServer(funAppHTML)
+
+	comment('\nFun! Starting up '+sourceFile)
+	return fin.start('localhost', 8080, engine, httpServer)
 }
 
 /* These are the functions that actually do something,
  * based on what you passed in as arguments to fun
  *****************************************************/
-function startHTTPServer(application) {
+function startHTTPServer(html) {
 	var contentTypes = {
 		'.js':   'application/javascript',
 		'.css':  'text/css',
@@ -75,12 +73,9 @@ function startHTTPServer(application) {
 		var requestPath = req.url.replace(/\.\./g, '') // don't want visitors to climb the path
 		if (requestPath == '/') {
 			res.writeHead(200)
-			res.end(application.html)
-		} else if (requestPath == '/app.js') {
-			res.writeHead(200)
-			res.end(application.js)
+			res.end(html)
 		} else {
-			fs.readFile(__dirname + requestPath, function(err, text) {
+			fs.readFile(__dirname + '/../' + requestPath, function(err, text) {
 				var extension = path.extname(requestPath)
 				res.writeHead(err ? 404 : 200, {
 					'Content-Type':contentTypes[extension]
@@ -93,47 +88,28 @@ function startHTTPServer(application) {
 	return httpServer
 }
 
-function startFinServer(engineName, httpServer) {	
-	var engines = {
-		development: './lib/fin/engines/development',
-		redis: './lib/fin/engines/redis'
-	}
-	if (!engines[engineName]) { throw new Error('Unkown engine "'+engineName+'"') }
-	var finServer = require('./lib/fin/api/server'),
-		engine = require(engines[engineName])
-	
-	return finServer.start(engine, httpServer)
-}
-
 function compileFunCode(sourceFile) {
 	var tokens = tokenizer.tokenize(sourceFile),
 		ast = parser.parse(tokens),
 		resolved = resolver.resolve(ast),
-		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations)
-	
-	var appJS = [
-		'window.fun=require("./language/lib")',
-		'window.fin=require("./lib/fin/api/client")',
-		'window.models=require("./lib/fin/api/models")',
-		browserRequireCompiler.indentJS(compiledJS)
-	].join('\n')
+		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations),
+		libJS = fs.readFileSync(__dirname + '/../language/lib.js')
 	
 	var appHTML = [
 		'<!doctype html>',
 		'<html>',
 		'<head></head>',
 		'<body>',
-		'	<script src="./lib/fin/lib/browser-require/require.js" main="app" id="browser-require"></script>',
+		'	<script src="http://localhost:8080/fin-models-api.js"></script>',
+		'	<script>',
+			libJS,
+			compiledJS,
+		'	</script>',
 		'</body>',
 		'</html>'
 	].join('\n')
 	
-	var result = {
-		js: appJS,
-		html: appHTML
-	}
-	
-	return result
+	return appHTML
 }
 
 /* Utility functions
