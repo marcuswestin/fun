@@ -2,7 +2,7 @@ fun
 ===
 A declarative programming language for realtime web applications
 
-Getting up and running
+Getting started
 ----------------------
 	npm install fun
 	echo '"Hello world!"' > hello.fun
