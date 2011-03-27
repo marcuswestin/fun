@@ -4,29 +4,42 @@ A declarative programming language for realtime web applications
 
 Getting up and running
 ----------------------
-Grab dependencies
+	npm install fun
+	echo '"Hello world!"' > hello.fun
+	fun hello.fun
+	# Open your browser to localhost:8080
 
-	make
+Examples
+--------
+Hello World
+	"Hello world!"
 
-If you don't have node.js installed, you'll need to install it
+Facebook Connect
+	import Facebook
 
-	sudo make -f lib/fin/Makefile install-node
+	let name = Facebook.user.name,
+		fbAppID = '177253448965438'
+	if (Facebook.connected) {
+		if (name) { <div>"Welcome " name</div }
+		<div>"Your ID is " Facebook.user.id</div>
+	} else {
+		<button>"Connect"</button onclick=handler() {
+			Facebook.connect(fbAppID)
+		}>
+	}
 
-Now run the example chat app!
+Drag and Drop
+	import Mouse
 
-	./fun examples/chat.fun
-
-Production vs development environments
---------------------------------------
-Fun compiles down to javascript which gets runs on top of fin, a realtime datastore. Fin requires two "engine components", a pubsub component and a persistence component.
-
-By default, fin uses the "developer" engine. While the developer engine is well suited for development work, you would not want to deploy it in production. For production I recommend you use the redis engine, or roll your own (see lib/fin/engines/redis.js):
-
-	./fun chat.app --engine=redis
-
-If you don't have redis installed, you'll need to install it to use the redis engine
-
-	sudo make -f lib/fin/Makefile install-redis
+	let dragStyle = {
+		width:      100,
+		height:     100,
+		background: red,
+		position:   'absolute',
+		top:        Mouse.y + 50,
+		left:       Mouse.x + 50
+	}
+	<div style=dragStyle />
 
 Getting involved
 ----------------
