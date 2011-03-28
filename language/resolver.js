@@ -37,7 +37,7 @@ exports.resolve = util.intercept('ResolveError', function(ast, context) {
 /************************
  * Top level statements *
  ************************/
-var _expressionTypes = util.listToObject(['STATIC_VALUE', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION'])
+var _expressionTypes = util.listToObject(['STATIC_VALUE', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION', 'CONDITION'])
 var resolve = function(context, ast) {
 	if (!ast) {
 		return null
@@ -57,7 +57,8 @@ var _resolveExpression = function(context, ast) {
 		case 'ALIAS':                return lookup(context, ast)
 		case 'RUNTIME_ITERATOR':     return ast
 		case 'ITEM_PROPERTY':        return ast
-		case 'COMPOSITE':            return resolveCompositeStatement(context, ast)
+		case 'CONDITION':
+		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
 		case 'STATIC_VALUE':         return ast
 		default:                     console.log(ast.type); UNKNOWN_EXPRESSION_TYPE
 	}
@@ -131,9 +132,9 @@ var _lookupAlias = function(context, ast, allowMiss) {
 }
 
 /************************
- * Composite statements *
+ * Composite expressions *
  ************************/
-var resolveCompositeStatement = function(context, ast) {
+var resolveCompositeExpression = function(context, ast) {
 	ast.left = resolve(context, ast.left)
 	ast.right = resolve(context, ast.right)
 	return ast

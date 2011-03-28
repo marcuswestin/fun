@@ -48,6 +48,7 @@ var compileStatement = function(context, ast) {
 		case 'CLASS_DECLARATION': return compileClassDeclaration(context, ast)
 		case 'STATIC_VALUE':      return compileStaticValue(context, ast)
 		case 'ITEM_PROPERTY':     return compileItemProperty(context, ast)
+		case 'CONDITION':
 		case 'COMPOSITE':         return compileCompositeStatement(context, ast)
 		case 'RUNTIME_ITERATOR':  return compileRuntimeIterator(context, ast)
 		case 'TEMPLATE_ARGUMENT': return compileTemplateArgument(context, ast)
@@ -582,7 +583,9 @@ function statementCode(ast /*, line1, line2, ..., lineN, values */) {
 		})
 }
 var _collectDynamicASTs = function(ast) {
+	if (!ast) { return [] }
 	switch(ast.type) {
+		case 'CONDITION':
 		case 'COMPOSITE':
 			return _collectDynamicASTs(ast.left).concat(_collectDynamicASTs(ast.right))
 		case 'ITEM_PROPERTY':
@@ -609,7 +612,9 @@ var _itemPropertiesArray = function(ASTs) {
 	return '['+itemProperties.join(',')+']'
 }
 function _compileStatementValue(ast) {
+	if (!ast) { return '' }
 	switch(ast.type) {
+		case 'CONDITION':
 		case 'COMPOSITE':
 			var res = _compileStatementValue(ast.left) + ast.operator + _compileStatementValue(ast.right)
 			return ast.hasParens ? '('+res+')' : res

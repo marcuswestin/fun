@@ -81,7 +81,7 @@ var parseStatement = function() {
 			switch (token.value) {
 				case 'let':      return parseDeclarationStatement()
 				case 'for':      return parseForLoopStatement()
-				case 'if':       return parseIfElseStatement()
+				case 'if':       return parseIfStatement()
 				case 'switch':   return parseSwitchStatement()
 				case 'debugger': return parseDebuggerStatement()
 				default:         halt('Unexpected keyword "'+token.value+'"')
@@ -129,14 +129,7 @@ var parseDeclarationStatement = astGenerator(function() {
  * Expressions (literals, aliases, invocations) *
  ************************************************/
 var _rawValueOperators = '+-*/%'.split('')
-var parseExpression = function() {
-	if (peek('symbol', L_PAREN)) {
-		advance('symbol', L_PAREN)
-		var value = parseExpression()
-		advance('symbol', R_PAREN)
-		return value
-	}
-	
+var parseExpression = _groupWithParens(function() {
 	// HACK! Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
 	if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) { return _parseJavascriptBridge() }
 
@@ -145,6 +138,29 @@ var parseExpression = function() {
 	var lValue = _parseRawValueExpression()
 	if (!peek('symbol', _rawValueOperators)) { return lValue }
 	return _parseCompositeExpression(lValue)
+})
+
+var _conditionOperatorSymbols = ['<','>','<=','>=','=='],
+	_conditionOperatorKeywords = ['and','or']
+var parseConditionExpression = _groupWithParens(astGenerator(function() {
+	var lValue = parseExpression(),
+		operator = '',
+		rValue
+	if (peek('symbol', _conditionOperatorSymbols)) { operator = advance('symbol').value }
+	else if (peek('keyword', _conditionOperatorKeywords)) { operator = advance('keyword').value }
+	if (operator) { rValue = parseConditionExpression() }
+	
+	return { type:'CONDITION', left:lValue, operator:operator, right:rValue }
+}))
+
+function _groupWithParens(expressionFn) {
+	return function() {
+		if (!peek('symbol', L_PAREN)) { return expressionFn() }
+		advance('symbol', L_PAREN)
+		var value = _groupWithParens(expressionFn)
+		advance('symbol', R_PAREN)
+		return value
+	}
 }
 
 var _parseCompositeExpression = astGenerator(function(lValue) {
@@ -405,7 +421,7 @@ var parseIfStatement = astGenerator(function() {
 var parseSwitchStatement = astGenerator(function() {
 	advance('keyword', 'switch')
 	advance('symbol', L_PAREN, 'beginning of the switch statement\'s value')
-	var controlValue = parseExpression()
+	var controlValue = parseConditionExpression()
 	advance('symbol', R_PAREN, 'end of the switch statement\'s value')
 	var cases = parseBlock(_parseCase, 'switch case statement')
 	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
