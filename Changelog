@@ -1,3 +1,6 @@
+v0.2.1
++ Fix if/else statement parsing
+
 v0.2.0
 + Publish fun with npm
 + Significantly improved parsing
