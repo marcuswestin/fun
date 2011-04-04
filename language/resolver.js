@@ -2,7 +2,7 @@
  * 1) Resolve import statements by injecting declarations from
  *    the imported module into the main context's alias table
  * 2) Resolve aliases to balues
- * 3) Infer the type of all values
+ * 3) Infer the type of and type check all values
  * The resolver returns an AST with no import statements and
  * no aliases, in which all values have been annotated with a type
  *****************************************************************/
