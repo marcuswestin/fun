@@ -46,7 +46,7 @@ var compileStatement = function(context, ast) {
 	if (!ast) { return '' }
 	switch (ast.type) {
 		case 'CLASS_DECLARATION': return compileClassDeclaration(context, ast)
-		case 'STATIC_VALUE':      return compileStaticValue(context, ast)
+		case 'STATIC':            return compileStaticValue(context, ast)
 		case 'ITEM_PROPERTY':     return compileItemProperty(context, ast)
 		case 'COMPOSITE':         return compileCompositeStatement(context, ast)
 		case 'RUNTIME_ITERATOR':  return compileRuntimeIterator(context, ast)
@@ -115,7 +115,7 @@ var compileStaticValue = function(context, ast) {
 var _runtimeValue = function(ast) {
 	var prefix = ast.prefix || ''
 	switch(ast.type) {
-		case 'STATIC_VALUE':      return prefix + q(ast.value)
+		case 'STATIC':            return prefix + q(ast.value)
 		case 'RUNTIME_ITERATOR':  return prefix + ast.runtimeName
 		case 'TEMPLATE_ARGUMENT': return prefix + ast.runtimeName
 		case 'LIST':              return prefix + q(ast.content)
@@ -230,7 +230,7 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 		_handleDataAttribute(nodeHookName, ast, dynamicCode, value, attribute.dataType)
 	} else if (match = name.match(/^on(\w+)$/)) {
 		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
-	} else if (value.type == 'STATIC_VALUE') {
+	} else if (value.type == 'STATIC') {
 		staticAttrs[name] = value.value
 	} else {
 		assert(ast, value.type != 'OBJECT_LITERAL', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
@@ -523,7 +523,7 @@ var compileItemPropertyMutation = function(ast) {
 var _cachedValueListCode = function(args) {
 	return map(args, function(arg) {
 		switch (arg.type) {
-			case 'STATIC_VALUE': return q(arg.value)
+			case 'STATIC': return q(arg.value)
 			case 'MUTATION_ITEM_CREATION': return arg.promiseName+'.fulfillment[0]' // the fulfillment is [itemID]
 			case 'RUNTIME_ITERATOR': return arg.runtimeName
 			case 'TEMPLATE_ARGUMENT': return arg.runtimeName
@@ -600,7 +600,7 @@ var _collectDynamicASTs = function(ast) {
 		case 'ITEM_PROPERTY':
 		case 'RUNTIME_ITERATOR':
 			return [ast]
-		case 'STATIC_VALUE':
+		case 'STATIC':
 			return []
 		case 'TEMPLATE_ARGUMENT':
 			// need to know the type of the argument - in the meantime, assume that no type means its a literal value
@@ -629,7 +629,7 @@ function _compileStatementValue(ast) {
 		case 'ITEM_PROPERTY':
 		case 'RUNTIME_ITERATOR':
 		case 'TEMPLATE_ARGUMENT':
-		case 'STATIC_VALUE':
+		case 'STATIC':
 			return _runtimeValue(ast)
 		default:
 			console.log(ast); UNKNOWN_VALUE_AST_TYPE

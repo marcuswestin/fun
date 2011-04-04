@@ -38,7 +38,7 @@ exports.resolve = util.intercept('ResolveError', function(ast, context) {
 /************************
  * Top level statements *
  ************************/
-var _expressionTypes = util.listToObject(['STATIC_VALUE', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION'])
+var _expressionTypes = util.listToObject(['STATIC', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION'])
 var resolve = function(context, ast) {
 	if (!ast) {
 		return null
@@ -59,7 +59,7 @@ var _resolveExpression = function(context, ast) {
 		case 'RUNTIME_ITERATOR':     return ast
 		case 'ITEM_PROPERTY':        return ast
 		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
-		case 'STATIC_VALUE':         return ast
+		case 'STATIC':               return ast
 		default:                     console.log(ast.type); UNKNOWN_EXPRESSION_TYPE
 	}
 }
@@ -179,7 +179,7 @@ var _resolveXMLAttributes = function(context, attributes) {
 	if (dataTypeAttr) {
 		assert(dataTypeAttr, !!dataAttr, 'Found dataType attribute but no data attribute')
 		var value = dataTypeAttr.value
-		assert(dataTypeAttr, value.type == 'STATIC_VALUE' && value.valueType == 'string', 'dataType should be a static string, like "number"')
+		assert(dataTypeAttr, value.type == 'STATIC' && value.valueType == 'string', 'dataType should be a static string, like "number"')
 		dataAttr.dataType = value.value.toLowerCase()
 	}
 }
@@ -329,7 +329,7 @@ var resolveSwitchStatement = function(context, ast) {
 	each(ast.cases, function(aCase) {
 		aCase.values = map(aCase.values, bind(this, resolve, context))
 		each(aCase.values, function(aCase) {
-			assert(aCase, aCase.type == 'STATIC_VALUE', "Switch statements' case values must be numbers (e.g. 2, 3, 4) or text (e.g. 'hello')")
+			assert(aCase, aCase.type == 'STATIC', "Switch statements' case values must be numbers (e.g. 2, 3, 4) or text (e.g. 'hello')")
 		})
 		aCase.statements = map(aCase.statements, bind(this, resolve, context))
 	})
@@ -361,7 +361,7 @@ var handleDeclaration = function(context, ast) {
 				context.declarations.push(value.iterable)
 			}
 			break
-		case 'STATIC_VALUE':
+		case 'STATIC':
 			value.type = 'ITEM_PROPERTY'
 			value.item = { id:LOCAL_ID }
 			value.property = ['__local' + util.name()]

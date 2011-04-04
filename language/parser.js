@@ -176,7 +176,7 @@ var _parseCompositeExpression = astGenerator(function(lValue) {
 var _parseItemLiteral = astGenerator(function() {
 	advance('symbol', '@')
 	var idAST = _parseRawValueExpression()
-	assert(idAST.type == 'STATIC_VALUE' && typeof idAST.value == 'number', 'Item literals need numeric IDs, e.g. @1')
+	assert(idAST.type == 'STATIC' && typeof idAST.value == 'number', 'Item literals need numeric IDs, e.g. @1')
 	if (peek('symbol', '.')) {
 		advance('symbol', '.')
 		var namespace = parseNamespace()
@@ -211,7 +211,7 @@ var _doParseRawValueExpression = function() {
 
 var _parseStaticValue = astGenerator(function() {
 	advance(['string','number'])
-	return { type:'STATIC_VALUE', valueType:gToken.type, value:gToken.value }
+	return { type:'STATIC', valueType:gToken.type, value:gToken.value }
 })
 
 var _parseAliasOrInvocation = astGenerator(function() {
