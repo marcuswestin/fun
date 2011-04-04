@@ -6,6 +6,10 @@ var testCase = require('nodeunit').testCase,
 test('text literal', '"hello world"', static("hello world"))
 test('number literal', '1', static(1))
 test('declaration', 'let greeting = "hello"', { type:'DECLARATION', name:'greeting', value: static("hello") })
+test('alias single namespace', 'greeting', { type:'ALIAS', namespace:['greeting'] })
+test('alias double namespace', 'user.name', { type:'ALIAS', namespace:['user','name'] })
+test('parenthesized expression', '(1)', static(1))
+test('double parenthesized expression', '(("hello"))', static("hello"))
 
 /* UTIL */
 

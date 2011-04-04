@@ -155,17 +155,17 @@ var _doParseExpression = _groupWithParens(function(operatorSymbols, operatorKeyw
 	else if (peek('keyword', operatorKeywords)) { operator = advance('keyword').value }
 
 	if (!operator) { return lValue }
-
+	
 	rValue = _doParseExpression(operatorSymbols, operatorKeywords)
 	return { type:'COMPOSITE', left:lValue, operator:operator, right:rValue }
 })
 
 function _groupWithParens(expressionFn) {
 	return function() {
-		if (!peek('symbol', L_PAREN)) { return expressionFn.apply(this, arguments) }
-		advance('symbol', L_PAREN)
-		var value = _groupWithParens(expressionFn.apply(this, arguments))
-		advance('symbol', R_PAREN)
+		var numParens = 0
+		while(peek('symbol', L_PAREN)) { advance('symbol', L_PAREN); numParens += 1 }
+		var value = expressionFn.apply(this, arguments)
+		while(numParens) { advance('symbol', R_PAREN); numParens -= 1 }
 		return value
 	}
 }
