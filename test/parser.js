@@ -2,13 +2,10 @@ var testCase = require('nodeunit').testCase,
 	parser = require('../language/parser'),
 	tokenizer = require('../language/tokenizer')
 
-test('TextLiteral', '"hello world"', static("hello world"))
-test('NumberLiteral', '1', static(1))
-test('Declaration', 'let greeting = "hello"', {
-	type:'DECLARATION',
-	name:'greeting',
-	value: static("hello")
-})
+/* TESTS */
+test('text literal', '"hello world"', static("hello world"))
+test('number literal', '1', static(1))
+test('declaration', 'let greeting = "hello"', { type:'DECLARATION', name:'greeting', value: static("hello") })
 
 /* UTIL */
 
