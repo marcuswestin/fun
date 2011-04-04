@@ -50,7 +50,7 @@ var compileStatement = function(context, ast) {
 		case 'STATIC':            return compileStaticValue(context, ast)
 		case 'ITEM_PROPERTY':     return compileItemProperty(context, ast)
 		case 'COMPOSITE':         return compileCompositeStatement(context, ast)
-		case 'RUNTIME_ITERATOR':  return compileRuntimeIterator(context, ast)
+		case 'RUNTIME_ITERATOR':  return compileItemProperty(context, ast)
 		case 'TEMPLATE_ARGUMENT': return compileTemplateArgument(context, ast)
 		case 'XML':               return compileXML(context, ast)
 		case 'IF_STATEMENT':      return compileIfStatement(context, ast)
@@ -60,16 +60,6 @@ var compileStatement = function(context, ast) {
 		case 'DEBUGGER':          return 'debugger'
 		
 		default:                  console.log(ast); UNKNOWN_STATEMENT_AST_TYPE
-	}
-}
-
-var compileRuntimeIterator = function(context, ast) {
-	// TODO this function assumes that the iterable is an item property.
-	//  It would be nice if it could be a static inline-defined list
-	if (ast.iterable.type == 'ITEM_PROPERTY') {
-		return compileItemProperty(context, ast)
-	} else {
-		console.log(ast); UNKNOWN_ITERABLE_TYPE
 	}
 }
 
