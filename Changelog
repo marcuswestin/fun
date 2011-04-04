@@ -1,3 +1,8 @@
+v0.2.3
++ Parser improvements
++ Local expressions are now Local item properties, e.g. let name = "marcus" name.set("marcus westin")
++ Unit testing using nodeunit - a bunch of test cases added for the parser!
+
 v0.2.2
 + File cleanup
 + Upgrade to fin v0.2.11
