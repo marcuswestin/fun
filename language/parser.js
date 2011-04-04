@@ -31,8 +31,13 @@ exports.parse = util.intercept('ParseError', function(tokens) {
 	while (gIndex + 1 != gTokens.length) {
 		ast.push(parseStatement())
 	}
-	return ast
+	return cleanup(ast)
 })
+
+function cleanup(ast) {
+	if (ast instanceof Array && ast.length == 1) { return cleanup(ast[0]) }
+	return ast
+}
 
 /************************************************************
  * Setup statements - comes before any of the imitting code *
