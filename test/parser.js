@@ -12,7 +12,6 @@ test('parenthesized expression', '(1)', static(1))
 test('double parenthesized expression', '(("hello"))', static("hello"))
 
 /* UTIL */
-
 function test(name, code, expectedAST) {
 	module.exports['test '+name] = function(assert) {
 		var ast = parse(code)
