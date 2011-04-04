@@ -308,7 +308,7 @@ var _parseXMLAttribute = astGenerator(function() {
 	advance('symbol', '=')
 	var value =
 		singleName == 'style' ? parseObjectLiteral() :
-		singleName.match(/on\w+/) ? parseHandlerLiteral() :
+		singleName.match(/on\w+/) ? parseHandlerLiteral(true) :
 		parseExpression()
 	return { namespace:namespace, value:value }
 })
@@ -321,7 +321,8 @@ var parseTemplateLiteral = astGenerator(function() {
 	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 
-var parseHandlerLiteral = astGenerator(function() {
+var parseHandlerLiteral = astGenerator(function(allowAlias) {
+	if (peek('name')) { return parseAlias() }
 	var callable = _parseCallable(parseMutationStatement, 'handler')
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
