@@ -5,7 +5,6 @@ var // system modules
 	sys = require('sys'),
 	http = require('http'),
 	path = require('path'),
-	comment = require('util').debug,
 	optimist = require('optimist'),
 	fin = require('fin'),
 	browserRequireCompiler = require('require/compiler'),
@@ -32,9 +31,9 @@ var sourceFile = argv._[0],
 if (argv.h || argv.help) {
 	output(fs.readFileSync('./help.txt'))
 } else if (argv.s || argv['static']) {
-	comment('compiling fun code...')
+	console.log('compiling fun code...')
 	var funAppHTML = compileFunCode(sourceFile)
-	comment('done!')
+	console.log('done!')
 	
 	function printStaticFunApp(jsCode) {
 		var staticFunApp = funAppHTML.replace(
@@ -44,9 +43,9 @@ if (argv.h || argv.help) {
 	}
 	
 	if (argv.compress) {
-		comment('compressing output with google closure compiler...')
+		console.log('compressing output with google closure compiler...')
 		browserRequireCompiler.compressJS(funAppJS, printStaticFunApp)
-		comment('done!')
+		console.log('done!')
 	} else {
 		printStaticFunApp(funAppJS)
 	}
@@ -55,8 +54,10 @@ if (argv.h || argv.help) {
 		funAppHTML = compileFunCode(sourceFile),
 		httpServer = startHTTPServer(funAppHTML)
 
-	comment('\nFun! Starting up '+sourceFile)
-	return fin.start('localhost', 8080, engine, httpServer)
+	var host = 'localhost',
+		port = 8080
+	console.log('\nFun running', sourceFile, 'on', host+':'+port, 'with engine', engineName)
+	return fin.start(host, port, engine, httpServer)
 }
 
 /* These are the functions that actually do something,
@@ -116,8 +117,4 @@ function compileFunCode(sourceFile) {
  *******************/
 function output() {
 	sys.puts.apply(this, arguments)
-}
-
-function comment() {
-	sys.debug.apply(this, arguments)
 }
