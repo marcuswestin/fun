@@ -6,15 +6,15 @@ class Message {
 	1 body: Text
 }
 
-import Local
+let userInput = ""
 
 <link rel="stylesheet" href="examples/chat.css" />
 
 <div class="chat">
-	<input data=Local.message class="messageInput"/>
+	<input data=userInput class="messageInput"/>
 	<button>"Send"</button onClick=handler() {
-		let newMessage = new { text: Local.message }
-		Local.message.set("")
+		let newMessage = new { text: userInput }
+		userInput.set("")
 		global.messages.unshift(newMessage)
 	}>
 	<div class="messages">
