@@ -194,7 +194,7 @@ var _prefixOperators = '-!~'.split('')
 var _parseRawValueExpression = function() {
 	var prefix = (peek('symbol', _prefixOperators) ? advance('symbol').value : null)
 	expression = _doParseRawValueExpression()
-	expression.prefix = prefix
+	if (prefix) { expression.prefix = prefix }
 	return expression
 }
 
