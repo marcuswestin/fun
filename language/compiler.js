@@ -42,6 +42,7 @@ var compile = function(context, ast) {
 /************************
  * Top level statements *
  ************************/
+// TODO Make a generic compileExpression function
 var compileStatement = function(context, ast) {
 	if (!ast) { return '' }
 	switch (ast.type) {
