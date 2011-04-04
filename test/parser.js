@@ -13,7 +13,7 @@ test('Declaration', 'let greeting = "hello"', {
 /* UTIL */
 
 function test(name, code, expectedAST) {
-	module.exports['test'+name] = function(assert) {
+	module.exports['test '+name] = function(assert) {
 		var ast = parse(code)
 		assert.deepEqual(ast, expectedAST)
 		assert.done()
