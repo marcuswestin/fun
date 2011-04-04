@@ -382,6 +382,7 @@ var compileDeclaration = function(declaration) {
 		case 'TEMPLATE':  return compileTemplateDeclaration(declaration)
 		case 'HANDLER':   return compileHandlerDeclaration(declaration)
 		case 'LIST':      return compileListLiteral(declaration)
+		case 'ITEM_PROPERTY': return compileItemPropertyDeclaration(declaration)
 		default:          halt(declaration, 'Found declaration that requires compilation of unknown type')
 	}
 }
@@ -399,6 +400,16 @@ var compileListLiteral = function(ast) {
 			}
 		)
 	})
+}
+
+var compileItemPropertyDeclaration = function(ast) {
+	return code(
+		'fun.mutate("set", {{ id }}, {{ prop }}, [{{ value }}])',
+		{
+			id: getItemID(ast),
+			prop: getPropertyName(ast),
+			value: q(ast.value)
+		})
 }
 
 var compileTemplateDeclaration = function(ast) {

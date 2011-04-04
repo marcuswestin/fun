@@ -19,7 +19,8 @@ var util = require('./util'),
 	map = util.map,
 	each = util.each
 
-var GLOBAL_ID = 0
+var GLOBAL_ID = 0,
+	LOCAL_ID = -1
 
 exports.resolve = util.intercept('ResolveError', function(ast, context) {
 	if (!context) {
@@ -359,6 +360,12 @@ var handleDeclaration = function(context, ast) {
 			if (value.iterable.type == 'LIST') {
 				context.declarations.push(value.iterable)
 			}
+			break
+		case 'STATIC_VALUE':
+			value.type = 'ITEM_PROPERTY'
+			value.item = { id:LOCAL_ID }
+			value.property = ['__local' + util.name()]
+			context.declarations.push(value)
 			break
 		default:
 			// do nothing
