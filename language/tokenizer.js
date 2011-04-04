@@ -24,7 +24,12 @@ var fs = require('fs'),
     sys = require('sys'),
 	util = require('./util')
 
-exports.tokenize = util.intercept('TokenizeError', doTokenize)
+exports.tokenize = util.intercept('TokenizeError', function(inputString) {
+	return _doTokenize(inputString, '[raw string]')
+})
+exports.tokenizeFile = util.intercept('TokenizeError', function(inputFile) {
+	return _doTokenize(fs.readFileSync(inputFile), inputFile)
+})
 
 var TokenizeError = function(file, line, column, msg) {
 	this.name = 'TokenizeError';
@@ -33,7 +38,7 @@ var TokenizeError = function(file, line, column, msg) {
 TokenizeError.prototype = Error.prototype
 
 var keywords = 'let,for,in,if,else,template,handler,new,debugger,switch,case,default,and,or'.split(',')
-function doTokenize (inputFile) {
+function _doTokenize (inputString, inputFile) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.
     var i = 0;                  // The index of the current character.
@@ -51,7 +56,7 @@ function doTokenize (inputFile) {
 
     var halt = function (msg) {
         var col = from - lineStart + 1
-        sys.puts(util.grabLine(inputFile, line, col, i - from));
+        sys.puts(util.grabLine(inputString, line, col, i - from));
         throw new TokenizeError(inputFile, line, col, msg);
     }
 
@@ -67,7 +72,7 @@ function doTokenize (inputFile) {
             span: i - from,
             line: line,
             column: from - lineStart + 1,
-            file: inputFile,
+            file: inputString,
             hadWhitespace: hadWhitespace
         };
         hadWhitespace = false;
@@ -82,7 +87,6 @@ function doTokenize (inputFile) {
 
 // Loop through the text, one character at a time.
 
-    inputString = fs.readFileSync(inputFile).toString()
     length = inputString.length
     
     c = inputString.charAt(i);

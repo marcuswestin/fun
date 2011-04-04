@@ -76,10 +76,9 @@ var bind = util.bind = function(context, method) {
 	}
 }
 
-util.grabLine = function(file, lineNumber, column, length) {
+util.grabLine = function(code, lineNumber, column, length) {
 	length = length || 1
-	var code = fs.readFileSync(file).toString(),
-		lines = code.split('\n'),
+	var lines = code.split('\n'),
 		line = _replace(lines[lineNumber - 1], '\t', ' ')
 	
 	return '\n' + line + '\n'

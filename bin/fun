@@ -90,7 +90,7 @@ function startHTTPServer(html) {
 }
 
 function compileFunCode(sourceFile) {
-	var tokens = tokenizer.tokenize(sourceFile),
+	var tokens = tokenizer.tokenizeFile(sourceFile),
 		ast = parser.parse(tokens),
 		resolved = resolver.resolve(ast),
 		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations),
