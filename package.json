@@ -15,7 +15,8 @@
   "dependencies": {
     "optimist": "= 0.1.6",
     "fin": "= 0.2.13",
-    "require": "= 0.1.10"
+    "require": "= 0.1.10",
+    "nodeunit": "= 0.5.1"
   },
   "directories": {
     "lib": "."
