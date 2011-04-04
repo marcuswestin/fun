@@ -37,7 +37,7 @@ exports.resolve = util.intercept('ResolveError', function(ast, context) {
 /************************
  * Top level statements *
  ************************/
-var _expressionTypes = util.listToObject(['STATIC_VALUE', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION', 'CONDITION'])
+var _expressionTypes = util.listToObject(['STATIC_VALUE', 'COMPOSITE', 'ITEM_PROPERTY', 'RUNTIME_ITERATOR', 'ALIAS', 'INVOCATION'])
 var resolve = function(context, ast) {
 	if (!ast) {
 		return null
@@ -57,7 +57,6 @@ var _resolveExpression = function(context, ast) {
 		case 'ALIAS':                return lookup(context, ast)
 		case 'RUNTIME_ITERATOR':     return ast
 		case 'ITEM_PROPERTY':        return ast
-		case 'CONDITION':
 		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
 		case 'STATIC_VALUE':         return ast
 		default:                     console.log(ast.type); UNKNOWN_EXPRESSION_TYPE

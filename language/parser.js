@@ -128,36 +128,38 @@ var parseDeclarationStatement = astGenerator(function() {
 /************************************************
  * Expressions (literals, aliases, invocations) *
  ************************************************/
-var _rawValueOperators = '+-*/%'.split('')
-var parseExpression = _groupWithParens(function() {
+var _expressionOperatorSymbols = ['+','-','*','/','%'], _expressionOperatorKeywords = []
+var parseExpression = function() {
+	return _doParseExpression(_expressionOperatorSymbols, _expressionOperatorKeywords)
+}
+
+var _conditionOperatorSymbols = ['<','>','<=','>=','=='], _conditionOperatorKeywords = ['and','or']
+var parseConditionExpression = function() {
+	return _doParseExpression(_conditionOperatorSymbols, _conditionOperatorSymbols)
+}
+
+var _doParseExpression = _groupWithParens(function(operatorSymbols, operatorKeywords) {
 	// HACK! Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
 	if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) { return _parseJavascriptBridge() }
-
 	if (peek('symbol', '@')) { return _parseItemLiteral() }
 
-	var lValue = _parseRawValueExpression()
-	if (!peek('symbol', _rawValueOperators)) { return lValue }
-	return _parseCompositeExpression(lValue)
-})
+	var lValue = _parseRawValueExpression(),
+		operator = '', rValue
 
-var _conditionOperatorSymbols = ['<','>','<=','>=','=='],
-	_conditionOperatorKeywords = ['and','or']
-var parseConditionExpression = _groupWithParens(astGenerator(function() {
-	var lValue = parseExpression(),
-		operator = '',
-		rValue
-	if (peek('symbol', _conditionOperatorSymbols)) { operator = advance('symbol').value }
-	else if (peek('keyword', _conditionOperatorKeywords)) { operator = advance('keyword').value }
-	if (operator) { rValue = parseConditionExpression() }
-	
-	return { type:'CONDITION', left:lValue, operator:operator, right:rValue }
-}))
+	if (peek('symbol', operatorSymbols)) { operator = advance('symbol').value }
+	else if (peek('keyword', operatorKeywords)) { operator = advance('keyword').value }
+
+	if (!operator) { return lValue }
+
+	rValue = _doParseExpression(operatorSymbols, operatorKeywords)
+	return { type:'COMPOSITE', left:lValue, operator:operator, right:rValue }
+})
 
 function _groupWithParens(expressionFn) {
 	return function() {
-		if (!peek('symbol', L_PAREN)) { return expressionFn() }
+		if (!peek('symbol', L_PAREN)) { return expressionFn.apply(this, arguments) }
 		advance('symbol', L_PAREN)
-		var value = _groupWithParens(expressionFn)
+		var value = _groupWithParens(expressionFn.apply(this, arguments))
 		advance('symbol', R_PAREN)
 		return value
 	}
