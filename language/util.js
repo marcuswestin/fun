@@ -1,4 +1,4 @@
-var util = exports
+var util = module.exports
 
 var sys = require('sys'),
 	fs = require('fs')
