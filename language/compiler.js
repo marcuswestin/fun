@@ -379,9 +379,9 @@ var compileForLoop = function(context, ast) {
  *************/
 var compileDeclaration = function(declaration) {
 	switch (declaration.type) {
-		case 'TEMPLATE':  return compileTemplateDeclaration(declaration)
-		case 'HANDLER':   return compileHandlerDeclaration(declaration)
-		case 'LIST':      return compileListLiteral(declaration)
+		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
+		case 'HANDLER':       return compileHandlerDeclaration(declaration)
+		case 'LIST':          return compileListLiteral(declaration)
 		case 'ITEM_PROPERTY': return compileItemPropertyDeclaration(declaration)
 		default:          halt(declaration, 'Found declaration that requires compilation of unknown type')
 	}
