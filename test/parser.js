@@ -1,5 +1,4 @@
-var testCase = require('nodeunit').testCase,
-	std = require('std'),
+var std = require('std'),
 	parser = require('../lib/parser'),
 	tokenizer = require('../lib/tokenizer')
 
