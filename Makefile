@@ -1,3 +1,3 @@
 .PHONY: test
 test:
-	nodeunit test
+	nodeunit test/testCases

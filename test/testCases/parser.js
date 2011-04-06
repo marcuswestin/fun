@@ -1,6 +1,6 @@
 var std = require('std'),
-	parser = require('../lib/parser'),
-	tokenizer = require('../lib/tokenizer')
+	parser = require('../../lib/parser'),
+	tokenizer = require('../../lib/tokenizer')
 
 /* TESTS */
 test('text literal', '"hello world"', static("hello world"))
