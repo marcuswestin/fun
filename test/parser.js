@@ -7,8 +7,8 @@ var testCase = require('nodeunit').testCase,
 test('text literal', '"hello world"', static("hello world"))
 test('number literal', '1', static(1))
 test('declaration', 'let greeting = "hello"', { type:'DECLARATION', name:'greeting', value: static("hello") })
-test('alias single namespace', 'greeting', { type:'ALIAS', namespace:['greeting'] })
-test('alias double namespace', 'user.name', { type:'ALIAS', namespace:['user','name'] })
+test('alias single namespace', 'greeting', alias('greeting'))
+test('alias double namespace', 'user.name', alias('user.name'))
 test('parenthesized expression', '(1)', static(1))
 test('double parenthesized expression', '(("hello"))', static("hello"))
 test('addition', '1+1', composite(static(1), '+', static(1)))
@@ -28,6 +28,11 @@ function static(value) {
 	var ast = { type:'STATIC', value:value }
 	ast.valueType = typeof value
 	return ast
+}
+
+function alias(namespace) {
+	namespace = namespace.split('.')
+	return { type:'ALIAS', namespace:namespace }
 }
 
 function ifElse(condition, ifBranch, elseBranch) {
