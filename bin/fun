@@ -8,11 +8,11 @@ var // system modules
 	optimist = require('optimist'),
 	fin = require('fin'),
 	browserRequireCompiler = require('require/compiler'),
-	tokenizer = require('../language/tokenizer'),
-	parser = require('../language/parser'),
-	resolver = require('../language/resolver'),
-	compiler = require('../language/compiler'),
-	util = require('../language/util')
+	tokenizer = require('../lib/tokenizer'),
+	parser = require('../lib/parser'),
+	resolver = require('../lib/resolver'),
+	compiler = require('../lib/compiler'),
+	util = require('../lib/util')
 
 /* Commandline options
  *********************/
@@ -94,7 +94,7 @@ function compileFunCode(sourceFile) {
 		ast = parser.parse(tokens),
 		resolved = resolver.resolve(ast),
 		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations),
-		libJS = fs.readFileSync(__dirname + '/../language/lib.js')
+		libJS = fs.readFileSync(__dirname + '/../lib/lib.js')
 	
 	var appHTML = [
 		'<!doctype html>',
