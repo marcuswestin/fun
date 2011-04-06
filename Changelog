@@ -1,3 +1,6 @@
+intented v0.2.4
++ parser unit tests for if statements and composite expressions
+
 v0.2.3
 + Parser improvements
 + Local expressions are now Local item properties, e.g. let name = "marcus" name.set("marcus westin")
