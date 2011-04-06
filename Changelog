@@ -1,5 +1,6 @@
 intented v0.2.4
 + parser unit tests for if statements and composite expressions
++ move all js files into /lib
 
 v0.2.3
 + Parser improvements

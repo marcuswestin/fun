@@ -1,7 +1,7 @@
 var testCase = require('nodeunit').testCase,
 	std = require('std'),
-	parser = require('../language/parser'),
-	tokenizer = require('../language/tokenizer')
+	parser = require('../lib/parser'),
+	tokenizer = require('../lib/tokenizer')
 
 /* TESTS */
 test('text literal', '"hello world"', static("hello world"))
