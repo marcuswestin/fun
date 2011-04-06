@@ -7,10 +7,8 @@ test('compiles something', a.static(1), function(output, assert) {
 })
 
 /* UTIL */
-var nameCount
 function test(name, ast, fn) {
-	nameCount = nameCount + 1 || 1
-	module.exports['test ' +name+' '+nameCount] = function(assert) {
+	module.exports['test ' +name] = function(assert) {
 		var output = compile(ast)
 		fn(output, assert)
 		assert.done()
