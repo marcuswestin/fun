@@ -2,7 +2,7 @@ var std = require('std'),
 	a = require('../astMocks'),
 	resolver = require('../../lib/resolver')
 
-test("resolves a declared alias", [
+test("resolves a declared alias to a local item property", [
 		a.declaration('name', a.static("Marcus")),
 		a.alias("name", "Marcus")],
 	a.property(-1, ["__local_$1"], "Marcus"))
