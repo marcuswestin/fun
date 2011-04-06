@@ -1,4 +1,5 @@
 var testCase = require('nodeunit').testCase,
+	std = require('std'),
 	parser = require('../language/parser'),
 	tokenizer = require('../language/tokenizer')
 
@@ -10,6 +11,9 @@ test('alias single namespace', 'greeting', { type:'ALIAS', namespace:['greeting'
 test('alias double namespace', 'user.name', { type:'ALIAS', namespace:['user','name'] })
 test('parenthesized expression', '(1)', static(1))
 test('double parenthesized expression', '(("hello"))', static("hello"))
+test('addition', '1+1', composite(static(1), '+', static(1)))
+test('parenthesized subtraction', '(((1-1)))', composite(static(1), '-', static(1)))
+test('simple if statement', 'if (1 < 2) { 1 }', ifElse(composite(static(1), '<', static(2)), static(1)))
 
 /* UTIL */
 function test(name, code, expectedAST) {
@@ -24,6 +28,17 @@ function static(value) {
 	var ast = { type:'STATIC', value:value }
 	ast.valueType = typeof value
 	return ast
+}
+
+function ifElse(condition, ifBranch, elseBranch) {
+	if (!std.isArray(ifBranch)) { ifBranch = [ifBranch] }
+	if (elseBranch && !std.isArray(elseBranch)) { elseBranch = [elseBranch] }
+	var ast = { type:'IF_STATEMENT', condition:condition, ifBlock:ifBranch, elseBlock:elseBranch || null }
+	return ast
+}
+
+function composite(left, operator, right) {
+	return { type:'COMPOSITE', left:left, right:right, operator:operator }
 }
 
 function parse(code) {
