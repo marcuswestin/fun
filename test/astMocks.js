@@ -4,6 +4,7 @@ module.exports = {
 	static: static,
 	alias: alias,
 	composite: composite,
+	property: property,
 	declaration: declaration,
 	ifElse: ifElse
 }
@@ -21,6 +22,10 @@ function alias(namespace) {
 
 function composite(left, operator, right) {
 	return { type:'COMPOSITE', left:left, right:right, operator:operator }
+}
+
+function property(id, property, value) {
+	return { type:'ITEM_PROPERTY', value:value, valueType:typeof value, item:{id:id}, property:property }
 }
 
 function declaration(name, value) {
