@@ -94,7 +94,7 @@ function compileFunCode(sourceFile) {
 		ast = parser.parse(tokens),
 		resolved = resolver.resolve(ast),
 		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations),
-		libJS = fs.readFileSync(__dirname + '/../lib/lib.js')
+		runtimeUtilJS = fs.readFileSync(__dirname + '/../lib/runtimeUtil.js')
 	
 	var appHTML = [
 		'<!doctype html>',
@@ -103,7 +103,7 @@ function compileFunCode(sourceFile) {
 		'<body>',
 		'	<script src="http://localhost:8080/fin-models-api.js"></script>',
 		'	<script>',
-			libJS,
+			runtimeUtilJS,
 			compiledJS,
 		'	</script>',
 		'</body>',
