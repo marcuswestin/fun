@@ -20,6 +20,7 @@ test('* operator precedence 1', '1 + 2 * 3', a.composite(a.static(1), '+', a.com
 test('* operator precedence 2', '1 * 2 + 3', a.composite(a.composite(a.static(1), '*', a.static(2)), '+', a.static(3)))
 test('triple nested operators', '1 + 2 + 3 + 4', a.composite(a.static(1), '+', a.composite(a.static(2), '+', a.composite(a.static(3), '+', a.static(4)))))
 test('empty for loop over list literal', 'for (iterator in [1,2,3]) {}', a.forLoop(a.list(a.static(1), a.static(2), a.static(3)), 'iterator', []))
+test('self-closing xml', '<div />', a.xml('div', [], []))
 
 /* UTIL */
 function test(name, code, expectedAST) {

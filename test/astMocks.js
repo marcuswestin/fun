@@ -6,6 +6,7 @@ module.exports = {
 	composite: composite,
 	property: property,
 	list: list,
+	xml: xml,
 	declaration: declaration,
 	ifElse: ifElse,
 	forLoop: forLoop
@@ -32,6 +33,10 @@ function property(id, property, value) {
 
 function list() {
 	return { type:'LIST', content:std.slice(arguments, 0), localName:'_LIST_LITERAL$1' }
+}
+
+function xml(tag, attrs, block) {
+	return { type:'XML', tagName:tag, attributes:attrs, content:block }
 }
 
 function declaration(name, value) {
