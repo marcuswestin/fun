@@ -36,7 +36,7 @@ function list() {
 }
 
 function xml(tag, attrs, block) {
-	return { type:'XML', tagName:tag, attributes:attrs, content:block }
+	return { type:'XML', tagName:tag, attributes:attrs, block:block }
 }
 
 function declaration(name, value) {
