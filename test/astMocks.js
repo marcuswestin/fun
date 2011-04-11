@@ -5,8 +5,10 @@ module.exports = {
 	alias: alias,
 	composite: composite,
 	property: property,
+	list: list,
 	declaration: declaration,
-	ifElse: ifElse
+	ifElse: ifElse,
+	forLoop: forLoop
 }
 
 function static(value) {
@@ -28,6 +30,10 @@ function property(id, property, value) {
 	return { type:'ITEM_PROPERTY', value:value, valueType:typeof value, item:{id:id}, property:property }
 }
 
+function list() {
+	return { type:'LIST', content:std.slice(arguments, 0), localName:'_LIST_LITERAL$1' }
+}
+
 function declaration(name, value) {
 	return { type:'DECLARATION', name:name, value:value }
 }
@@ -39,3 +45,7 @@ function ifElse(condition, ifBranch, elseBranch) {
 	return ast
 }
 
+function forLoop(iterable, iteratorName, block) {
+	var iterator = { type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: { type:'RUNTIME_ITERATOR' } }
+	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
+}
