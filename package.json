@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "optimist": "= 0.1.6",
-    "fin": "= 0.2.13",
+    "fin": "= 0.2.14",
     "require": "= 0.1.10",
     "nodeunit": "= 0.5.1",
-	"std": "= 0.1.10"
+	"std": "= 0.1.11"
   },
   "directories": {
     "lib": "."
