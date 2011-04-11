@@ -1,4 +1,4 @@
-intented v0.2.4
+v0.2.4
 + operator presedence in parser
 + parser unit tests for if statements, composite expressions, and operator presedence
 + use latest fin
