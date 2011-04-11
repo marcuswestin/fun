@@ -16,6 +16,9 @@ test('parenthesized subtraction', '(((1-1)))', a.composite(a.static(1), '-', a.s
 test('simple if statement', 'if (1 < 2) { 1 }', a.ifElse(a.composite(a.static(1), '<', a.static(2)), a.static(1)))
 test('has no null statements or expressions', '\nlet foo="bar"\n1\n\n', [a.declaration("foo",a.static("bar")), a.static(1)])
 test('parses empty program', '', [])
+test('* operator precedence 1', '1 + 2 * 3', a.composite(a.static(1), '+', a.composite(a.static(2), '*', a.static(3))))
+test('* operator precedence 2', '1 * 2 + 3', a.composite(a.composite(a.static(1), '*', a.static(2)), '+', a.static(3)))
+test('triple nested operators', '1 + 2 + 3 + 4', a.composite(a.static(1), '+', a.composite(a.static(2), '+', a.composite(a.static(3), '+', a.static(4)))))
 
 /* UTIL */
 function test(name, code, expectedAST) {
