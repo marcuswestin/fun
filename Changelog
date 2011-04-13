@@ -1,4 +1,4 @@
-v0.2.4.1
+v0.2.5
 + Fix parsing of empty XML tags
 + Add parser and resolver test cases for XML
 + examples/chat.fun works again :)
