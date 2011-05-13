@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 
-var // system modules
-	fs = require('fs'),
+var fs = require('fs'),
 	sys = require('sys'),
 	http = require('http'),
 	path = require('path'),
 	optimist = require('optimist'),
 	fin = require('fin'),
-	browserRequireCompiler = require('require/compiler'),
+	requireCompiler = require('require/compiler'),
+	requireServer = require('require/server'),
 	tokenizer = require('../lib/tokenizer'),
 	parser = require('../lib/parser'),
 	resolver = require('../lib/resolver'),
-	compiler = require('../lib/compiler'),
-	util = require('../lib/util')
+	compiler = require('../lib/compiler')
 
 /* Commandline options
  *********************/
@@ -24,97 +23,39 @@ var sourceFile = argv._[0],
 	host = argv.host || '127.0.0.1',
 	engineName = argv.engine || 'development'
 
-/* Ladies and gentlemen, START YOUR ENGINES!
- * Look at the command line arguments and act
- * accordingly.
- ********************************************/
 if (argv.h || argv.help) {
-	output(fs.readFileSync('./help.txt'))
-} else if (argv.s || argv['static']) {
-	console.log('compiling fun code...')
-	var funAppHTML = compileFunCode(sourceFile)
-	console.log('done!')
-	
-	function printStaticFunApp(jsCode) {
-		var staticFunApp = funAppHTML.replace(
-			'<script src="http://localhost:8080/fin-models-api.js"></script>',
-			'<script>\n' + jsCode + '\n</script>')
-		output(staticFunApp)
-	}
-	
-	if (argv.compress) {
-		console.log('compressing output with google closure compiler...')
-		browserRequireCompiler.compressJS(funAppJS, printStaticFunApp)
-		console.log('done!')
-	} else {
-		printStaticFunApp(funAppJS)
-	}
+	sys.puts(fs.readFileSync('./help.txt'))
 } else {
-	var engine = require('fin/engines/'+engineName),
-		funAppHTML = compileFunCode(sourceFile),
-		httpServer = startHTTPServer(funAppHTML)
-
-	var host = 'localhost',
-		port = 8080
-	console.log('\nFun running', sourceFile, 'on', host+':'+port, 'with engine', engineName)
-	return fin.start(host, port, engine, httpServer)
-}
-
-/* These are the functions that actually do something,
- * based on what you passed in as arguments to fun
- *****************************************************/
-function startHTTPServer(html) {
-	var contentTypes = {
-		'.js':   'application/javascript',
-		'.css':  'text/css',
-		'.html': 'text/html'
-	}
-	
-	var httpServer = http.createServer(function(req, res) {
-		var requestPath = req.url.replace(/\.\./g, '') // don't want visitors to climb the path
-		if (requestPath == '/') {
-			res.writeHead(200)
-			res.end(html)
-		} else {
-			fs.readFile(__dirname + '/../' + requestPath, function(err, text) {
-				var extension = path.extname(requestPath)
-				res.writeHead(err ? 404 : 200, {
-					'Content-Type':contentTypes[extension]
-				})
-				res.end(text || '')
-			})
-		}
+	var engine = require('fin/engines/'+engineName)
+	var server = http.createServer(function(req, res) {
+		if (req.url == '/') { res.end(compileAppHTML()) }
 	})
-	httpServer.listen(port, host)
-	return httpServer
+	server.listen(port, host)
+	requireServer.mount(server)
+	fin.mount(server, engine)
+	console.log("running", sourceFile, "on", host, port)
 }
 
-function compileFunCode(sourceFile) {
+function compileAppHTML() {
+	return [
+		'<!doctype html>',
+		'<html>',
+		'<head></head>',
+		'<body>',
+		'	<script src="/require/fin/api/models"></script>',
+		'	<script>',
+			compileAppJS(),
+		'	</script>',
+		'</body>',
+		'</html>'
+	].join('\n')
+}
+
+function compileAppJS() {
 	var tokens = tokenizer.tokenizeFile(sourceFile),
 		ast = parser.parse(tokens),
 		resolved = resolver.resolve(ast),
 		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations),
 		runtimeUtilJS = fs.readFileSync(__dirname + '/../lib/runtimeUtil.js')
-	
-	var appHTML = [
-		'<!doctype html>',
-		'<html>',
-		'<head></head>',
-		'<body>',
-		'	<script src="http://localhost:8080/fin-models-api.js"></script>',
-		'	<script>',
-			runtimeUtilJS,
-			compiledJS,
-		'	</script>',
-		'</body>',
-		'</html>'
-	].join('\n')
-	
-	return appHTML
-}
-
-/* Utility functions
- *******************/
-function output() {
-	sys.puts.apply(this, arguments)
+	return runtimeUtilJS + "\n" + compiledJS
 }
