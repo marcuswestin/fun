@@ -1,6 +1,9 @@
 TODO
 - write unit tests
 
+intended v0.4.4
++ Import js files directly under node_modules correctly, e.g. ./node_modules/foo.js
+
 v0.4.3
 + Fix import of socket.io browser npm module
 + Enable nested npm module imports by reimplementing node's require.resolve algorithm

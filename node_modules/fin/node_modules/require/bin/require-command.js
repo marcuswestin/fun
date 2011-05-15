@@ -6,7 +6,6 @@ var path = require('path'),
 	compiler = require('../compiler')
 
 var opts = {
-	paths:   [],
 	port:    1234,
 	host:    'localhost',
 	command: null,
@@ -48,7 +47,6 @@ switch (opts.command) {
 			console.log('Specify a single file to compile, e.g. require compile ./path/to/file.js')
 			process.exit(1)
 		}
-		for (var i=0; i<opts.paths.length; i++) { compiler.addPath(opts.paths[i]) }
 		sys.print(compiler.compile(opts.path))
 		break
 	default:

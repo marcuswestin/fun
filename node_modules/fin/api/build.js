@@ -18,7 +18,7 @@ var paths = {
 
 var out = {
 	client: 'fin-client',
-	models: 'fin-models-client'
+	models: 'fin-orm'
 }
 
 compile.forEach(function(target) {

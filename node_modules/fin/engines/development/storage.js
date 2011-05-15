@@ -2,7 +2,7 @@ var fs = require('fs'),
 	path = require('path')
 
 var data = {},
-	dataDumpFile = './node-engine-dump.json'
+	dataDumpFile = './_development-engine-dump.json'
 
 if (path.existsSync(dataDumpFile)) {
 	console.log('node engine found ' + dataDumpFile + ' - loading data...')

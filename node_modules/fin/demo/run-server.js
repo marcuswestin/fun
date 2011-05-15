@@ -11,8 +11,9 @@ var server = http.createServer(function(req, res) {
 })
 
 fin.mount(server, engine)
-requireServer.mount(server)
+requireServer.mount(server, __dirname)
 server.listen(1234)
+console.log('listening on :1234')
 
 function listDemos(res) {
 	fs.readdir(__dirname, function(err, entries) {

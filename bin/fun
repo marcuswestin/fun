@@ -6,8 +6,6 @@ var fs = require('fs'),
 	path = require('path'),
 	optimist = require('optimist'),
 	fin = require('fin'),
-	requireCompiler = require('require/compiler'),
-	requireServer = require('require/server'),
 	tokenizer = require('../lib/tokenizer'),
 	parser = require('../lib/parser'),
 	resolver = require('../lib/resolver'),
@@ -31,7 +29,6 @@ if (argv.h || argv.help) {
 		if (req.url == '/') { res.end(compileAppHTML()) }
 	})
 	server.listen(port, host)
-	requireServer.mount(server)
 	fin.mount(server, engine)
 	console.log("running", sourceFile, "on", host, port)
 }
@@ -42,7 +39,7 @@ function compileAppHTML() {
 		'<html>',
 		'<head></head>',
 		'<body>',
-		'	<script src="/require/fin/api/models"></script>',
+		'	<script src="/fin-orm.js"></script>',
 		'	<script>',
 			compileAppJS(),
 		'	</script>',
