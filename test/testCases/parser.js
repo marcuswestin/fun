@@ -4,31 +4,92 @@ var std = require('std'),
 	a = require('../astMocks')
 
 /* TESTS */
-test('text literal', '"hello world"', a.static("hello world"))
-test('number literal', '1', a.static(1))
-test('declaration', 'let greeting = "hello"', a.declaration('greeting', a.static("hello")))
-test('alias single namespace', 'greeting', a.alias('greeting'))
-test('alias double namespace', 'user.name', a.alias('user.name'))
-test('parenthesized expression', '(1)', a.static(1))
-test('double parenthesized expression', '(("hello"))', a.static("hello"))
-test('addition', '1+1', a.composite(a.static(1), '+', a.static(1)))
-test('parenthesized subtraction', '(((1-1)))', a.composite(a.static(1), '-', a.static(1)))
-test('simple if statement', 'if (1 < 2) { 1 }', a.ifElse(a.composite(a.static(1), '<', a.static(2)), a.static(1)))
-test('has no null statements or expressions', '\nlet foo="bar"\n1\n\n', [a.declaration("foo",a.static("bar")), a.static(1)])
-test('parses empty program', '', [])
-test('* operator precedence 1', '1 + 2 * 3', a.composite(a.static(1), '+', a.composite(a.static(2), '*', a.static(3))))
-test('* operator precedence 2', '1 * 2 + 3', a.composite(a.composite(a.static(1), '*', a.static(2)), '+', a.static(3)))
-test('triple nested operators', '1 + 2 + 3 + 4', a.composite(a.static(1), '+', a.composite(a.static(2), '+', a.composite(a.static(3), '+', a.static(4)))))
-test('empty for loop over list literal', 'for (iterator in [1,2,3]) {}', a.forLoop(a.list(a.static(1), a.static(2), a.static(3)), 'iterator', []))
-test('self-closing xml', '<div />', a.xml('div', [], []))
+test('text literal')
+	.input('"hello world"')
+	.expect(a.static("hello world"))
+
+test('number literal')
+	.input('1')
+	.expect(a.static(1))
+
+test('declaration')
+	.input('let greeting = "hello"')
+	.expect(a.declaration('greeting', a.static("hello")))
+
+test('alias single namespace')
+	.input('greeting')
+	.expect(a.alias('greeting'))
+
+test('alias double namespace')
+	.input('user.name')
+	.expect(a.alias('user.name'))
+
+test('parenthesized expression')
+	.input('(1)')
+	.expect(a.static(1))
+
+test('double parenthesized expression')
+	.input('(("hello"))')
+	.expect(a.static("hello"))
+
+test('addition')
+	.input('1+1')
+	.expect(a.composite(a.static(1), '+', a.static(1)))
+
+test('parenthesized subtraction')
+	.input('(((1-1)))')
+	.expect(a.composite(a.static(1), '-', a.static(1)))
+
+test('simple if statement')
+	.input('if (1 < 2) { 1 }')
+	.expect(a.ifElse(a.composite(a.static(1), '<', a.static(2)), a.static(1)))
+
+test('has no null statements or expressions')
+	.input('\nlet foo="bar"\n1\n\n')
+	.expect(a.declaration("foo",a.static("bar")), a.static(1))
+
+test('parses empty program')
+	.input('')
+	.expect()
+
+test('* operator precedence 1')
+	.input('1 + 2 * 3')
+	.expect(a.composite(a.static(1), '+', a.composite(a.static(2), '*', a.static(3))))
+
+test('* operator precedence 2')
+	.input('1 * 2 + 3')
+	.expect(a.composite(a.composite(a.static(1), '*', a.static(2)), '+', a.static(3)))
+
+test('triple nested operators')
+	.input('1 + 2 + 3 + 4')
+	.expect(a.composite(a.static(1), '+', a.composite(a.static(2), '+', a.composite(a.static(3), '+', a.static(4)))))
+
+test('empty for loop over list literal')
+	.input('for (iterator in [1,2,3]) {}')
+	.expect(a.forLoop(a.list(a.static(1), a.static(2), a.static(3)), 'iterator', []))
+
+test('self-closing xml')
+	.input('<div />')
+	.expect(a.xml('div', [], []))
 
 /* UTIL */
-function test(name, code, expectedAST) {
-	module.exports['test '+name] = function(assert) {
-		var ast = parse(code)
-		assert.deepEqual(ast, expectedAST)
-		assert.done()
+function test(name) {
+	var input
+	var testObj = {
+		input: function() {
+			input = std.slice(arguments).join('\n')
+			return testObj
+		},
+		expect: function() {
+			var expected = std.slice(arguments)
+			module.exports['test resolver '+name] = function(assert) {
+				var output = parse(input)
+				assert.deepEqual(output, expected)
+				assert.done()
+			}
+		}
 	}
+	return testObj
 }
 
 function parse(code) {
