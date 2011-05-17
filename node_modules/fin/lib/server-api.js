@@ -28,8 +28,8 @@ function mount(server, engine) {
 	data.setEngine(engine)
 
 	server.on('request', function(req, res) {
-		if (req.url == '/fin-client.js') { res.end(clientJS) }
-		else if (req.url == '/fin-orm.js') { res.end(ormJS) }
+		if (req.url == '/fin/client.js') { res.end(clientJS) }
+		else if (req.url == '/fin/orm.js') { res.end(ormJS) }
 	})
 
 	var socket = io.listen(server)

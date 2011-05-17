@@ -39,7 +39,7 @@ function compileAppHTML() {
 		'<html>',
 		'<head></head>',
 		'<body>',
-		'	<script src="/fin-orm.js"></script>',
+		'	<script src="/fin/orm.js"></script>',
 		'	<script>',
 			compileAppJS(),
 		'	</script>',
