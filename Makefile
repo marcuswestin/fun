@@ -1,3 +1,3 @@
 .PHONY: test
 test:
-	nodeunit test/testCases
+	./node_modules/.bin/nodeunit test/testCases
