@@ -15,7 +15,7 @@ var opts = {
 var args = [].slice.call(process.argv, 2)
 
 opts.command = args.shift()
-opts.path = args.shift()
+opts.path = path.resolve(args.shift())
 
 while (args.length) {
 	var arg = args.shift()
@@ -40,7 +40,7 @@ switch (opts.command) {
 			process.exit(1)
 		}
 		server.listen(opts.port, { host:opts.host, path:opts.path })
-		console.log('serving', opts.path, 'on', 'http://'+opts.host+':'+opts.port)
+		console.log('serving from', opts.path, 'on', 'http://'+opts.host+':'+opts.port)
 		break
 	case 'compile':
 		if (!opts.path) {

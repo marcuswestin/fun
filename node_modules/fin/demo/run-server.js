@@ -1,7 +1,6 @@
 var http = require('http'),
 	fs = require('fs')
-	requireServer = require('require/server'),
-	fin = require('../api/server'),
+	fin = require('../lib/server-api'),
 	engine = require('../engines/development')
 
 var server = http.createServer(function(req, res) {
@@ -11,7 +10,6 @@ var server = http.createServer(function(req, res) {
 })
 
 fin.mount(server, engine)
-requireServer.mount(server, __dirname)
 server.listen(1234)
 console.log('listening on :1234')
 

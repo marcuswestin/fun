@@ -1,7 +1,7 @@
 TODO
 - write unit tests
 
-intended v0.4.4
+v0.4.4
 + Import js files directly under node_modules correctly, e.g. ./node_modules/foo.js
 
 v0.4.3

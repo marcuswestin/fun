@@ -7,7 +7,11 @@
     "type": "git",
     "url": "git://github.com/marcuswestin/fin.git"
   },
-  "main": "api/server",
+  "main": "lib/server-api",
+  "scripts": {
+    "install":"./bin/build"
+  },
+  "build": "node scripts/build.js",
   "bin": {
     "fin": "./bin/fin"
   },
