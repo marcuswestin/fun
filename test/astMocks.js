@@ -32,7 +32,7 @@ function property(id, property, value) {
 }
 
 function list() {
-	return { type:'LIST', content:std.slice(arguments, 0), localName:'_LIST_LITERAL$1' }
+	return { type:'LIST', content:std.slice(arguments, 0), localName:'_LIST_LITERAL$0' }
 }
 
 function xml(tag, attrs, block) {
