@@ -1,3 +1,6 @@
+v0.2.6
++ npm install works again
+
 v0.2.5
 + Fix parsing of empty XML tags
 + Add parser and resolver test cases for XML

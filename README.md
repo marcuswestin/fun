@@ -4,7 +4,7 @@ A declarative programming language for realtime web applications
 
 Getting started
 ----------------------
-	npm install fun
+	sudo npm install -g fun
 	echo '"Hello world!"' > hello.fun
 	fun hello.fun
 	# Open your browser to localhost:8080
