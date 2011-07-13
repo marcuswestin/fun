@@ -2,6 +2,10 @@ fun
 ===
 A declarative programming language for realtime web applications
 
+Broken
+======
+Build is currently broken. If anyone cares I'll be incentivized to fix it and get started with Fun again :)
+
 Getting started
 ----------------------
 	sudo npm install -g fun
