@@ -20,7 +20,7 @@ Facebook Connect
 	let name = Facebook.user.name,
 		fbAppID = '177253448965438'
 	if (Facebook.connected) {
-		if (name) { <div>"Welcome " name</div }
+		if (name) { <div>"Welcome " name</div> }
 		<div>"Your ID is " Facebook.user.id</div>
 	} else {
 		<button>"Connect"</button onclick=handler() {
