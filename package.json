@@ -13,7 +13,6 @@
     "fun": "./bin/fun"
   },
   "dependencies": {
-    "optimist": "= 0.1.6",
     "nodeunit": "= 0.5.1"
   },
   "directories": {
