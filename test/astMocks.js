@@ -9,7 +9,10 @@ module.exports = {
 	xml: xml,
 	declaration: declaration,
 	ifElse: ifElse,
-	forLoop: forLoop
+	forLoop: forLoop,
+	importFile: importFile,
+	importModule: importModule,
+	inlineScript:inlineScript
 }
 
 function static(value) {
@@ -53,4 +56,16 @@ function ifElse(condition, ifBranch, elseBranch) {
 function forLoop(iterable, iteratorName, block) {
 	var iterator = { type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: { type:'RUNTIME_ITERATOR' } }
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
+}
+
+function importFile(path) {
+	return { type:'IMPORT_FILE', path:path }
+}
+
+function importModule(name) {
+	return { type:'IMPORT_MODULE', name:name }
+}
+
+function inlineScript(js) {
+	return { type:'INLINE_SCRIPT', inlineJavascript:js }
 }

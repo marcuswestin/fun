@@ -72,6 +72,10 @@ test('self-closing xml')
 	.input('<div />')
 	.expect(a.xml('div', [], []))
 
+test('inline javascript')
+	.input('<script> var i = 1; function a() { alert(i++) }; setInterval(a); </script> let a = 1')
+	.expect(a.inlineScript(' var i = 1; function a() { alert(i++) }; setInterval(a);'), a.declaration('a', a.static(1)))
+
 /* UTIL */
 function test(name) {
 	var input
