@@ -1,4 +1,5 @@
-var std = require('std')
+var std = require('std'),
+	util = require('../lib/util')
 
 module.exports = {
 	static: static,
