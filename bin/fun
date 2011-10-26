@@ -5,7 +5,6 @@ var fs = require('fs'),
 	http = require('http'),
 	path = require('path'),
 	optimist = require('optimist'),
-	fin = require('fin'),
 	tokenizer = require('../lib/tokenizer'),
 	parser = require('../lib/parser'),
 	resolver = require('../lib/resolver'),
@@ -13,52 +12,48 @@ var fs = require('fs'),
 
 /* Commandline options
  *********************/
-var argv = optimist.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=8080 --engine=[development,redis]]').argv
+var argv = optimist.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=8080]').argv
 
 // Variables
-var sourceFile = argv._[0],
-	port = argv.port || 8080,
-	host = argv.host || '127.0.0.1',
-	engineName = argv.engine || 'development'
+var port = argv.port || 8080,
+	host = argv.host || '127.0.0.1'
 
 if (argv.h || argv.help) {
 	sys.puts(fs.readFileSync('./help.txt'))
-} else {
-	var engine = require('fin/engines/'+engineName)
-	var server = http.createServer(function(req, res) {
-		if (req.url == '/') {
-			try {
-				res.end(compileAppHTML())
-			} catch(e) {
-				res.end('ERROR ' + e.message)
-			}
-		}
-	})
-	server.listen(port, host)
-	fin.mount(server, engine)
-	console.log("running", sourceFile, "on", host, port)
+	process.exit(0)
 }
 
-function compileAppHTML() {
+http.createServer(function(req, res) {
+	if (req.url == '/favicon.ico') { return res.end(); }
+	var filePath = __dirname + '/../examples' + req.url
+	if (!fs.statSync(filePath).isFile()) {
+		res.end('Not found. Try /simple.fun')
+		return
+	}
+	try {
+		res.end(compileAppHTML(filePath))
+	} catch(e) {
+		res.end(e.stack)
+	}
+}).listen(port, host)
+console.log("fun running in development mode on", host+':'+port)
+
+function compileAppHTML(sourceFile) {
+	var tokens = tokenizer.tokenizeFile(sourceFile),
+		ast = parser.parse(tokens),
+		resolved = resolver.resolve(ast),
+		compiledJS = compiler.compile(resolved),
+		runtimeUtilJS = fs.readFileSync(__dirname + '/../lib/runtimeUtil.js')
+	
 	return [
 		'<!doctype html>',
 		'<html>',
 		'<head></head>',
 		'<body>',
-		'	<script src="/fin/orm.js"></script>',
 		'	<script>',
-			compileAppJS(),
+			runtimeUtilJS + "\n" + compiledJS,
 		'	</script>',
 		'</body>',
 		'</html>'
 	].join('\n')
-}
-
-function compileAppJS() {
-	var tokens = tokenizer.tokenizeFile(sourceFile),
-		ast = parser.parse(tokens),
-		resolved = resolver.resolve(ast),
-		compiledJS = compiler.compile(resolved.ast, resolved.modules, resolved.declarations),
-		runtimeUtilJS = fs.readFileSync(__dirname + '/../lib/runtimeUtil.js')
-	return runtimeUtilJS + "\n" + compiledJS
 }
