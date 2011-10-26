@@ -1,17 +1,9 @@
 var std = require('std'),
 	parser = require('../../lib/parser'),
 	tokenizer = require('../../lib/tokenizer'),
-	a = require('../astMocks'),
+	a = require('../parser-mocks'),
 	util = require("../../lib/util")
 
-function object(kvps) {
-	var content = []
-	for (var key in kvps) { content.push({ name:key, value:kvps[key] }) }
-	return { type:'OBJECT_LITERAL', content:content }
-}
-
-
-/* TESTS */
 test('text literal')
 	.code('"hello world"')
 	.expect(a.literal("hello world"))
@@ -96,8 +88,8 @@ test('nested declaration')
 	.code('let Foo = { nested: { cat:"yay" } }, Bar = Foo.nested\n Foo Bar Foo.nested')
 	.expect(
 		a.declarations(
-			'Foo', object({
-				nested:object({ cat:a.literal('yay') })
+			'Foo', a.object({
+				nested:a.object({ cat:a.literal('yay') })
 			}),
 			'Bar', a.alias('Foo.nested')
 		),
@@ -105,9 +97,10 @@ test('nested declaration')
 
 test('just a declaration')
 	.code('let Foo = { bar:1 }')
-	.expect(a.declaration('Foo', object({ bar:a.literal(1) })))
+	.expect(a.declaration('Foo', a.object({ bar:a.literal(1) })))
 
-/* UTIL */
+/* Util
+ ******/
 function test(name) {
 	util.resetUniqueID()
 	var input
@@ -118,35 +111,16 @@ function test(name) {
 			return this
 		},
 		expect: function() {
-			var expected = std.slice(arguments)
+			var expected = std.slice(arguments),
+				tokens = tokenizer.tokenize(input)
 			module.exports['parse\t\t"'+name+'"'] = function(assert) {
-				assert.doesNotThrow(function() {
-					util.resetUniqueID()
-					try { var output = parse(input) }
-					catch(e) { console.log("ERROR", e); throw e; }
-					assert.deepEqual(output, expected)
-					assert.done()
-					return this
-				})
+				util.resetUniqueID()
+				try { var output = parser.parse(tokens) }
+				catch(e) { console.log("Parser threw: ", e); throw e; }
+				assert.deepEqual(output, expected)
+				assert.done()
 			}
+			return this
 		}
 	}
 }
-
-function parse(code) {
-	tokens = tokenizer.tokenize(code)
-	return pruneInfo(parser.parse(tokens))
-}
-
-function pruneInfo(ast) {
-	if (std.isArray(ast)) {
-		return std.map(ast, pruneInfo)
-	} else {
-		for (var key in ast) {
-			if (key == 'info') { delete ast[key] }
-			else if (typeof ast[key] == 'object') { pruneInfo(ast[key]) }
-		}
-		return ast
-	}
-}
-

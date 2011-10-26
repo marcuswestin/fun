@@ -1,27 +1,9 @@
 var std = require('std'),
-	a = require('../astMocks'),
+	a = require('../resolver-mocks'),
 	resolver = require('../../lib/resolver'),
 	parser = require('../../lib/parser'),
 	tokenizer = require('../../lib/tokenizer'),
 	util = require('../../lib/util')
-
-
-function ref(id, value) {
-	var references = ref.references
-	if (value) {
-		if (references[id]) { throw new Error("Same test reference declared twice") }
-		references[id] = value
-	} else {
-		if (!references[id]) { throw new Error("Referenced undeclared test reference") }
-	}
-	return references[id]
-}
-ref.clear = function() { ref.references = {} }
-
-function object(resolvedKVPs) {
-	return { type:'OBJECT_LITERAL', resolved:resolvedKVPs }
-}
-
 
 test("a declared alias for a string")
 	.code(
@@ -54,14 +36,14 @@ test('nested declarations')
 		'	cat = Bar.cat',
 		'Foo.nested.cat Bar.cat cat Bar')
 	.declarations(ref(1, a.value("yay")))
-	.expressions([], ref(1), ref(1), ref(1), object({ cat:ref(1) }))
+	.expressions([], ref(1), ref(1), ref(1), a.object({ cat:ref(1) }))
 
 
-/* UTIL */
-
+/* Util
+ ******/
 function test(name) {
 	util.resetUniqueID()
-	ref.clear()
+	ref.references = {}
 	var inputCode
 	return {
 		code: function(/* line1, line2, ... */) {
@@ -92,4 +74,15 @@ function test(name) {
 			assert.done()
 		}
 	}
+}
+
+function ref(id, value) {
+	var references = ref.references
+	if (value) {
+		if (references[id]) { throw new Error("Same test reference declared twice") }
+		references[id] = value
+	} else {
+		if (!references[id]) { throw new Error("Referenced undeclared test reference") }
+	}
+	return references[id]
 }
