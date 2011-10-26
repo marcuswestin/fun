@@ -26,7 +26,13 @@ if (argv.h || argv.help) {
 } else {
 	var engine = require('fin/engines/'+engineName)
 	var server = http.createServer(function(req, res) {
-		if (req.url == '/') { res.end(compileAppHTML()) }
+		if (req.url == '/') {
+			try {
+				res.end(compileAppHTML())
+			} catch(e) {
+				res.end('ERROR ' + e.message)
+			}
+		}
 	})
 	server.listen(port, host)
 	fin.mount(server, engine)
