@@ -1,36 +1,95 @@
 var std = require('std'),
 	a = require('../astMocks'),
-	resolver = require('../../lib/resolver')
+	resolver = require('../../lib/resolver'),
+	parser = require('../../lib/parser'),
+	tokenizer = require('../../lib/tokenizer'),
+	util = require('../../lib/util')
 
-test("resolves a declared alias to a local item property")
-	.input(a.declaration('name', a.static("Marcus")), a.alias("name", "Marcus"))
-	.expect(a.property(-1, ["__local_$1"], "Marcus"))
 
-test("resolved empty XML")
-	.input(a.xml('div', [], []))
-	.expect(a.xml('div', [], []))
-
-// a.forLoop(a.list(a.static(1), a.static(2), a.static(3)), 'iterator', [])
-/* UTIL */
-function test(name) {
-	var inputAST
-	var testObj = {
-		input: function() {
-			inputAST = std.slice(arguments)
-			return testObj
-		},
-		expect: function() {
-			var expectedAST = std.slice(arguments)
-			module.exports['test resolver '+name] = function(assert) {
-				var resolvedAST = resolve(inputAST)
-				assert.deepEqual(resolvedAST, expectedAST)
-				assert.done()
-			}
-		}
+function ref(id, value) {
+	var references = ref.references
+	if (value) {
+		if (references[id]) { throw new Error("Same test reference declared twice") }
+		references[id] = value
+	} else {
+		if (!references[id]) { throw new Error("Referenced undeclared test reference") }
 	}
-	return testObj
+	return references[id]
+}
+ref.clear = function() { ref.references = {} }
+
+function object(resolvedKVPs) {
+	return { type:'OBJECT_LITERAL', resolved:resolvedKVPs }
 }
 
-function resolve(ast) {
-	return resolver.resolve(ast).ast
+
+test("a declared alias for a string")
+	.code(
+		'let guy = "Marcus"',
+		'guy'
+	)
+	.declarations(ref(1, a.value('Marcus')))
+	.expressions(a.value('Marcus'))
+	.expressions(ref(1))
+
+test("an empty div")
+	.code(
+		'<div/>'
+	)
+	.expressions(a.xml('div'))
+
+test("two nested properties")
+	.code(
+		'let Foo = { bar:1, cat:"cat" }',
+		'Foo.bar Foo.cat'
+	)
+	.declarations(ref(1, a.value(1)), ref(2, a.value("cat")))
+	.expressions(a.value(1), a.value("cat"))
+	.expressions(ref(1), ref(2))
+
+test('nested declarations')
+	.code(
+		'let Foo = { nested: { cat:"yay" } },',
+		'	Bar = Foo.nested,',
+		'	cat = Bar.cat',
+		'Foo.nested.cat Bar.cat cat Bar')
+	.declarations(ref(1, a.value("yay")))
+	.expressions([], ref(1), ref(1), ref(1), object({ cat:ref(1) }))
+
+
+/* UTIL */
+
+function test(name) {
+	util.resetUniqueID()
+	ref.clear()
+	var inputCode
+	return {
+		code: function(/* line1, line2, ... */) {
+			inputCode = std.slice(arguments).join('\n')
+			return this
+		},
+		expressions: function() {
+			runTest('expressions', std.slice(arguments))
+			return this
+		},
+		declarations: function() {
+			runTest('declarations', std.slice(arguments))
+			return this
+		}
+	}
+	function runTest(type, expectedAST) {
+		var inputAST = parser.parse(tokenizer.tokenize(inputCode))
+		util.resetUniqueID() // TODO the unique IDs function should probably be on the resolver
+		var count = 1,
+			testName = type+'\t'+'"'+name+'" ' + (count++ == 1 ? '' : count)
+		while (module.exports[testName]) {
+			testName = type+'\t'+'"'+name+'" ' + (count++)
+		}
+		module.exports[testName] = function(assert) {
+			try { var actualAST = resolver.resolve(inputAST)[type] }
+			catch(e) { console.log('resolver threw', e.stack) }
+			assert.deepEqual(expectedAST, actualAST)
+			assert.done()
+		}
+	}
 }

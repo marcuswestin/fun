@@ -2,13 +2,16 @@ var std = require('std'),
 	util = require('../lib/util')
 
 module.exports = {
-	static: static,
+	value: value,
+	literal: literal,
 	alias: alias,
+	aliases: aliases,
 	composite: composite,
-	property: property,
+	value: value,
 	list: list,
 	xml: xml,
 	declaration: declaration,
+	declarations: declarations,
 	ifElse: ifElse,
 	forLoop: forLoop,
 	importFile: importFile,
@@ -16,8 +19,14 @@ module.exports = {
 	inlineScript:inlineScript
 }
 
-function static(value) {
-	var ast = { type:'STATIC', value:value }
+function literal(value) {
+	return { type:'VALUE_LITERAL', value:value }
+}
+
+function value(value) {
+	var ast = util.create({ uniqueID:util.uniqueID() })
+	ast.type = 'VALUE'
+	ast.initialValue = value
 	ast.valueType = typeof value
 	return ast
 }
@@ -27,12 +36,10 @@ function alias(namespace) {
 	return { type:'ALIAS', namespace:namespace }
 }
 
+function aliases() {}
+
 function composite(left, operator, right) {
 	return { type:'COMPOSITE', left:left, right:right, operator:operator }
-}
-
-function property(id, property, value) {
-	return { type:'ITEM_PROPERTY', value:value, valueType:typeof value, item:{id:id}, property:property }
 }
 
 function list() {
@@ -40,11 +47,19 @@ function list() {
 }
 
 function xml(tag, attrs, block) {
-	return { type:'XML', tagName:tag, attributes:attrs, block:block }
+	return { type:'XML', tagName:tag, attributes:attrs || [], block:block || [] }
 }
 
 function declaration(name, value) {
 	return { type:'DECLARATION', name:name, value:value }
+}
+
+function declarations(name1, value1 /*, ... */) {
+	var decls = []
+	for (var i=0; i<arguments.length; i+=2) {
+		decls.push(declaration(arguments[i], arguments[i+1]))
+	}
+	return decls
 }
 
 function ifElse(condition, ifBranch, elseBranch) {

@@ -1,99 +1,136 @@
 var std = require('std'),
 	parser = require('../../lib/parser'),
 	tokenizer = require('../../lib/tokenizer'),
-	a = require('../astMocks')
+	a = require('../astMocks'),
+	util = require("../../lib/util")
+
+function object(kvps) {
+	var content = []
+	for (var key in kvps) { content.push({ name:key, value:kvps[key] }) }
+	return { type:'OBJECT_LITERAL', content:content }
+}
+
 
 /* TESTS */
 test('text literal')
-	.input('"hello world"')
-	.expect(a.static("hello world"))
+	.code('"hello world"')
+	.expect(a.literal("hello world"))
 
 test('number literal')
-	.input('1')
-	.expect(a.static(1))
+	.code('1')
+	.expect(a.literal(1))
 
 test('declaration')
-	.input('let greeting = "hello"')
-	.expect(a.declaration('greeting', a.static("hello")))
+	.code('let greeting = "hello"')
+	.expect(a.declaration('greeting', a.literal("hello")))
 
 test('alias single namespace')
-	.input('greeting')
+	.code('greeting')
 	.expect(a.alias('greeting'))
 
 test('alias double namespace')
-	.input('user.name')
+	.code('user.name')
 	.expect(a.alias('user.name'))
 
 test('parenthesized expression')
-	.input('(1)')
-	.expect(a.static(1))
+	.code('(1)')
+	.expect(a.literal(1))
 
 test('double parenthesized expression')
-	.input('(("hello"))')
-	.expect(a.static("hello"))
+	.code('(("hello"))')
+	.expect(a.literal("hello"))
 
 test('addition')
-	.input('1+1')
-	.expect(a.composite(a.static(1), '+', a.static(1)))
+	.code('1+1')
+	.expect(a.composite(a.literal(1), '+', a.literal(1)))
 
 test('parenthesized subtraction')
-	.input('(((1-1)))')
-	.expect(a.composite(a.static(1), '-', a.static(1)))
+	.code('(((1-1)))')
+	.expect(a.composite(a.literal(1), '-', a.literal(1)))
 
 test('simple if statement')
-	.input('if (1 < 2) { 1 }')
-	.expect(a.ifElse(a.composite(a.static(1), '<', a.static(2)), a.static(1)))
+	.code('if (1 < 2) { 1 }')
+	.expect(a.ifElse(a.composite(a.literal(1), '<', a.literal(2)), a.literal(1)))
 
 test('has no null statements or expressions')
-	.input('\nlet foo="bar"\n1\n\n')
-	.expect(a.declaration("foo",a.static("bar")), a.static(1))
+	.code('\nlet foo="bar"\n1\n\n')
+	.expect(a.declaration("foo",a.literal("bar")), a.literal(1))
 
 test('parses empty program')
-	.input('')
+	.code('')
 	.expect()
 
 test('* operator precedence 1')
-	.input('1 + 2 * 3')
-	.expect(a.composite(a.static(1), '+', a.composite(a.static(2), '*', a.static(3))))
+	.code('1 + 2 * 3')
+	.expect(a.composite(a.literal(1), '+', a.composite(a.literal(2), '*', a.literal(3))))
 
 test('* operator precedence 2')
-	.input('1 * 2 + 3')
-	.expect(a.composite(a.composite(a.static(1), '*', a.static(2)), '+', a.static(3)))
+	.code('1 * 2 + 3')
+	.expect(a.composite(a.composite(a.literal(1), '*', a.literal(2)), '+', a.literal(3)))
 
 test('triple nested operators')
-	.input('1 + 2 + 3 + 4')
-	.expect(a.composite(a.static(1), '+', a.composite(a.static(2), '+', a.composite(a.static(3), '+', a.static(4)))))
+	.code('1 + 2 + 3 + 4')
+	.expect(a.composite(a.literal(1), '+', a.composite(a.literal(2), '+', a.composite(a.literal(3), '+', a.literal(4)))))
 
 test('empty for loop over list literal')
-	.input('for (iterator in [1,2,3]) {}')
-	.expect(a.forLoop(a.list(a.static(1), a.static(2), a.static(3)), 'iterator', []))
+	.code('for (iterator in [1,2,3]) {}')
+	.expect(a.forLoop(a.list(a.literal(1), a.literal(2), a.literal(3)), 'iterator', []))
 
 test('self-closing xml')
-	.input('<div />')
+	.code('<div />')
 	.expect(a.xml('div', [], []))
 
 test('inline javascript')
-	.input('<script> var i = 1; function a() { alert(i++) }; setInterval(a); </script> let a = 1')
-	.expect(a.inlineScript(' var i = 1; function a() { alert(i++) }; setInterval(a);'), a.declaration('a', a.static(1)))
+	.code('<script> var i = 1; function a() { alert(i++) }; setInterval(a); </script> let a = 1')
+	.expect(a.inlineScript(' var i = 1; function a() { alert(i++) }; setInterval(a);'), a.declaration('a', a.literal(1)))
+
+test('module import')
+	.code('import Test')
+	.expect(a.importModule('Test'))
+
+test('file import')
+	.code('import "test.fun"')
+	.expect(a.importFile('test.fun'))
+
+test('nested declaration')
+	.code('let Foo = { nested: { cat:"yay" } }, Bar = Foo.nested\n Foo Bar Foo.nested')
+	.expect(
+		a.declarations(
+			'Foo', object({
+				nested:object({ cat:a.literal('yay') })
+			}),
+			'Bar', a.alias('Foo.nested')
+		),
+		a.alias('Foo'), a.alias('Bar'), a.alias('Foo.nested'))
+
+test('just a declaration')
+	.code('let Foo = { bar:1 }')
+	.expect(a.declaration('Foo', object({ bar:a.literal(1) })))
 
 /* UTIL */
 function test(name) {
+	util.resetUniqueID()
 	var input
-	var testObj = {
-		input: function() {
+	return {
+		code: function() {
+			util.resetUniqueID()
 			input = std.slice(arguments).join('\n')
-			return testObj
+			return this
 		},
 		expect: function() {
 			var expected = std.slice(arguments)
-			module.exports['test resolver '+name] = function(assert) {
-				var output = parse(input)
-				assert.deepEqual(output, expected)
-				assert.done()
+			module.exports['parse\t\t"'+name+'"'] = function(assert) {
+				assert.doesNotThrow(function() {
+					util.resetUniqueID()
+					try { var output = parse(input) }
+					catch(e) { console.log("ERROR", e); throw e; }
+					assert.deepEqual(output, expected)
+					assert.done()
+					return this
+				})
 			}
 		}
 	}
-	return testObj
 }
 
 function parse(code) {
