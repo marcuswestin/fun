@@ -5,16 +5,17 @@ var std = require('std'),
 	compiler = require('../../lib/compiler'),
 	a = require('../ast-mocks')
 
-test('a number and a string')
-	.code(
-		'"Hello " 1'
-	)
+test('a number and a string').code(
+	'"Hello " 1')
 
-test('a declaration and reference')
-	.code(
-		'let foo = "bar"',
-		'foo'
-	)
+test('a declaration and reference').code(
+	'let foo = "bar"',
+	'foo')
+
+test('object literals').code(
+	'let foo = { nested: { bar:1 } }',
+	'let nested = foo.nested',
+	'foo foo.nested nested foo.nested.bar')
 
 /* Util
  ******/
