@@ -2,9 +2,9 @@ fun
 ===
 A declarative programming language for realtime web applications
 
-Broken
-======
-Build is currently broken. If anyone cares I'll be incentivized to fix it and get started with Fun again :)
+A work in progress
+==================
+I recently resumed work on Fun. It's a work in progress
 
 Getting started
 ----------------------
@@ -16,11 +16,13 @@ Getting started
 Examples
 --------
 Hello World
+
 	"Hello world!"
 
 Facebook Connect
-	import Facebook
 
+	import Facebook
+	
 	let name = Facebook.user.name,
 		fbAppID = '177253448965438'
 	if (Facebook.connected) {
@@ -33,8 +35,9 @@ Facebook Connect
 	}
 
 Drag and Drop
-	import Mouse
 
+	import Mouse
+	
 	let dragStyle = {
 		width:      100,
 		height:     100,
@@ -48,6 +51,11 @@ Drag and Drop
 Getting involved
 ----------------
 The best way to get involved is to start writing fun apps and using them. There are bugs and inefficiencies waiting to be discovered!
+
+	git clone https://marcuswestin@github.com/marcuswestin/fun.git
+	cd fun
+	sudo npm link
+	make test
 
 See roadmap.md for plans that are anywhere from near to distant future.
 
