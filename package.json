@@ -13,7 +13,12 @@
     "fun": "./bin/fun"
   },
   "dependencies": {
-    "nodeunit": "= 0.5.1"
+    "std": "~0.1.27",
+    "optimist": "~0.2.8"
+  },
+  "devDependencies": {
+    "nodeunit": "~0.5.1",
+    "zombie": "~0.10.2"
   },
   "directories": {
     "lib": "."
