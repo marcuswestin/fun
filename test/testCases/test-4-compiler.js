@@ -40,6 +40,7 @@ test('a number and a string').compile(
 
 /* Util
  ******/
+var isFirstTest = true
 function test(name) {
 	return {
 		compile: function() {
@@ -48,6 +49,7 @@ function test(name) {
 			
 			module.exports['compile\t"'+name+'"'] = function(assert) {
 				currentTestCode = code
+				if (isFirstTest) { console.log('loading headless browser...'); isFirstTest = false }
 				zombie.visit('http://localhost:'+compilerServerPort, function(err, browser, status) {
 					if (err) { throw err }
 					if (status != 200) { throw new Error("Got bad status from compiler server:", status) }
@@ -116,5 +118,5 @@ function scheduleCompilerServerShutdown() {
 	clearTimeout(scheduleCompilerServerShutdown.timeout)
 	scheduleCompilerServerShutdown.timeout = setTimeout(function() {
 		compilerServer.close()
-	}, 500)
+	}, 100)
 }
