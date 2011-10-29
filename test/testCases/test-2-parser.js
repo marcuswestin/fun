@@ -70,7 +70,7 @@ test('empty for loop over list literal')
 
 test('self-closing xml')
 	.code('<div />')
-	.expect(a.xml('div', [], []))
+	.expect(a.xml('div'))
 
 test('inline javascript')
 	.code('<script> var i = 1; function a() { alert(i++) }; setInterval(a); </script> let a = 1')
