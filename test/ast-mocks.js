@@ -31,7 +31,7 @@ function literal(value) {
 }
 
 function value(value) {
-	var ast = util.create({ uniqueID:util.uniqueID() })
+	var ast = {}
 	ast.type = 'VALUE'
 	ast.initialValue = value
 	ast.valueType = typeof value
