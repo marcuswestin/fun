@@ -68,10 +68,13 @@ function test(name) {
 			testName = type+'\t'+'"'+name+'" ' + (count++)
 		}
 		module.exports[testName] = function(assert) {
-			try { var actualAST = resolver.resolve(inputAST)[type] }
-			catch(e) { console.log('resolver threw', e.stack) }
-			assert.deepEqual(expectedAST, actualAST)
-			assert.done()
+			try {
+				var actualAST = resolver.resolve(inputAST)[type]
+				assert.deepEqual(expectedAST, actualAST)
+				assert.done()
+			} catch(e) {
+				console.log('resolver threw', e.stack)
+			}
 		}
 	}
 }

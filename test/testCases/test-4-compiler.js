@@ -104,6 +104,7 @@ function startCompilerServer() {
 		catch(e) { var error = e; }
 		
 		if (error) {
+			console.log("compiler server error", error.stack)
 			res.writeHead(500)
 			res.end(error.stack)
 		} else {
