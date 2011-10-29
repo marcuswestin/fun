@@ -1,5 +1,6 @@
 var std = require('std'),
-	util = require('../lib/util')
+	util = require('../lib/util'),
+	map = require('std/map')
 
 module.exports = {
 	value: value,
@@ -16,7 +17,13 @@ module.exports = {
 	forLoop: forLoop,
 	importFile: importFile,
 	importModule: importModule,
-	inlineScript:inlineScript
+	inlineScript:inlineScript,
+	handler:handler,
+	mutation:mutation
+}
+
+function mutation(operand, operator, args) {
+	return { type:'MUTATION', alias:operand, method:operator, args:args }
 }
 
 function literal(value) {
@@ -47,7 +54,10 @@ function list() {
 }
 
 function xml(tag, attrs, block) {
-	return { type:'XML', tagName:tag, attributes:attrs || [], block:block || [] }
+	attrs = map(attrs, function(val, key) {
+		return { name:key, value:val }
+	})
+	return { type:'XML', tagName:tag, attributes:attrs, block:block || [] }
 }
 
 function declaration(name, value) {
@@ -84,4 +94,8 @@ function importModule(name) {
 
 function inlineScript(js) {
 	return { type:'INLINE_SCRIPT', inlineJavascript:js }
+}
+
+function handler(signature, block) {
+	return { type:'HANDLER', signature:signature || [], block:block || [] }
 }
