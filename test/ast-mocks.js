@@ -23,7 +23,7 @@ module.exports = {
 }
 
 function mutation(operand, operator, args) {
-	return { type:'MUTATION', alias:operand, method:operator, args:args }
+	return { type:'MUTATION', operand:operand, method:operator, args:args }
 }
 
 function literal(value) {
@@ -80,7 +80,7 @@ function ifElse(condition, ifBranch, elseBranch) {
 }
 
 function forLoop(iterable, iteratorName, block) {
-	var iterator = { type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: { type:'RUNTIME_ITERATOR' } }
+	var iterator = { type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: { type:'ITERATOR' } }
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 }
 

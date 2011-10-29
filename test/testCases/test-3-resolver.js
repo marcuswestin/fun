@@ -38,6 +38,27 @@ test('nested declarations')
 	.declarations(ref(1, a.value("yay")))
 	.expressions([], ref(1), ref(1), ref(1), a.object({ cat:ref(1) }))
 
+test('clicking a button updates the UI')
+	.code(
+		'let foo = "bar"',
+		'let qwe = "cat"',
+		'<div id="output">foo</div>',
+		'<button id="button">"Click me"</button onClick=handler() {',
+		'	foo.set("cat")',
+		'	qwe.set(foo)',
+		'}>')
+	.declarations(
+		ref(1, a.value("bar")),
+		ref(2, a.value("cat")),
+		ref(3, a.handler([], [
+			a.mutation(ref(1), 'set', [a.literal('cat')]),
+			a.mutation(ref(2), 'set', [ref(1)])
+		]))
+	)
+	.expressions(
+		a.xml('div', { id:a.literal('output') }, [ ref(1) ]),
+		a.xml('button', { id:a.literal('button'), onclick:ref(3) }, [ a.literal('Click me') ])
+	)
 
 /* Util
  ******/

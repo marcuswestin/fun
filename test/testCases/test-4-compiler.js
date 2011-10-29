@@ -18,15 +18,15 @@ test('a number and a string').compile(
 	'<div>"Hello " 1</div>')
 	.htmlIs('div', '<div>Hello 1</div>')
 
-// test('clicking a button updates the UI').compile(
-// 	'let foo = "bar"',
-// 	'<div id="output">foo</div>',
-// 	'<button id="button"></button onClick=handler() {',
-// 	'	foo.set("cat")',
-// 	'}>')
-// 	.htmlIs('#output', 'bar')
-// 	.click('#button')
-// 	.htmlIs('#output', 'cat')
+test('clicking a button updates the UI').compile(
+	'let foo = "bar"',
+	'<div id="output">foo</div>',
+	'<button id="button"></button onClick=handler() {',
+	'	foo.set("cat")',
+	'}>')
+	.htmlIs('#output', 'bar')
+	.click('#button')
+	.htmlIs('#output', 'cat')
 // 
 // test('a declaration and reference').compile(
 // 	'let foo = "bar"',
