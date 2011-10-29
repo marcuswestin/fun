@@ -99,6 +99,20 @@ test('just a declaration')
 	.code('let Foo = { bar:1 }')
 	.expect(a.declaration('Foo', a.object({ bar:a.literal(1) })))
 
+test('a handler')
+	.code('let aHandler = handler(){}')
+	.expect(
+		a.declaration('aHandler', a.handler()))
+
+test('a button which mutates state')
+	.code('let foo="bar"\n<button></button onclick=handler(){ foo.set("cat") }>')
+	.expect(
+		a.declaration('foo', a.literal("bar")),
+		a.xml('button', { 'onclick':a.handler([],[
+			a.mutation(a.alias('foo'), 'set', [a.literal("cat")])
+		])})
+	)
+
 /* Util
  ******/
 function test(name) {
