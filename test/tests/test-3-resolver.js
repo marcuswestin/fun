@@ -1,9 +1,9 @@
 var std = require('std'),
 	a = require('../resolver-mocks'),
-	resolver = require('../../lib/resolver'),
-	parser = require('../../lib/parser'),
-	tokenizer = require('../../lib/tokenizer'),
-	util = require('../../lib/util')
+	resolver = require('../../src/resolver'),
+	parser = require('../../src/parser'),
+	tokenizer = require('../../src/tokenizer'),
+	util = require('../../src/util')
 
 test("a declared alias for a string")
 	.code(

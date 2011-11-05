@@ -20,9 +20,6 @@
     "nodeunit": "~0.5.1",
     "zombie": "~0.10.2"
   },
-  "directories": {
-    "lib": "."
-  },
   "engines": {
     "node": ">= 0.4.0"
   },

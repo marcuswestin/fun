@@ -1,8 +1,8 @@
 var std = require('std'),
-	parser = require('../../lib/parser'),
-	tokenizer = require('../../lib/tokenizer'),
+	parser = require('../../src/parser'),
+	tokenizer = require('../../src/tokenizer'),
 	a = require('../parser-mocks'),
-	util = require("../../lib/util")
+	util = require("../../src/util")
 
 test('text literal')
 	.code('"hello world"')

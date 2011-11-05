@@ -32,7 +32,7 @@ var _doCompile = function(tokens) {
 }
 
 exports._printHTML = function(compiledJS) {
-	var runtimeUtilJS = fs.readFileSync(__dirname + '/../lib/runtimeUtil.js')
+	var runtimeUtilJS = fs.readFileSync(__dirname + '/../src/runtimeUtil.js')
 	return [
 		'<!doctype html>',
 		'<html><head></head><body><script>',

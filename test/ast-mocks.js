@@ -1,5 +1,5 @@
 var std = require('std'),
-	util = require('../lib/util'),
+	util = require('../src/util'),
 	map = require('std/map')
 
 module.exports = {

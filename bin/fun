@@ -5,10 +5,10 @@ var fs = require('fs'),
 	http = require('http'),
 	path = require('path'),
 	optimist = require('optimist'),
-	tokenizer = require('../lib/tokenizer'),
-	parser = require('../lib/parser'),
-	resolver = require('../lib/resolver'),
-	compiler = require('../lib/compiler')
+	tokenizer = require('../src/tokenizer'),
+	parser = require('../src/parser'),
+	resolver = require('../src/resolver'),
+	compiler = require('../src/compiler')
 
 /* Commandline options
  *********************/
