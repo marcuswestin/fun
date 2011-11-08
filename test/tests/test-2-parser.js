@@ -136,7 +136,7 @@ function test(name) {
 			module.exports['parse\t\t"'+name+'"'] = function(assert) {
 				util.resetUniqueID()
 				try { var output = parser.parse(tokens) }
-				catch(e) { console.log("Parser threw: ", e); throw e; }
+				catch(e) { console.log("Parser threw"); throw e; }
 				assert.deepEqual(output, expected)
 				assert.done()
 			}
