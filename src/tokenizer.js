@@ -36,6 +36,7 @@ var TokenizeError = function(file, line, column, msg) {
 }
 TokenizeError.prototype = Error.prototype
 
+var types = 'Bool,Text,Number,Color,Object,List,Template,Handler,Function,Enum,Event,Interface'.split(',')
 var keywords = 'let,for,in,if,else,template,handler,new,debugger,switch,case,default,and,or'.split(',')
 function _doTokenize (inputString, inputFile) {
     var c;                      // The current character.
@@ -89,6 +90,8 @@ function _doTokenize (inputString, inputFile) {
     for (var kWord, keyI=0; kWord = keywords[keyI]; keyI++) {
         keywords[kWord] = true;
     }
+    
+    for (var type, typeI=0; type = types[typeI]; typeI++) { types[type] = true }
 
 // Loop through the text, one character at a time.
 
@@ -130,7 +133,7 @@ function _doTokenize (inputString, inputFile) {
                     break;
                 }
             }
-            result.push(make(keywords.hasOwnProperty(str) ? 'keyword' : 'name', str));
+            result.push(make(keywords.hasOwnProperty(str) ? 'keyword' : types.hasOwnProperty(str) ? 'type' : 'name', str));
 
 // number.
 

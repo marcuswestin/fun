@@ -109,6 +109,11 @@ util.log = function() {
 	console.log.apply(console, arguments)
 }
 
+util.isUpperCaseLetter = function(letter) {
+	return letter.length == 1 && 'A' <= letter && letter <= 'Z'
+}
+
+
 /* unexposed utility functions
  *****************************/
 function _repeat(str, times) {

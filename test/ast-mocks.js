@@ -19,7 +19,20 @@ module.exports = {
 	importModule: importModule,
 	inlineScript:inlineScript,
 	handler:handler,
-	mutation:mutation
+	mutation:mutation,
+	interface:interface,
+	Text:_type('Text'),
+	Number:_type('Number')
+}
+
+function _type(name) {
+	return { type:'INTERFACE', name:name }
+}
+
+function interface(kvps) {
+	return { type:'INTERFACE', content:map(kvps, function(val, key) {
+		return { name:key, value:val }
+	}) }
 }
 
 function mutation(operand, operator, args) {

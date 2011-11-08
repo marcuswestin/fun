@@ -85,19 +85,19 @@ test('file import')
 	.expect(a.importFile('test.fun'))
 
 test('nested declaration')
-	.code('let Foo = { nested: { cat:"yay" } }, Bar = Foo.nested\n Foo Bar Foo.nested')
+	.code('let foo = { nested: { cat:"yay" } }, bar = foo.nested\n foo bar foo.nested')
 	.expect(
 		a.declarations(
-			'Foo', a.object({
+			'foo', a.object({
 				nested:a.object({ cat:a.literal('yay') })
 			}),
-			'Bar', a.alias('Foo.nested')
+			'bar', a.alias('foo.nested')
 		),
-		a.alias('Foo'), a.alias('Bar'), a.alias('Foo.nested'))
+		a.alias('foo'), a.alias('bar'), a.alias('foo.nested'))
 
 test('just a declaration')
-	.code('let Foo = { bar:1 }')
-	.expect(a.declaration('Foo', a.object({ bar:a.literal(1) })))
+	.code('let foo = { bar:1 }')
+	.expect(a.declaration('foo', a.object({ bar:a.literal(1) })))
 
 test('a handler')
 	.code('let aHandler = handler(){}')
@@ -111,6 +111,12 @@ test('a button which mutates state')
 		a.xml('button', { 'onclick':a.handler([],[
 			a.mutation(a.alias('foo'), 'set', [a.literal("cat")])
 		])})
+	)
+
+test('an interface declaration')
+	.code('let Thing = { foo:Text, bar:Number }')
+	.expect(
+		a.declaration('Thing', a.interface({ foo:a.Text, bar:a.Number }))
 	)
 
 /* Util

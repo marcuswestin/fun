@@ -83,10 +83,9 @@ var parseDeclarationStatement = astGenerator(function() {
 	while (true) {
 		var name = advance('name').value
 		advance('symbol', '=')
-		var value =
-			peek('keyword', 'template') ? parseTemplateLiteral() :
-			peek('keyword', 'handler') ?  parseHandler() :
-			                              parseExpression()
+		
+		var value = util.isUpperCaseLetter(name[0]) ? parseInterfaceExpression() : parseExpression()
+		
 		declarations.push(createAST({ type:'DECLARATION', name:name, value:value }))
 		
 		if (!peek('symbol', ',')) { break }
@@ -164,9 +163,15 @@ var _parseRawValue = function() {
 		case 'name':   return _parseAliasOrInvocation()
 		case 'symbol':
 			switch(peek().value) {
-				case L_ARRAY: return parseListLiteral()
-				case L_CURLY: return parseObjectLiteral()
+				case L_ARRAY: return parseListLiteral(parseExpression)
+				case L_CURLY: return parseObjectLiteral(parseExpression)
 				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'"')
+			}
+		case 'keyword':
+			switch(peek().value) {
+				case 'template': return parseTemplateLiteral()
+				case 'handler':  return parseHandlerLiteral()
+				default:         halt(peek(), 'Unexpected keyword "'+peek().value+'"')
 			}
 		default:       halt(peek(), 'Unexpected token type "'+peek().type+'"')
 	}
@@ -198,30 +203,43 @@ var _parseJavascriptBridge = astGenerator(function() {
 	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
 })
 
+var parseInterfaceExpression = astGenerator(function() {
+	if (peek('type')) {
+		return { type:'INTERFACE', name:advance().value }
+	}
+	if (peek('symbol', L_CURLY)) {
+		return parseObjectLiteral(parseInterfaceExpression, 'INTERFACE')
+	}
+	if (peek('symbol', L_ARRAY)) {
+		return parseListLiteral(parseInterfaceExpression, 'INTERFACE')
+	}
+	halt(peek(), 'Expected an interface')
+})
+
 /************************************
  * JSON - list and object listerals *
  ************************************/
-var parseListLiteral = astGenerator(function() {
+var parseListLiteral = astGenerator(function(valueParserFn, type) {
 	advance('symbol', L_ARRAY)
-	var content = parseList(parseExpression, R_ARRAY)
+	var content = parseList(valueParserFn, R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
-	return { type:'LIST', content:content, localName:util.name('LIST_LITERAL') }
+	return { type:type || 'LIST', content:content, localName:util.name('LIST_LITERAL') }
 })
 
-var parseObjectLiteral = astGenerator(function() {
+var parseObjectLiteral = astGenerator(function(valueParserFn, type) {
 	advance('symbol', L_CURLY)
 	var content = []
 	while (true) {
 		if (peek('symbol', R_CURLY)) { break }
 		var key = advance(['name','string']).value
 		advance('symbol', ':')
-		var value = parseExpression()
+		var value = valueParserFn()
 		content.push(createAST({ name:key, value:value }))
 		if (!peek('symbol', ',')) { break }
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:'OBJECT_LITERAL', content:content }
+	return { type:type || 'OBJECT_LITERAL', content:content }
 })
 
 /****************
@@ -267,11 +285,12 @@ var _parseXMLAttribute = astGenerator(function() {
 	var name = advance('name').value.toLowerCase()
 	advance('symbol', '=')
 	var value =
-		name == 'style' ? parseObjectLiteral() :
-		name.match(/on\w+/) ? parseHandler() :
+		name == 'style' ? parseObjectLiteral(parseExpression) :
 		parseExpression()
 	return { name:name, value:value }
 })
+
+
 var _parseScript = astGenerator(function() {
 	var attributes = _parseXMLAttributes(),
 		js = []
@@ -301,7 +320,7 @@ var parseTemplateLiteral = astGenerator(function() {
 	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 
-var parseHandler = astGenerator(function() {
+var parseHandlerLiteral = astGenerator(function() {
 	if (peek('name')) { return parseAlias() }
 	var callable = _parseCallable(parseMutationStatement, 'handler')
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
