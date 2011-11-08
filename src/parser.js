@@ -204,6 +204,9 @@ var _parseJavascriptBridge = astGenerator(function() {
 })
 
 var parseInterfaceExpression = astGenerator(function() {
+	if (peek('name')) {
+		return parseAlias()
+	}
 	if (peek('type')) {
 		return { type:'INTERFACE', name:advance().value }
 	}
@@ -223,7 +226,7 @@ var parseListLiteral = astGenerator(function(valueParserFn, type) {
 	advance('symbol', L_ARRAY)
 	var content = parseList(valueParserFn, R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
-	return { type:type || 'LIST', content:content, localName:util.name('LIST_LITERAL') }
+	return { type:type || 'LIST', content:content }
 })
 
 var parseObjectLiteral = astGenerator(function(valueParserFn, type) {

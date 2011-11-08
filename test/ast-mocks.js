@@ -1,6 +1,7 @@
 var std = require('std'),
 	util = require('../src/util'),
-	map = require('std/map')
+	map = require('std/map'),
+	isArray = require('std/isArray')
 
 module.exports = {
 	value: value,
@@ -29,10 +30,10 @@ function _type(name) {
 	return { type:'INTERFACE', name:name }
 }
 
-function interface(kvps) {
-	return { type:'INTERFACE', content:map(kvps, function(val, key) {
+function interface(content) {
+	return { type:'INTERFACE', content:(isArray(content) ? content : map(content, function(val, key) {
 		return { name:key, value:val }
-	}) }
+	})) }
 }
 
 function mutation(operand, operator, args) {
@@ -63,7 +64,7 @@ function composite(left, operator, right) {
 }
 
 function list() {
-	return { type:'LIST', content:std.slice(arguments, 0), localName:'_LIST_LITERAL$0' }
+	return { type:'LIST', content:std.slice(arguments, 0) }
 }
 
 function xml(tag, attrs, block) {

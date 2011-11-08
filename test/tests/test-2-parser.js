@@ -113,10 +113,13 @@ test('a button which mutates state')
 		])})
 	)
 
-test('an interface declaration')
-	.code('let Thing = { foo:Text, bar:Number }')
+test('interface declarations')
+	.code('let Thing = { foo:Text, bar:Number }\n let ListOfThings=[Thing]\n let ListOfNumbers = [Number]\n let NumberInterface = Number')
 	.expect(
-		a.declaration('Thing', a.interface({ foo:a.Text, bar:a.Number }))
+		a.declaration('Thing', a.interface({ foo:a.Text, bar:a.Number })),
+		a.declaration('ListOfThings', a.interface([a.alias('Thing')])),
+		a.declaration('ListOfNumbers', a.interface([a.Number])),
+		a.declaration('NumberInterface', a.Number)
 	)
 
 /* Util
