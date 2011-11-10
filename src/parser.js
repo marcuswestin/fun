@@ -69,7 +69,8 @@ var _doParseStatement = function() {
 		case 'if':       return parseIfStatement()
 		case 'switch':   return parseSwitchStatement()
 		case 'debugger': return parseDebuggerStatement()
-		default:         halt(peek(), 'Unexpected keyword "'+token.value+'"')
+		case 'return':   return parseReturnStatement()
+		default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while parsing a statement')
 	}
 }
 
@@ -165,15 +166,16 @@ var _parseRawValue = function() {
 			switch(peek().value) {
 				case L_ARRAY: return parseListLiteral(parseExpression)
 				case L_CURLY: return parseObjectLiteral(parseExpression)
-				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'"')
+				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'" while looking for a value')
 			}
 		case 'keyword':
 			switch(peek().value) {
 				case 'template': return parseTemplateLiteral()
 				case 'handler':  return parseHandlerLiteral()
-				default:         halt(peek(), 'Unexpected keyword "'+peek().value+'"')
+				case 'function': return parseFunctionLiteral()
+				default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while looking for a value')
 			}
-		default:       halt(peek(), 'Unexpected token type "'+peek().type+'"')
+		default:       halt(peek(), 'Unexpected token type "'+peek().type+'" while looking for a value')
 	}
 }
 
@@ -216,7 +218,7 @@ var parseInterfaceExpression = astGenerator(function() {
 	if (peek('symbol', L_ARRAY)) {
 		return parseListLiteral(parseInterfaceExpression, 'INTERFACE')
 	}
-	halt(peek(), 'Expected an interface')
+	halt(peek(), 'Unexpected "'+peek().type+'" while looking for an interface')
 })
 
 /************************************
