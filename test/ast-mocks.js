@@ -1,7 +1,8 @@
 var std = require('std'),
 	util = require('../src/util'),
 	map = require('std/map'),
-	isArray = require('std/isArray')
+	isArray = require('std/isArray'),
+	slice = require('std/slice')
 
 module.exports = {
 	value: value,
@@ -20,10 +21,32 @@ module.exports = {
 	importModule: importModule,
 	inlineScript:inlineScript,
 	handler:handler,
+	argument:argument,
+	'function':func,
+	'return':ret,
 	mutation:mutation,
 	interface:interface,
 	Text:_type('Text'),
-	Number:_type('Number')
+	Number:_type('Number'),
+	Anything:_type('Anything'),
+	invocation: invocation
+}
+
+function invocation(invocable /*, arg1, arg2, ... */) {
+	var args = slice(arguments, 1)
+	return { type:'INVOCATION', invocable:invocable, arguments:args }
+}
+
+function ret(value) {
+	return { type:'RETURN', value:value }
+}
+
+function func(signature, block) {
+	return { type:'FUNCTION', signature:signature, block:block }
+}
+
+function argument(name, interface) {
+	return { type:'ARGUMENT', name:name, interface:interface }
 }
 
 function _type(name) {
@@ -74,8 +97,8 @@ function xml(tag, attrs, block) {
 	return { type:'XML', tagName:tag, attributes:attrs, block:block || [] }
 }
 
-function declaration(name, value) {
-	return { type:'DECLARATION', name:name, value:value }
+function declaration(name, value, interface) {
+	return { type:'DECLARATION', name:name, value:value, interface:interface }
 }
 
 function declarations(name1, value1 /*, ... */) {

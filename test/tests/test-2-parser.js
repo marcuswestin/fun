@@ -85,27 +85,35 @@ test('file import')
 	.expect(a.importFile('test.fun'))
 
 test('nested declaration')
-	.code('let foo = { nested: { cat:"yay" } }, bar = foo.nested\n foo bar foo.nested')
+	.code(
+		'let foo = { nested: { cat:"yay" } }, bar = foo.nested',
+		' foo bar foo.nested'
+	)
 	.expect(
 		a.declarations(
-			'foo', a.object({
-				nested:a.object({ cat:a.literal('yay') })
-			}),
+			'foo', a.object({ nested:a.object({ cat:a.literal('yay') }) }),
 			'bar', a.alias('foo.nested')
 		),
-		a.alias('foo'), a.alias('bar'), a.alias('foo.nested'))
+		a.alias('foo'), a.alias('bar'), a.alias('foo.nested')
+	)
 
 test('just a declaration')
 	.code('let foo = { bar:1 }')
 	.expect(a.declaration('foo', a.object({ bar:a.literal(1) })))
 
 test('a handler')
-	.code('let aHandler = handler(){}')
+	.code(
+		'let aHandler = handler(){}'
+	)
 	.expect(
-		a.declaration('aHandler', a.handler()))
+		a.declaration('aHandler', a.handler())
+	)
 
 test('a button which mutates state')
-	.code('let foo="bar"\n<button></button onclick=handler(){ foo.set("cat") }>')
+	.code(
+		'let foo="bar"',
+		'<button></button onclick=handler(){ foo.set("cat") }>'
+	)
 	.expect(
 		a.declaration('foo', a.literal("bar")),
 		a.xml('button', { 'onclick':a.handler([],[
@@ -114,12 +122,45 @@ test('a button which mutates state')
 	)
 
 test('interface declarations')
-	.code('let Thing = { foo:Text, bar:Number }\n let ListOfThings=[Thing]\n let ListOfNumbers = [Number]\n let NumberInterface = Number')
+	.code(
+		'let Thing = { foo:Text, bar:Number }',
+		'let ListOfThings=[ Thing ]',
+		'let ListOfNumbers = [Number]',
+		'let NumberInterface = Number'
+	)
 	.expect(
 		a.declaration('Thing', a.interface({ foo:a.Text, bar:a.Number })),
 		a.declaration('ListOfThings', a.interface([a.alias('Thing')])),
 		a.declaration('ListOfNumbers', a.interface([a.Number])),
 		a.declaration('NumberInterface', a.Number)
+	)
+
+test('typed value declarations')
+	.code(
+		'let Response = { error:Text, result:Text }',
+		'let Response response = { error:"foo", result:"bar" }',
+		'response'
+	)
+	.expect(
+		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),
+		a.declaration('response', a.object({ error:a.literal('foo'), result:a.literal('bar') }), a.alias('Response')),
+		a.alias('response')
+	)
+
+test('typed function declaration and invocation')
+	.code(
+		'let Response = { error:Text, result:Text }',
+		'let Response post = function(Text path, Anything params) {',
+		'	return { error:"foo", response:"bar" }',
+		'}',
+		'let response = post("/test", { foo:"bar" })'
+	)
+	.expect(
+		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),
+		a.declaration('post', a.function([a.argument('path', a.Text), a.argument('params', a.Anything)], [
+			a.return(a.object({ error:a.literal('foo'), response:a.literal('bar') }))
+		]), a.alias('Response')),
+		a.declaration('response', a.invocation(a.alias('post'), a.literal('/test'), a.object({ foo:a.literal('bar')})))
 	)
 
 /* Util

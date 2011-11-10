@@ -77,17 +77,26 @@ var _doParseStatement = function() {
 /****************
  * Declarations *
  ****************/
+var parseReturnStatement = astGenerator(function() {
+	advance('keyword', 'return')
+	var value = parseExpression()
+	return { type:'RETURN', value:value }
+})
+
 var parseDeclarationStatement = astGenerator(function() {
 	advance('keyword', 'let')
 	var declarations = []
 	
 	while (true) {
+		var interface = peekInterfaceExpression() ? parseInterfaceExpression() : undefined
+		
 		var name = advance('name').value
+		
 		advance('symbol', '=')
 		
 		var value = util.isUpperCaseLetter(name[0]) ? parseInterfaceExpression() : parseExpression()
 		
-		declarations.push(createAST({ type:'DECLARATION', name:name, value:value }))
+		declarations.push(createAST({ type:'DECLARATION', name:name, value:value, interface:interface }))
 		
 		if (!peek('symbol', ',')) { break }
 		advance('symbol', ',')
@@ -190,7 +199,7 @@ var _parseAliasOrInvocation = astGenerator(function() {
 	advance('symbol', L_PAREN)
 	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of invocation')
-	return { type:'INVOCATION', operand:operand, arguments:args }
+	return { type:'INVOCATION', invocable:alias, arguments:args }
 })
 
 // HACK expects __javascriptBridge("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun. TODO: Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
@@ -220,6 +229,13 @@ var parseInterfaceExpression = astGenerator(function() {
 	}
 	halt(peek(), 'Unexpected "'+peek().type+'" while looking for an interface')
 })
+
+var peekInterfaceExpression = function() {
+	if (peek('name')) { return !!peek('name', null, 2) } // let Response response = ...
+	if (peek('type')) { return true } // let Text test = ...
+	if (peek('symbol', L_CURLY)) { return true } // let { ... } obj = ...
+	if (peek('symbol', L_ARRAY)) { return true } // let [ ... ] list = ...
+}
 
 /************************************
  * JSON - list and object listerals *
@@ -331,6 +347,11 @@ var parseHandlerLiteral = astGenerator(function() {
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
 
+var parseFunctionLiteral = astGenerator(function() {
+	var callable = _parseCallable(parseStatement, 'function')
+	return { type:'FUNCTION', signature:callable[0], block:callable[1] }
+})
+
 var _parseCallable = function(statementParseFn, keyword) {
 	advance('keyword', keyword)
 	advance('symbol', L_PAREN)
@@ -341,7 +362,8 @@ var _parseCallable = function(statementParseFn, keyword) {
 }
 
 var _parseCallableArg = astGenerator(function() {
-	return { type:'ARGUMENT', name:advance('name').value }
+	if (peekInterfaceExpression()) { var interface = parseInterfaceExpression() }
+	return { type:'ARGUMENT', name:advance('name').value, interface:interface }
 })
 
 /************************************************
@@ -369,7 +391,7 @@ var _parseMutationDeclaration = astGenerator(function() {
 	var value = (peek('keyword', 'new')
 		? _parseItemCreation()
 		: parseExpression())
-	return {type: 'MUTATION_DECLARATION', name:name, value:value}
+	return {type: 'MUTATION_DECLARATION', name:name, value:value }
 })
 
 var _parseMutationInvocation = astGenerator(function() {
@@ -530,7 +552,7 @@ function advance(type, value, expressionType) {
 	return gToken
 }
 
-function peek(type, value, steps) {
+var peek = function(type, value, steps) {
 	var token = gTokens[gIndex + (steps || 1)]
 	if (!token) { return false }
 	if (type && findInArray(type, token.type) != token.type) { return false }
