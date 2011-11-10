@@ -181,7 +181,7 @@ function test(name) {
 				util.resetUniqueID()
 				try { var output = parser.parse(tokens) }
 				catch(e) { console.log("Parser threw"); throw e; }
-				assert.deepEqual(output, expected)
+				assert.deepEqual(expected, output)
 				assert.done()
 			}
 			return this
