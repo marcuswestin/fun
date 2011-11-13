@@ -1,10 +1,7 @@
 #import WebSocket
+let messages = []
 
-let Message = { body:Text }
-
-let [Message] messages = []
-
-WebSocket.on('message', handler(Message message) { messages.push(message) })
+WebSocket.on('message', handler(message) { messages.push(message) })
 
 <div class="chat">
 	let input = ""
@@ -21,4 +18,3 @@ WebSocket.on('message', handler(Message message) { messages.push(message) })
 		}
 	</div>
 </div>
-
