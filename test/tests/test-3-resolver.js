@@ -22,8 +22,8 @@ test("an empty div")
 
 test("two nested properties")
 	.code(
-		'let Foo = { bar:1, cat:"cat" }',
-		'Foo.bar Foo.cat'
+		'let foo = { bar:1, cat:"cat" }',
+		'foo.bar foo.cat'
 	)
 	.declarations(ref(1, a.value(1)), ref(2, a.value("cat")))
 	.expressions(a.value(1), a.value("cat"))
@@ -31,10 +31,10 @@ test("two nested properties")
 
 test('nested declarations')
 	.code(
-		'let Foo = { nested: { cat:"yay" } },',
-		'	Bar = Foo.nested,',
-		'	cat = Bar.cat',
-		'Foo.nested.cat Bar.cat cat Bar')
+		'let foo = { nested: { cat:"yay" } },',
+		'	bar = foo.nested,',
+		'	cat = bar.cat',
+		'foo.nested.cat bar.cat cat bar')
 	.declarations(ref(1, a.value("yay")))
 	.expressions([], ref(1), ref(1), ref(1), a.object({ cat:ref(1) }))
 
@@ -59,6 +59,40 @@ test('clicking a button updates the UI')
 		a.xml('div', { id:a.literal('output') }, [ ref(1) ]),
 		a.xml('button', { id:a.literal('button'), onclick:ref(3) }, [ a.literal('Click me') ])
 	)
+
+// Boolean values
+// Null values
+// Handlers, Functions and Templates as expressions and being emitted
+// 
+// test('typed value declarations')
+// 	.code(
+// 		'let Response = { error:Text, result:Text }',
+// 		'let Response response = { error:"foo", result:"bar" }',
+// 		'response'
+// 	)
+// 	.expect(
+// 		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),
+// 		a.declaration('response', a.object({ error:a.literal('foo'), result:a.literal('bar') }), a.alias('Response')),
+// 		a.alias('response')
+// 	)
+// 
+// test('typed function declaration and invocation')
+// 	.code(
+// 		'let Response = { error:Text, result:Text }',
+// 		'let Response post = function(Text path, Anything params) {',
+// 		'	return { error:"foo", response:"bar" }',
+// 		'}',
+// 		'let response = post("/test", { foo:"bar" })'
+// 	)
+// 	.expect(
+// 		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),
+// 		a.declaration('post', a.function([a.argument('path', a.Text), a.argument('params', a.Anything)], [
+// 			a.return(a.object({ error:a.literal('foo'), response:a.literal('bar') }))
+// 		]), a.alias('Response')),
+// 		a.declaration('response', a.invocation(a.alias('post'), a.literal('/test'), a.object({ foo:a.literal('bar')})))
+// 	)
+
+// TODO test file imports
 
 /* Util
  ******/

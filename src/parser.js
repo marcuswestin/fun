@@ -1,5 +1,6 @@
 var std = require('std'),
 	util = require('./util'),
+	curry = require('std/curry'),
 	q = util.q,
 	log = util.log,
 	halt = util.halt
@@ -39,16 +40,16 @@ exports.parse = function(tokens) {
  * Setup statements - comes before any of the emitting code *
  ************************************************************/
 function parseSetupStatement() {
-	if (peek('name', 'import')) { return _parseImportStatement() }
+	if (peek('keyword', 'import')) { return _parseImportStatement() }
 }
 
 var _parseImportStatement = astGenerator(function() {
-	advance('name', 'import')
-	advance(['string','name'])
-	if (gToken.type == 'string') {
-		return { type: 'IMPORT_FILE', path: gToken.value }
+	advance('keyword', 'import')
+	var path = advance(['string','name'])
+	if (path.type == 'string') {
+		return { type: 'IMPORT_FILE', path: path.value }
 	} else {
-		return { type: 'IMPORT_MODULE', name: gToken.value }
+		return { type: 'IMPORT_MODULE', name: path.value }
 	}
 })
 
@@ -56,18 +57,18 @@ var _parseImportStatement = astGenerator(function() {
  * Declaration/Control statements and emitting expressions *
  ***********************************************************/
 var parseStatement = function() {
-	var token = peek()
-	if (token.type == 'keyword') { return _doParseStatement() }
-	else if (token.type == 'symbol' && token.value == '<') { return parseXML() }
-	else { return parseExpression() }
+	if (peek('keyword', 'null')) { return nullValue() }
+	if (peek('keyword')) { return _doParseStatement(parseStatement) }
+	if (peek('symbol', '<')) { return parseXML() }
+	return parseExpression()
 }
 
-var _doParseStatement = function() {
+var _doParseStatement = function(statementParseFunction) {
 	switch(peek().value) {
 		case 'let':      return parseDeclarationStatement()
-		case 'for':      return parseForLoopStatement()
-		case 'if':       return parseIfStatement()
-		case 'switch':   return parseSwitchStatement()
+		case 'for':      return parseForLoopStatement(statementParseFunction)
+		case 'if':       return parseIfStatement(statementParseFunction)
+		case 'switch':   return parseSwitchStatement(statementParseFunction)
 		case 'debugger': return parseDebuggerStatement()
 		case 'return':   return parseReturnStatement()
 		default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while parsing a statement')
@@ -182,11 +183,17 @@ var _parseRawValue = function() {
 				case 'template': return parseTemplateLiteral()
 				case 'handler':  return parseHandlerLiteral()
 				case 'function': return parseFunctionLiteral()
+				case 'null':     return nullValue()
 				default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while looking for a value')
 			}
 		default:       halt(peek(), 'Unexpected token type "'+peek().type+'" while looking for a value')
 	}
 }
+
+var nullValue = astGenerator(function() {
+	advance('keyword', 'null')
+	return { type:'NULL' }
+})
 
 var _parseValueLiteral = astGenerator(function() {
 	advance(['string','number'])
@@ -260,7 +267,7 @@ var parseObjectLiteral = astGenerator(function(valueParserFn, type) {
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:type || 'OBJECT_LITERAL', content:content }
+	return { type:type || 'OBJECT', content:content }
 })
 
 /****************
@@ -343,7 +350,7 @@ var parseTemplateLiteral = astGenerator(function() {
 
 var parseHandlerLiteral = astGenerator(function() {
 	if (peek('name')) { return parseAlias() }
-	var callable = _parseCallable(parseMutationStatement, 'handler')
+	var callable = _parseCallable(parseHandlerStatement, 'handler')
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
 
@@ -369,11 +376,12 @@ var _parseCallableArg = astGenerator(function() {
 /************************************************
  * Top level mutation statements (handler code) *
  ************************************************/
-var parseMutationStatement = function() {
+var parseHandlerStatement = function() {
 	var token = peek()
 	switch(token.type) {
 		case 'keyword':
 			switch(token.value) {
+				case 'if':        return parseIfStatement(parseHandlerStatement)
 				case 'debugger':  return parseDebuggerStatement()
 				case 'let':       return _parseMutationDeclaration()
 				case 'new':       return _parseItemCreation()
@@ -396,11 +404,11 @@ var _parseMutationDeclaration = astGenerator(function() {
 
 var _parseMutationInvocation = astGenerator(function() {
 	var alias = parseAlias(),
-		method = alias.namespace.pop()
+		operator = alias.namespace.pop()
 	advance('symbol', L_PAREN)
 	var args = parseList(parseExpression, R_PAREN)
-	advance('symbol', R_PAREN, 'end of mutation method')
-	return {type:'MUTATION', operand:alias, method:method, args:args}
+	advance('symbol', R_PAREN, 'end of mutation operator')
+	return {type:'MUTATION', operand:alias, operator:operator, arguments:args}
 })
 
 var _parseItemCreation = astGenerator(function() {
@@ -412,7 +420,7 @@ var _parseItemCreation = astGenerator(function() {
 /*************
 * For loops *
 *************/
-var parseForLoopStatement = astGenerator(function() {
+var parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'for')
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	
@@ -424,7 +432,7 @@ var parseForLoopStatement = astGenerator(function() {
 	var iterable = parseExpression()
 	
 	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
-	var block = parseBlock(parseStatement, 'for_loop')
+	var block = parseBlock(statementParseFunction, 'for_loop')
 	
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 })
@@ -432,18 +440,18 @@ var parseForLoopStatement = astGenerator(function() {
 /****************
  * If statement *
  ****************/
-var parseIfStatement = astGenerator(function() {
+var parseIfStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'if')
 	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
 	var condition = parseConditionExpression()
 	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
 	
-	var ifBlock = parseBlock(parseStatement, 'if statement')
+	var ifBlock = parseBlock(statementParseFunction, 'if statement')
 	
 	var elseBlock = null
 	if (peek('keyword', 'else')) {
 		advance('keyword', 'else')
-		elseBlock = parseBlock(parseStatement, 'else statement')
+		elseBlock = parseBlock(statementParseFunction, 'else statement')
 	}
 	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
@@ -452,16 +460,16 @@ var parseIfStatement = astGenerator(function() {
 /********************
  * Switch statement *
  ********************/
-var parseSwitchStatement = astGenerator(function() {
+var parseSwitchStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'switch')
 	advance('symbol', L_PAREN, 'beginning of the switch statement\'s value')
 	var controlValue = parseConditionExpression()
 	advance('symbol', R_PAREN, 'end of the switch statement\'s value')
-	var cases = parseBlock(_parseCase, 'switch case statement')
+	var cases = parseBlock(curry(_parseCase, statementParseFunction), 'switch case statement')
 	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
 })
 
-var _parseCase = astGenerator(function() {
+var _parseCase = astGenerator(function(statementParseFunction) {
 	var labelToken = advance('keyword', ['case', 'default']),
 		isDefault = (labelToken.value == 'default'),
 		values = [],
@@ -476,7 +484,7 @@ var _parseCase = astGenerator(function() {
 	}
 	advance('symbol', ':')
 	while (true) {
-		statements.push(parseStatement())
+		statements.push(statementParseFunction())
 		if (peek('keyword', ['case', 'default']) || peek('symbol', R_CURLY)) { break }
 	}
 	return { type:'SWITCH_CASE', values:values, statements:statements, isDefault:isDefault }

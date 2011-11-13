@@ -29,7 +29,12 @@ module.exports = {
 	Text:_type('Text'),
 	Number:_type('Number'),
 	Anything:_type('Anything'),
-	invocation: invocation
+	invocation: invocation,
+	'null':nullValue()
+}
+
+function nullValue() {
+	return { type:'NULL' }
 }
 
 function invocation(invocable /*, arg1, arg2, ... */) {
@@ -60,18 +65,19 @@ function interface(content) {
 }
 
 function mutation(operand, operator, args) {
-	return { type:'MUTATION', operand:operand, method:operator, args:args }
+	return { type:'MUTATION', operand:operand, operator:operator, arguments:args }
 }
 
 function literal(value) {
 	return { type:'VALUE_LITERAL', value:value }
 }
 
-function value(value) {
+function value(value, interface) {
 	var ast = {}
 	ast.type = 'VALUE'
 	ast.initialValue = value
 	ast.valueType = typeof value
+	if (typeof interface != 'undefined') { ast.interface = interface }
 	return ast
 }
 
@@ -83,7 +89,7 @@ function alias(namespace) {
 function aliases() {}
 
 function composite(left, operator, right) {
-	return { type:'COMPOSITE', left:left, right:right, operator:operator }
+	return { type:'COMPOSITE', operator:operator, left:left, right:right }
 }
 
 function list() {

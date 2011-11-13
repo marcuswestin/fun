@@ -48,17 +48,18 @@ var resolve = function(context, ast) {
 }
 
 var _resolveExpression = function(context, ast) {
-	
 	switch (ast.type) {
 		case 'VALUE_LITERAL':        return ast
 		case 'ARGUMENT':             return ast
 		case 'ITERATOR':             return ast
 		case 'VALUE':                return ast
+		case 'NULL':                 return ast
 		case 'HANDLER':              return resolveHandler(context, ast)
 		case 'TEMPLATE':             return resolveTemplate(context, ast)
 		case 'ALIAS':                return resolve(context, lookup(context, ast))
 		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
-		case 'OBJECT_LITERAL':       return resolveObjectLiteral(context, ast)
+		case 'OBJECT':       return resolveObjectLiteral(context, ast)
+		case 'LIST':                 return resolveList(context, ast)
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 		default:                     halt(ast, '_resolveExpression: Unknown AST type "'+ast.type+'"')
 	}
@@ -78,9 +79,10 @@ var _resolveStatement = function(context, ast) {
 		case 'MUTATION':             return resolveMutation(context, ast)
 		case 'MUTATION_DECLARATION': handleDeclaration(context, ast)       ;break
 		
+		case 'INTERFACE':            return ast
 		case 'DEBUGGER':             return ast
 		
-		default:                     halt(ast, '_resolveStatement: Unkown AST type "'+ast.type+'"')
+		default:                     halt(ast, '_resolveStatement: Unknown AST type "'+ast.type+'"')
 	}
 }
 
@@ -101,7 +103,7 @@ var lookup = function(context, ast, allowMiss) {
 	while (chain.length) {
 		name = chain.shift()
 		switch (value.type) {
-			case 'OBJECT_LITERAL':
+			case 'OBJECT':
 				assert(ast, value.resolved[name], soFar.join('.')+' doesn\'t have a property named "'+name+'"')
 				value = value.resolved[name]
 				break
@@ -136,6 +138,17 @@ function resolveObjectLiteral(context, ast) {
 	return ast
 }
 
+function resolveList(context, ast) {
+	if (ast.resolved) { return ast }
+	ast.resolved = []
+	for (var i=0, value; value = ast.content[i]; i++) {
+		value = resolve(context, value)
+		value = declare(context, value)
+		ast.resolved.push(value)
+	}
+	delete ast.content
+	return ast
+}
 
 /************************
  * Composite expressions *
@@ -233,7 +246,7 @@ var resolveHandler = function(context, ast) {
  * Mutations *
  *************/
 var resolveMutation = function(context, ast) {
-	ast.args = map(ast.args, bind(this, lookup, context))
+	ast.arguments = map(ast.arguments, bind(this, lookup, context))
 	ast.operand = lookup(context, ast.operand)
 	
 	// // HACK For Javascript bridges, the method ("connect" in Facebook.connect()),
@@ -306,14 +319,14 @@ var handleDeclaration = function(context, ast) {
 	_declareAlias(ast, context, ast.name, ast.value)
 }
 var declare = function(context, value) {
-	if (value.type == 'OBJECT_LITERAL') {
+	if (value.type == 'OBJECT') {
 		// Object literals should not get assigned a unique ID or be listed as a declaration,
 		// since they do not represent actual values (but rather a collection of values)
 		return resolve(context, value)
 	}
 	if (value.uniqueID) { return value }
 	setNonEnumerableProperty(value, 'uniqueID', util.uniqueID())
-	
+
 	switch(value.type) {
 		case 'TEMPLATE':
 		case 'HANDLER':
@@ -321,26 +334,30 @@ var declare = function(context, value) {
 			each(value.signature, function(argument) {
 				argument.runtimeName = util.name('INVOCABLE_ARGUMENT_NAME')
 			})
+			context.declarations.push(value)
 			break
 		case 'MUTATION_ITEM_CREATION':
 			each(value.properties.content, function(prop) {
 				prop.value = lookup(context, prop.value)
 			})
-			break
-		case 'JAVASCRIPT_BRIDGE':
-			// do nothing
+			context.declarations.push(value)
 			break
 		case 'VALUE_LITERAL':
 			value = Object.create(value)
 			value.type = 'VALUE'
 			value.initialValue = value.value
 			value.valueType = typeof value.initialValue
+			context.declarations.push(value)
+			break
+		case 'INTERFACE':
+		case 'JAVASCRIPT_BRIDGE':
+		case 'NULL':
+		case 'LIST':
+			// do nothing
 			break
 		default:
 			throw new Error('Unknown declaration value type: "'+value.type+'"')
 	}
-	
-	context.declarations.push(value)
 	
 	return value
 }

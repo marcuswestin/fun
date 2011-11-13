@@ -85,10 +85,10 @@ var compileExpression = function(context, ast) {
 	switch(ast.type) {
 		case 'VALUE_LITERAL':     return compileStaticValue(context, ast)
 		case 'VALUE':             return compileValueExpression(context, ast)
-		case 'OBJECT_LITERAL':    return compileObjectLiteralExpression(context, ast)
+		case 'OBJECT':            return compileObjectLiteralExpression(context, ast)
 		case 'COMPOSITE':         return compileCompositeStatement(context, ast)
-		case 'ITERATOR':  return compileItemProperty(context, ast)
-		case 'ARGUMENT': return compileTemplateArgument(context, ast)
+		case 'ITERATOR':          return compileItemProperty(context, ast)
+		case 'ARGUMENT':          return compileTemplateArgument(context, ast)
 		case 'INVOCATION':        return compileInvocation(context, ast)
 		case 'INLINE_SCRIPT':     return ast.inlineJavascript
 		default:                  halt(ast, 'Unknown expression type')
@@ -262,7 +262,7 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 	} else if (value.type == 'STATIC') {
 		staticAttrs[name] = value.value
 	} else {
-		assert(ast, value.type != 'OBJECT_LITERAL', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+		assert(ast, value.type != 'OBJECT', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
 		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
 	}
 }
@@ -513,21 +513,16 @@ var compileHandlerDeclaration = function(ast) {
 		{
 			handlerFunctionName: ast.compiledFunctionName,
 			hookName: hookName,
-			code: map(ast.block, _compileMutationStatement).join('\n')
+			code: map(ast.block, _compileHandlerStatement).join('\n')
 		})
 }
 
-var _compileMutationStatement = function(ast) {
-	if (ast.type == 'DEBUGGER') { return 'debugger' }
-	switch(ast.value.type) {
-		case 'MUTATION_ITEM_CREATION':
-			return compileMutationItemCreation(ast)
-		case 'JAVASCRIPT_BRIDGE':
-			return compileJavascriptBridge(ast)
-		// case 'ITEM_PROPERTY':
-		// 	return compileItemPropertyMutation(ast)
-		default:
-			halt(ast, "Unknown mutation value type")
+function _compileHandlerStatement(ast) {
+	switch(ast.type) {
+		case 'DEBUGGER':     return 'debugger'
+		case 'MUTATION':     return _compileMutationStatement(ast)
+		case 'IF_STATEMENT': return _compileIfStatement(ast)
+		default:             halt(ast, 'Unknown handler statement type')
 	}
 }
 
@@ -547,11 +542,11 @@ var compileItemPropertyMutation = function(ast) {
 	var promiseNames = pick(ast.args, function(arg) { return arg.promiseName })
 	return code(
 		'fun.waitForPromises({{ promiseNames }}, function() {',
-		'	fun.mutate({{ operation }}, {{ id }}, {{ prop }}, [{{ args }}])',
+		'	fun.mutate({{ operator }}, {{ id }}, {{ prop }}, [{{ args }}])',
 		'})',
 		{
 			promiseNames: '['+promiseNames.join(',')+']',
-			operation: q(ast.method),
+			operator: q(ast.method),
 			id: getItemID(ast.value),
 			prop: getPropertyName(ast.value),
 			args: _cachedValueListCode(ast.args)
@@ -577,6 +572,35 @@ var _cachedValueListCode = function(args) {
 
 var _compileHandlerInvocation = function(context, invocationAST, handlerAST) {
 	util.halt(statementAST, 'TODO Compile handler invocation')
+}
+
+// Mutations
+var _compileMutationStatement = function(ast) {
+	assert(ast, ast.operand && ast.operand.uniqueID, "mutation statement expected an operand value with a unique id")
+	switch(ast.operator) {
+		case 'set':    return _compileSetOperation(ast.operand, ast.arguments)
+		default:       halt(ast, 'Unknown mutation operator "'+ast.operator+'"')
+	}
+	// switch(ast.value.type) {
+	// 	case 'MUTATION_ITEM_CREATION':
+	// 		return compileMutationItemCreation(ast)
+	// 	case 'JAVASCRIPT_BRIDGE':
+	// 		return compileJavascriptBridge(ast)
+		// case 'ITEM_PROPERTY':
+		// 	return compileItemPropertyMutation(ast)
+	// 	default:
+	// 		halt(ast, "Unknown mutation value type")
+	// }
+}
+
+var _compileSetOperation = function(operand, args) {
+	assert(args, args.length == 1, 'operator "set" expects exactly one operand')
+	return code(
+		'fun.set({{ uniqueID }}, {{ value }})',
+		{
+			uniqueID: q(operand.uniqueID),
+			value: _runtimeValue(args[0])
+		})
 }
 
 /****************************************
@@ -638,12 +662,12 @@ var _collectDynamicASTs = function(ast) {
 		case 'ITERATOR':
 		case 'VALUE':
 			return [ast]
-		case 'STATIC':
+		case 'VALUE_LITERAL':
 			return []
 		case 'ARGUMENT':
 			// need to know the type of the argument - in the meantime, assume that no type means its a literal value
 			return ast.property.length ? [ast] : []
-		case 'OBJECT_LITERAL':
+		case 'OBJECT':
 			return filter(flatten(map(ast.resolved, _collectDynamicASTs)))
 		default:
 			halt(ast, 'Unknown dynamic AST type');
@@ -669,7 +693,7 @@ function _compileStatementValue(ast) {
 		// case 'ITEM_PROPERTY':
 		case 'ITERATOR':
 		case 'ARGUMENT':
-		case 'STATIC':
+		case 'VALUE_LITERAL':
 			return _runtimeValue(ast)
 		default:
 			halt(ast, 'Unknown value type: ' + ast.type)

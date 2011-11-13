@@ -65,22 +65,30 @@ window.fun = {}
 /* Values
  ********/
 	var values = {},
-		types = {}
+		types = {},
+		observers = {}
 	fun.declare = function(id, type, value) {
 		values[id] = value
 		types[id] = type
 	}
-	fun.mutate = function(op, uniqueID, args) {
-		fin._mutate(op.toLowerCase(), id, propName, args)
-	}
-	fun.set = function(uniqueID, val) {
-		
+	fun.set = function(uniqueID, value) {
+		values[uniqueID] = value
+		for (var observationID in observers[uniqueID]) {
+			observers[uniqueID][observationID]({ value:value })
+		}
 	}
 	fun.get = function(uniqueID) {
-		
+		return values[uniqueID]
 	}
-	fun.observe = function(id, callback) {
-		callback({ value:values[id] })
+	fun.observe = function(uniqueID, callback) {
+		callback({ value:values[uniqueID] })
+		var observationID = _unique++
+		if (!observers[uniqueID]) { observers[uniqueID] = {} }
+		observers[uniqueID][observationID] = callback
+		return observationID
+	}
+	fun.unobserve = function(uniqueID, observationID) {
+		delete observers[uniqueID][observationID]
 	}
 	fun.splitListMutation = function(callback, mutation) {
 		var args = mutation.args

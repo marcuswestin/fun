@@ -163,6 +163,89 @@ test('typed function declaration and invocation')
 		a.declaration('response', a.invocation(a.alias('post'), a.literal('/test'), a.object({ foo:a.literal('bar')})))
 	)
 
+test('explicit interface declarations')
+	.code(
+		'let Thing = { foo:Text, bar:Number }',
+		'let Thing thing = null',
+		'thing'
+	)
+	.expect(
+		a.declaration('Thing', a.interface({ foo:a.Text, bar:a.Number })),
+		a.declaration('thing', a.null, a.alias('Thing')),
+		a.alias('thing')
+	)
+
+test('handler with logic')
+	.code(
+		'let cat = "hi"',
+		'let foo = handler() {',
+		'	if (cat == "hi") { cat.set("bye") }',
+		'	else { cat.set(foo) }',
+		'}'
+	)
+	.expect(
+		a.declaration('cat', a.literal('hi')),
+		a.declaration('foo', a.handler([], [
+			a.ifElse(a.composite(a.alias('cat'), '==', a.literal('hi')),[
+				a.mutation(a.alias('cat'), 'set', [a.literal('bye')])
+			], [
+				a.mutation(a.alias('cat'), 'set', [a.alias('foo')])
+			])
+		]))
+	)
+
+// let foo = function(path, params, handler1) {
+// 	let versionedPath = "/pay/v1/" + path
+// 	let handler2 = handler() {
+// 		handler1()
+// 	}
+// }
+
+// Invocable
+// subtype(Invocable, Handler)
+// subtype(Invocable, Template)
+// subtype(Invocable, Function)
+// 
+// If you add two values with +, the lowest common denominator is to convert values to texts
+// 
+// XHR.post('/get', handler(err, response) {
+// 	if (err) {
+// 		
+// 	}
+// 	response.foo
+// 	response.bar
+// })
+// 
+// let foo = function(a, b, { foo:Text, blah:@optional Number } c)
+
+// test('type-inferred function invocation')
+// 	.code(
+// 		'let Response = { error:Text, result:Text }',
+// 		'let post = function(Text path, Anything params) {',
+// 		'	return { error:"foo", response:"bar" }',
+// 		'}',
+// 		'let response = post("/test", { foo:"bar" })'
+// 	)
+// 	.expect(
+// 		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),
+// 		a.declaration('post', a.function([a.argument('path', a.Text), a.argument('params', a.Anything)], [
+// 			a.return(a.object({ error:a.literal('foo'), response:a.literal('bar') }))
+// 		])),
+// 		a.declaration('response', a.invocation(a.alias('post'), a.literal('/test'), a.object({ foo:a.literal('bar')})))
+// 	)
+// 
+// let Thing = { num:Number, foo:{ bar:[Text] }}
+// let Number five = 5
+// let Thing thing = { num:five, foo:{ bar:"cat" }}
+// let { num:Number, foo:{ bar:Text } } thing = { num:five, foo:{ bar:"cat" }}
+// let fun = function(Thing thing, { num:Number, foo:Text } alt) { ... }
+// let Response post = function(path, params) { return XHR.post(path, params) }
+// let response = post('/path', { foo:'bar' })
+// assert response.type == Response
+// let tar = XHR.post("/test", { foo:'bar' })
+// let Response tar = XHR.post("/test", { foo:'bar' })
+// let { error:String, result:String } tar = XHR.post("/test", { foo:'bar' })
+
 /* Util
  ******/
 function test(name) {

@@ -14,42 +14,80 @@ var currentTestCode, compilerServer
 	
 startCompilerServer()
 
-test('a number and a string').compile(
+test('a number and a string').code(
 	'<div>"Hello " 1</div>')
 	.htmlIs('div', '<div>Hello 1</div>')
 
-test('clicking a button updates the UI').compile(
+test('clicking a button updates the UI').code(
 	'let foo = "bar"',
 	'<div id="output">foo</div>',
 	'<button id="button"></button onClick=handler() {',
 	'	foo.set("cat")',
 	'}>')
-	.htmlIs('#output', 'bar')
+	.textIs('#output', 'bar')
 	.click('#button')
-	.htmlIs('#output', 'cat')
-// 
-// test('a declaration and reference').compile(
-// 	'let foo = "bar"',
-// 	'<div>"foo = " foo</div>')
-// 	.htmlIs('div', '<div>foo = bar</div>')
-// 
-// test('object literals').compile(
-// 	'let foo = { nested: { bar:1 } }',
-// 	'let nested = foo.nested',
-// 	'foo foo.nested nested foo.nested.bar')
+	.textIs('#output', 'cat')
+
+// test('value changes type')
+// 	.compile(
+// 		'let foo = "bar"',
+// 		'<div id="value">foo</div>',
+// 		'<div id="Type">foo.Type</div>',
+// 		'<button id="button"></button onClick=handler() { foo.set(1) }>'
+// 	)
+// 	.textIs('#value', 'bar')
+// 	.textIs('#Type', 'Text')
+// 	.click('#button')
+// 	.textIs('#value', 1)
+// 	.textIs('#Type', 'Number')
+
+test('object literals').code(
+	'let foo = { nested: { bar:1 } }',
+	'let nested = foo.nested',
+	'<div id="output">foo foo.nested nested foo.nested.bar</div>'
+	)
+	.textIs('#output', '{"type":"OBJECT","resolved":{"nested":{"type":"OBJECT","resolved":{"bar":{"type":"VALUE","initialValue":1,"valueType":"number"}}}}}{"type":"OBJECT","resolved":{"bar":{"type":"VALUE","initialValue":1,"valueType":"number"}}}{"type":"OBJECT","resolved":{"bar":{"type":"VALUE","initialValue":1,"valueType":"number"}}}1')
+
+// test('handler with logic')
+// 	.code(
+// 		'let cat = "hi1"',
+// 		'let foo = handler() {',
+// 		'	if (cat == "hi1") { cat.set("hi2") }',
+// 		'	else { cat.set("hi3") }',
+// 		'}',
+// 		'<button id="button" onclick=foo/>',
+// 		'<div id="output">cat</div>'
+// 	)
+// 	.textIs('#output', 'hi1')
+// 	.click('#button')
+// 	.textIs('#output', 'hi2')
+// 	.click('#button')
+// 	.textIs('#output', 'hi3')
+
 
 /* Util
  ******/
 var isFirstTest = true
 function test(name) {
 	return {
-		compile: function() {
+		code: function() {
 			var code = std.slice(arguments).join('\n'),
 				actions = this._actions = []
 			
 			module.exports['compile\t"'+name+'"'] = function(assert) {
 				currentTestCode = code
-				if (isFirstTest) { console.log('loading headless browser...'); isFirstTest = false }
+				
+				try {
+					var tokens = tokenizer.tokenize(currentTestCode),
+						parsedAST = parser.parse(tokens),
+						resolvedAST = resolver.resolve(parsedAST),
+						result = compiler._printHTML(compiler.compile(resolvedAST))
+				} catch(e) {
+					console.log(e.stack)
+					process.exit()
+				}
+				
+				if (isFirstTest) { console.log('loading headless browser - hang tight!'); isFirstTest = false }
 				zombie.visit('http://localhost:'+compilerServerPort, function(err, browser, status) {
 					if (err) { throw err }
 					if (status != 200) { throw new Error("Got bad status from compiler server:", status) }
@@ -72,6 +110,7 @@ function test(name) {
 			return this
 		},
 		htmlIs: chainableAction('htmlIs'),
+		textIs: chainableAction('textIs'),
 		click: chainableAction('click')
 	}
 }
@@ -90,6 +129,10 @@ var actionHandlers  = {
 	},
 	htmlIs: function(assert, browser, next, selector, expectedHTML) {
 		assert.deepEqual(expectedHTML, browser.html(selector))
+		next()
+	},
+	textIs: function(assert, browser, next, selector, expectedHTML) {
+		assert.deepEqual(expectedHTML, browser.text(selector))
 		next()
 	}
 }
