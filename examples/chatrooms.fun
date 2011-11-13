@@ -2,7 +2,7 @@ import Local
 import Global
 
 // Chatrooms app templates
-let Templates = {
+let templates = {
 	
 	// List all the rooms
 	roomsList: template() {
@@ -58,11 +58,11 @@ let Templates = {
 <link rel="stylesheet" href="examples/chatrooms.css" />
 
 <div class="rooms">
-	Templates.roomsList()
-	Templates.newRoomControls()
+	templates.roomsList()
+	templates.newRoomControls()
 </div>
 
 if (Local.currentRoom) {
 	// TODO Pass in Local.currentRoom and rename template to renderRoom
-	Templates.renderCurrentRoom()
+	templates.renderCurrentRoom()
 }
