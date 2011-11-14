@@ -10,7 +10,7 @@ test("a declared alias for a string")
 		'let guy = "Marcus"',
 		'guy'
 	)
-	.declarations(ref(1, a.value('Marcus')))
+	.values(ref(1, a.value('Marcus')))
 	.expressions(a.value('Marcus'))
 	.expressions(ref(1))
 
@@ -25,18 +25,37 @@ test("two nested properties")
 		'let foo = { bar:1, cat:"cat" }',
 		'foo.bar foo.cat'
 	)
-	.declarations(ref(1, a.value(1)), ref(2, a.value("cat")))
+	.values(ref(1, a.value(1)), ref(2, a.value("cat")))
 	.expressions(a.value(1), a.value("cat"))
 	.expressions(ref(1), ref(2))
 
-test('nested declarations')
+test('nested values')
 	.code(
-		'let foo = { nested: { cat:"yay" } },',
-		'	bar = foo.nested,',
-		'	cat = bar.cat',
+		'let foo = { nested: { cat:"yay" } }',
+		'let bar = foo.nested',
+		'let cat = bar.cat',
+		'let cat2 = foo.nested.cat',
 		'foo.nested.cat bar.cat cat bar')
-	.declarations(ref(1, a.value("yay")))
-	.expressions([], ref(1), ref(1), ref(1), a.object({ cat:ref(1) }))
+	.values(
+		ref(1, a.value('cat')),
+		ref(2, a.value({ cat:ref(1) })),
+		ref(3, a.value({ nested:ref(2) })),
+		ref(4, a.dereference(ref(3), 'nested')),
+		ref(5, a.dereference(ref(4), 'cat')),
+		ref(6, a.dereference(ref(3), 'nested.cat'))
+	)
+	.expressions(a.dereference(), ref(1), ref(1), ref(4))
+
+all values are typed at runtime, and can change type. there are
+	atomics: numbers, text, bool, null
+	collections: list, object
+	collection dereferences: foo.bar.cat, taw[1][4]
+	do we want dynamic dereferencing?: foo[bar]
+an expression is
+	
+
+
+a dereference is a value
 
 test('clicking a button updates the UI')
 	.code(
@@ -47,7 +66,7 @@ test('clicking a button updates the UI')
 		'	foo.set("cat")',
 		'	qwe.set(foo)',
 		'}>')
-	.declarations(
+	.values(
 		ref(1, a.value("bar")),
 		ref(2, a.value("cat")),
 		ref(3, a.handler([], [
@@ -64,7 +83,7 @@ test('clicking a button updates the UI')
 // Null values
 // Handlers, Functions and Templates as expressions and being emitted
 // 
-// test('typed value declarations')
+// test('typed value values')
 // 	.code(
 // 		'let Response = { error:Text, result:Text }',
 // 		'let Response response = { error:"foo", result:"bar" }',
@@ -109,8 +128,8 @@ function test(name) {
 			runTest('expressions', std.slice(arguments))
 			return this
 		},
-		declarations: function() {
-			runTest('declarations', std.slice(arguments))
+		values: function() {
+			runTest('values', std.slice(arguments))
 			return this
 		}
 	}

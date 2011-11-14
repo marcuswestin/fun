@@ -526,16 +526,6 @@ function _compileHandlerStatement(ast) {
 	}
 }
 
-var compileJavascriptBridge = function(ast) {
-	var value = ast.value,
-		args = map(ast.args, _runtimeValue)
-	
-	switch (value.jsType) {
-		case 'function': return code('{{ functionName }}({{ args }})', { functionName: value.jsName, args: args.join(',') })
-		default:         halt(ast, 'Unknown javascript bridge type')
-	}
-}
-
 var compileItemPropertyMutation = function(ast) {
 	// TODO Need to check if any of the ast.args are asynchronously retrieved, in which case we need
 	//  to wait for them
@@ -584,8 +574,6 @@ var _compileMutationStatement = function(ast) {
 	// switch(ast.value.type) {
 	// 	case 'MUTATION_ITEM_CREATION':
 	// 		return compileMutationItemCreation(ast)
-	// 	case 'JAVASCRIPT_BRIDGE':
-	// 		return compileJavascriptBridge(ast)
 		// case 'ITEM_PROPERTY':
 		// 	return compileItemPropertyMutation(ast)
 	// 	default:

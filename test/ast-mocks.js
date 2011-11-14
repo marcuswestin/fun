@@ -8,13 +8,12 @@ module.exports = {
 	value: value,
 	literal: literal,
 	alias: alias,
-	aliases: aliases,
+	variable: variable,
+	reference: reference,
 	composite: composite,
 	value: value,
 	list: list,
 	xml: xml,
-	declaration: declaration,
-	declarations: declarations,
 	ifElse: ifElse,
 	forLoop: forLoop,
 	importFile: importFile,
@@ -31,6 +30,10 @@ module.exports = {
 	Anything:_type('Anything'),
 	invocation: invocation,
 	'null':nullValue()
+}
+
+function reference(namespace) {
+	return { type:'REFERENCE', namespace:namespace.split('.') }
 }
 
 function nullValue() {
@@ -81,12 +84,13 @@ function value(value, interface) {
 	return ast
 }
 
-function alias(namespace) {
-	namespace = namespace.split('.')
-	return { type:'ALIAS', namespace:namespace }
+function alias(name, value) {
+	return { type:'ALIAS_DECLARATION', name:name, value:value }
 }
 
-function aliases() {}
+function variable(name, initialValue) {
+	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
+}
 
 function composite(left, operator, right) {
 	return { type:'COMPOSITE', operator:operator, left:left, right:right }
@@ -101,18 +105,6 @@ function xml(tag, attrs, block) {
 		return { name:key, value:val }
 	})
 	return { type:'XML', tagName:tag, attributes:attrs, block:block || [] }
-}
-
-function declaration(name, value, interface) {
-	return { type:'DECLARATION', name:name, value:value, interface:interface }
-}
-
-function declarations(name1, value1 /*, ... */) {
-	var decls = []
-	for (var i=0; i<arguments.length; i+=2) {
-		decls.push(declaration(arguments[i], arguments[i+1]))
-	}
-	return decls
 }
 
 function ifElse(condition, ifBranch, elseBranch) {

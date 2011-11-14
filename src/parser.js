@@ -26,13 +26,10 @@ exports.parse = function(tokens) {
 	var ast = []
 	
 	var setupAST
-	while (setupAST = parseSetupStatement()) {
-		ast.push(setupAST)
-	}
+	while (setupAST = parseSetupStatement()) { ast.push(setupAST) }
 	
-	while (peek()) {
-		ast.push(parseStatement())
-	}
+	while (peek()) { ast.push(parseEmitStatement()) }
+	
 	return util.cleanup(ast)
 }
 
@@ -41,6 +38,8 @@ exports.parse = function(tokens) {
  ************************************************************/
 function parseSetupStatement() {
 	if (peek('keyword', 'import')) { return _parseImportStatement() }
+	if (peek('keyword', 'var')) { return parseVariableDeclaration() }
+	if (peek('keyword', 'let')) { return parseAliasDeclaration() }
 }
 
 var _parseImportStatement = astGenerator(function() {
@@ -53,62 +52,48 @@ var _parseImportStatement = astGenerator(function() {
 	}
 })
 
-/***********************************************************
- * Declaration/Control statements and emitting expressions *
- ***********************************************************/
-var parseStatement = function() {
-	if (peek('keyword', 'null')) { return nullValue() }
-	if (peek('keyword')) { return _doParseStatement(parseStatement) }
+/****************************************************
+ * Control flow statements and emitting expressions *
+ ****************************************************/
+var parseEmitStatement = function() {
 	if (peek('symbol', '<')) { return parseXML() }
-	return parseExpression()
-}
-
-var _doParseStatement = function(statementParseFunction) {
-	switch(peek().value) {
-		case 'let':      return parseDeclarationStatement()
-		case 'for':      return parseForLoopStatement(statementParseFunction)
-		case 'if':       return parseIfStatement(statementParseFunction)
-		case 'switch':   return parseSwitchStatement(statementParseFunction)
-		case 'debugger': return parseDebuggerStatement()
-		case 'return':   return parseReturnStatement()
-		default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while parsing a statement')
+	if (peek('keyword')) {
+		switch(peek().value) {
+			case 'let':      return parseAliasDeclaration()
+			case 'for':      return parseForLoopStatement(parseEmitStatement)
+			case 'if':       return parseIfStatement(parseEmitStatement)
+			case 'switch':   return parseSwitchStatement(parseEmitStatement)
+			case 'debugger': return parseDebuggerLiteral()
+			default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while trying to parse an emit statement')
+		}
 	}
+	return parseExpression()
 }
 
 /****************
  * Declarations *
  ****************/
-var parseReturnStatement = astGenerator(function() {
-	advance('keyword', 'return')
-	var value = parseExpression()
-	return { type:'RETURN', value:value }
-})
-
-var parseDeclarationStatement = astGenerator(function() {
+var parseAliasDeclaration = astGenerator(function() {
 	advance('keyword', 'let')
-	var declarations = []
-	
-	while (true) {
-		var interface = peekInterfaceExpression() ? parseInterfaceExpression() : undefined
-		
-		var name = advance('name').value
-		
-		advance('symbol', '=')
-		
-		var value = util.isUpperCaseLetter(name[0]) ? parseInterfaceExpression() : parseExpression()
-		
-		declarations.push(createAST({ type:'DECLARATION', name:name, value:value, interface:interface }))
-		
-		if (!peek('symbol', ',')) { break }
-		advance('symbol', ',')
-	}
-	
-	return declarations
+	var name = advance('name').value
+	advance('symbol', '=')
+	var value = parseExpression()
+	return { type:'ALIAS_DECLARATION', name:name, value:value }
 })
 
-/************************************************
- * Expressions (literals, aliases, invocations) *
- ************************************************/
+var parseVariableDeclaration = astGenerator(function() {
+	advance('keyword', 'var')
+	var name = advance('name').value
+	if (peek('symbol', '=')) {
+		advance('symbol', '=')
+		var initialValue = parseExpression()
+	}
+	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
+})
+
+/***************************************************
+ * Expressions (literals, references, invocations) *
+ ***************************************************/
 var _expressionOperatorSymbols = ['+','-','*','/','%'], _expressionOperatorKeywords = []
 var parseExpression = function() {
 	return _doParseExpression(_expressionOperatorSymbols, _expressionOperatorKeywords, 0)
@@ -130,7 +115,6 @@ var _operatorBinding = {
 
 var _doParseExpression = astGenerator(function(operatorSymbols, operatorKeywords, leftOperatorBinding) {
 	if (!leftOperatorBinding) { leftOperatorBinding = 0 }
-	if (peek('name', JAVASCRIPT_BRIDGE_TOKEN)) { return _parseJavascriptBridge() }
 
 	var parseMore = std.curry(_doParseExpression, operatorSymbols, operatorKeywords),
 		peekOperator = std.curry(_peekOperator, operatorSymbols, operatorKeywords)
@@ -171,11 +155,11 @@ var _parseRawValue = function() {
 	switch (peek().type) {
 		case 'string':
 		case 'number': return _parseValueLiteral()
-		case 'name':   return _parseAliasOrInvocation()
+		case 'name':   return _parseReferenceOrInvocation()
 		case 'symbol':
 			switch(peek().value) {
-				case L_ARRAY: return parseListLiteral(parseExpression)
-				case L_CURLY: return parseObjectLiteral(parseExpression)
+				case L_ARRAY: return parseListLiteral()
+				case L_CURLY: return parseObjectLiteral()
 				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'" while looking for a value')
 			}
 		case 'keyword':
@@ -183,16 +167,16 @@ var _parseRawValue = function() {
 				case 'template': return parseTemplateLiteral()
 				case 'handler':  return parseHandlerLiteral()
 				case 'function': return parseFunctionLiteral()
-				case 'null':     return nullValue()
+				case 'null':     return parseNullLiteral()
 				default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while looking for a value')
 			}
 		default:       halt(peek(), 'Unexpected token type "'+peek().type+'" while looking for a value')
 	}
 }
 
-var nullValue = astGenerator(function() {
+var parseNullLiteral = astGenerator(function() {
 	advance('keyword', 'null')
-	return { type:'NULL' }
+	return { type:'VALUE_LITERAL', value:null }
 })
 
 var _parseValueLiteral = astGenerator(function() {
@@ -200,74 +184,39 @@ var _parseValueLiteral = astGenerator(function() {
 	return { type:'VALUE_LITERAL', value:gToken.value }
 })
 
-var _parseAliasOrInvocation = astGenerator(function() {
-	var alias = parseAlias()
-	if (!peek('symbol', L_PAREN)) { return alias }
+var _parseReferenceOrInvocation = astGenerator(function() {
+	var reference = parseReference()
+	if (!peek('symbol', L_PAREN)) { return reference }
 	advance('symbol', L_PAREN)
 	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of invocation')
-	return { type:'INVOCATION', invocable:alias, arguments:args }
+	return { type:'INVOCATION', invocable:reference, arguments:args }
 })
-
-// HACK expects __javascriptBridge("function", "FacebookModule.connect") - see e.g. Modules/Facebook/Facebook.fun. TODO: Come up with better syntax than __javascriptBridge(<jsType:string>, <jsName:string>)
-var JAVASCRIPT_BRIDGE_TOKEN = '__javascriptBridge'
-var _parseJavascriptBridge = astGenerator(function() {
-	advance('name', JAVASCRIPT_BRIDGE_TOKEN)
-	advance('symbol', L_PAREN)
-	var jsType = advance('string').value
-	advance('symbol', ',')
-	var jsName = advance('string').value
-	advance('symbol', R_PAREN, 'end of javascript bridge')
-	return { type:'JAVASCRIPT_BRIDGE', jsType:jsType, jsName:jsName }
-})
-
-var parseInterfaceExpression = astGenerator(function() {
-	if (peek('name')) {
-		return parseAlias()
-	}
-	if (peek('type')) {
-		return { type:'INTERFACE', name:advance().value }
-	}
-	if (peek('symbol', L_CURLY)) {
-		return parseObjectLiteral(parseInterfaceExpression, 'INTERFACE')
-	}
-	if (peek('symbol', L_ARRAY)) {
-		return parseListLiteral(parseInterfaceExpression, 'INTERFACE')
-	}
-	halt(peek(), 'Unexpected "'+peek().type+'" while looking for an interface')
-})
-
-var peekInterfaceExpression = function() {
-	if (peek('name')) { return !!peek('name', null, 2) } // let Response response = ...
-	if (peek('type')) { return true } // let Text test = ...
-	if (peek('symbol', L_CURLY)) { return true } // let { ... } obj = ...
-	if (peek('symbol', L_ARRAY)) { return true } // let [ ... ] list = ...
-}
 
 /************************************
  * JSON - list and object listerals *
  ************************************/
-var parseListLiteral = astGenerator(function(valueParserFn, type) {
+var parseListLiteral = astGenerator(function() {
 	advance('symbol', L_ARRAY)
-	var content = parseList(valueParserFn, R_ARRAY)
+	var content = parseList(parseExpression, R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
-	return { type:type || 'LIST', content:content }
+	return { type:'LIST', content:content }
 })
 
-var parseObjectLiteral = astGenerator(function(valueParserFn, type) {
+var parseObjectLiteral = astGenerator(function() {
 	advance('symbol', L_CURLY)
 	var content = []
 	while (true) {
 		if (peek('symbol', R_CURLY)) { break }
 		var key = advance(['name','string']).value
 		advance('symbol', ':')
-		var value = valueParserFn()
+		var value = parseExpression()
 		content.push(createAST({ name:key, value:value }))
 		if (!peek('symbol', ',')) { break }
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:type || 'OBJECT', content:content }
+	return { type:'OBJECT', content:content }
 })
 
 /****************
@@ -313,7 +262,7 @@ var _parseXMLAttribute = astGenerator(function() {
 	var name = advance('name').value.toLowerCase()
 	advance('symbol', '=')
 	var value =
-		name == 'style' ? parseObjectLiteral(parseExpression) :
+		name == 'style' ? parseObjectLiteral() :
 		parseExpression()
 	return { name:name, value:value }
 })
@@ -340,49 +289,56 @@ var _parseScript = astGenerator(function() {
 	return { type:'INLINE_SCRIPT', inlineJavascript:js.join('') }
 })
 
-/************************************
- * Invocables (Templates & Handlers *
- ************************************/
+/***********************************************
+ * Callables - Templates, Handlers & Functions *
+ ***********************************************/
 var parseTemplateLiteral = astGenerator(function() {
-	var callable = _parseCallable(parseStatement, 'template')
+	var callable = _parseCallable(parseEmitStatement, 'template')
 	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 
 var parseHandlerLiteral = astGenerator(function() {
-	if (peek('name')) { return parseAlias() }
+	if (peek('name')) { return parseReference() }
 	var callable = _parseCallable(parseHandlerStatement, 'handler')
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
 
 var parseFunctionLiteral = astGenerator(function() {
-	var callable = _parseCallable(parseStatement, 'function')
+	var callable = _parseCallable(parseFunctionStatement, 'function')
 	return { type:'FUNCTION', signature:callable[0], block:callable[1] }
 })
 
 var _parseCallable = function(statementParseFn, keyword) {
 	advance('keyword', keyword)
 	advance('symbol', L_PAREN)
-	var signature = parseList(_parseCallableArg, R_PAREN)
+	var signature = parseList(function() { createAST({ type:'ARGUMENT', name:advance('name').value }) }, R_PAREN)
 	advance('symbol', R_PAREN)
 	var block = parseBlock(statementParseFn, keyword)
 	return [signature, block]
 }
 
-var _parseCallableArg = astGenerator(function() {
-	if (peekInterfaceExpression()) { var interface = parseInterfaceExpression() }
-	return { type:'ARGUMENT', name:advance('name').value, interface:interface }
+/***********************
+ * Function statements *
+ ***********************/
+var parseFunctionStatement = astGenerator(function() {
+	if (peek('keyword', 'return')) {
+		advance('keyword', 'return')
+		var value = parseExpression()
+		return { type:'RETURN', value:value }
+	}
+	halt(ast, 'Implement parseFunctionStatement')
 })
 
-/************************************************
- * Top level mutation statements (handler code) *
- ************************************************/
+/**********************
+ * Handler statements *
+ **********************/
 var parseHandlerStatement = function() {
 	var token = peek()
 	switch(token.type) {
 		case 'keyword':
 			switch(token.value) {
 				case 'if':        return parseIfStatement(parseHandlerStatement)
-				case 'debugger':  return parseDebuggerStatement()
+				case 'debugger':  return parseDebuggerLiteral()
 				case 'let':       return _parseMutationDeclaration()
 				case 'new':       return _parseItemCreation()
 				default:          log(token); UNKNOWN_MUTATION_KEYWORD
@@ -403,12 +359,12 @@ var _parseMutationDeclaration = astGenerator(function() {
 })
 
 var _parseMutationInvocation = astGenerator(function() {
-	var alias = parseAlias(),
-		operator = alias.namespace.pop()
+	var reference = parseReference(),
+		operator = reference.namespace.pop()
 	advance('symbol', L_PAREN)
 	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of mutation operator')
-	return {type:'MUTATION', operand:alias, operator:operator, arguments:args}
+	return {type:'MUTATION', operand:reference, operator:operator, arguments:args}
 })
 
 var _parseItemCreation = astGenerator(function() {
@@ -424,7 +380,7 @@ var parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'for')
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	
-	var iteratorName = advance('name', null, 'for_loop\'s iterator alias').value,
+	var iteratorName = advance('name', null, 'for_loop\'s iterator reference').value,
 		iteratorValue = createAST({ type:'ITERATOR' }),
 		iterator = createAST({ type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: iteratorValue })
 	
@@ -531,13 +487,13 @@ var parseNamespace = function(msg) {
 }
 
 // return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
-var parseDebuggerStatement = astGenerator(function() {
+var parseDebuggerLiteral = astGenerator(function() {
 	advance('keyword', 'debugger')
 	return { type:'DEBUGGER' }
 })
 
-var parseAlias = astGenerator(function(msg) {
-	return { type: 'ALIAS', namespace: parseNamespace(msg) }
+var parseReference = astGenerator(function(msg) {
+	return { type: 'REFERENCE', namespace:parseNamespace(msg) }
 })
 
 /****************

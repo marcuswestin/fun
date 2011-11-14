@@ -248,22 +248,6 @@ var resolveHandler = function(context, ast) {
 var resolveMutation = function(context, ast) {
 	ast.arguments = map(ast.arguments, bind(this, lookup, context))
 	ast.operand = lookup(context, ast.operand)
-	
-	// // HACK For Javascript bridges, the method ("connect" in Facebook.connect()),
-	// //  gets popped off of the namespace in _parseInvocation. Try to look up
-	// //  ast.alias + ast.method and check to see if it maps to a javascript bridge.
-	// //  If it does, then go with that. Possibly, _parseInvocation could not pop off
-	// //  the last part of the namespace and interpret it as the method. However, that
-	// //  would require the resolver or the compiler to detect item property mutations,
-	// //  and pop off the last part of the namespace for method then. This works for now.
-	// if (!ast.value) {
-	// 	ast.alias.namespace.push(ast.method)
-	// 	var lookForJSBridge = lookup(context, ast.alias)
-	// 	if (lookForJSBridge.type == 'JAVASCRIPT_BRIDGE') {
-	// 		ast.value = lookForJSBridge
-	// 	}
-	// }
-	
 	return ast
 }
 
@@ -350,7 +334,6 @@ var declare = function(context, value) {
 			context.declarations.push(value)
 			break
 		case 'INTERFACE':
-		case 'JAVASCRIPT_BRIDGE':
 		case 'NULL':
 		case 'LIST':
 			// do nothing
