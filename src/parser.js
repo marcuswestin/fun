@@ -86,7 +86,7 @@ var parseVariableDeclaration = astGenerator(function() {
 	var name = advance('name').value
 	if (peek('symbol', '=')) {
 		advance('symbol', '=')
-		var initialValue = parseExpression()
+		var initialValue = parseLiteralExpression(parseLiteralExpression)
 	}
 	return { type:'VARIABLE', name:name, initialValue:initialValue }
 })
@@ -132,7 +132,7 @@ var _doParseExpression = astGenerator(function(operatorSymbols, operatorKeywords
 		return expression
 	}
 
-	var expression = _parseRawValue()
+	var expression = parseLiteralExpression(curry(_doParseExpression, operatorSymbols, operatorKeywords, leftOperatorBinding))
 
 	while (true) {
 		var rightOperator = peekOperator(),
@@ -151,15 +151,15 @@ var _peekOperator = function(operatorSymbols, operatorKeywords) {
 	return ''
 }
 
-var _parseRawValue = function() {
+var parseLiteralExpression = function(collectionExpressionParser) {
 	switch (peek().type) {
 		case 'string':
 		case 'number': return _parseValueLiteral()
 		case 'name':   return _parseReferenceOrInvocation()
 		case 'symbol':
 			switch(peek().value) {
-				case L_ARRAY: return parseListLiteral()
-				case L_CURLY: return parseObjectLiteral()
+				case L_ARRAY: return parseListLiteral(curry(collectionExpressionParser, collectionExpressionParser))
+				case L_CURLY: return parseObjectLiteral(curry(collectionExpressionParser, collectionExpressionParser))
 				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'" while looking for a value')
 			}
 		case 'keyword':
@@ -208,21 +208,21 @@ var _parseReferenceOrInvocation = astGenerator(function() {
 /************************************
  * JSON - list and object listerals *
  ************************************/
-var parseListLiteral = astGenerator(function() {
+var parseListLiteral = astGenerator(function(contentExpressionParseFn) {
 	advance('symbol', L_ARRAY)
-	var content = parseList(parseExpression, R_ARRAY)
+	var content = parseList(contentExpressionParseFn, R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
 	return { type:'LIST_LITERAL', content:content }
 })
 
-var parseObjectLiteral = astGenerator(function() {
+var parseObjectLiteral = astGenerator(function(contentExpressionParseFn) {
 	advance('symbol', L_CURLY)
 	var content = []
 	while (true) {
 		if (peek('symbol', R_CURLY)) { break }
 		var key = advance(['name','string']).value
 		advance('symbol', ':')
-		var value = parseExpression()
+		var value = contentExpressionParseFn()
 		content.push(createAST({ name:key, value:value }))
 		if (!peek('symbol', ',')) { break }
 		advance('symbol',',')
@@ -274,7 +274,7 @@ var _parseXMLAttribute = astGenerator(function() {
 	var name = advance('name').value.toLowerCase()
 	advance('symbol', '=')
 	var value =
-		name == 'style' ? parseObjectLiteral() :
+		name == 'style' ? parseObjectLiteral(parseExpression) :
 		parseExpression()
 	return { name:name, value:value }
 })

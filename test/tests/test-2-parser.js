@@ -94,14 +94,16 @@ test('file import')
 test('nested declaration')
 	.code(
 		'var foo = { nested: { cat:"yay" } }',
-		'var bar = foo.nested',
 		'foo bar foo.nested'
 	)
 	.expect(
 		a.variable('foo', a.object({ nested:a.object({ cat:a.literal('yay') }) })),
-		a.variable('bar', a.reference('foo.nested')),
 		a.reference('foo'), a.reference('bar'), a.reference('foo.nested')
 	)
+
+test('deep nested declaration')
+	.code('var asd = { a:{b:{c:{d:{e:{f:{}}}}}}}')
+	.expect(a.variable('asd', a.object({ a:a.object({ b:a.object({ c:a.object({ d:a.object({ e:a.object({ f:a.object({}) }) }) }) }) }) })))
 
 test('just a declaration')
 	.code('var foo = { bar:1 }')
