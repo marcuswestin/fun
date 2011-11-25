@@ -88,15 +88,8 @@ var declare = function(context, ast, name, value) {
 /************************
  * References & lookups *
  ************************/
-var lookup = function(context, ast, allowMiss) {
-	if (ast.type != 'REFERENCE') { return ast }
-	
-	var value = context.names[ast.name]
-	assert(ast, value, 'Couldn\'t find a variable called "'+ast.name+'"')
-	
-	delete ast.name
-	ast.value = value
-	
+var lookup = function(context, ast) {
+	assert(ast, context.names[ast.name], 'Couldn\'t find a variable called "'+ast.name+'"')
 	return ast
 }
 

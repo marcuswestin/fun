@@ -10,8 +10,8 @@ test("a declared alias for a string")
 		'var guy = "Marcus"',
 		'guy'
 	)
-	.declarations(ref(1, a.variable('guy', a.literal('Marcus'))))
-	.expressions(a.reference(ref(1)))
+	.declarations(a.variable('guy', a.literal('Marcus')))
+	.expressions(a.reference('guy'))
 
 test("an empty div")
 	.code(
@@ -24,11 +24,11 @@ test("nested aliases")
 		'var foo = { bar:1, cat:"cat" }',
 		'foo foo.bar foo.cat'
 	)
-	.declarations(ref(1, a.variable('foo', a.object({ bar:a.literal(1), cat:a.literal('cat') }))))
+	.declarations(a.variable('foo', a.object({ bar:a.literal(1), cat:a.literal('cat') })))
 	.expressions(
-		a.reference(ref(1)),
-		a.reference(ref(1), 'bar'),
-		a.reference(ref(1), 'cat')
+		a.reference('foo'),
+		a.reference('foo.bar'),
+		a.reference('foo.cat')
 	)
 
 // test('nested values and references of references')
@@ -60,16 +60,16 @@ test('clicking a button updates the UI')
 		'	qwe.set(foo)',
 		'}>')
 	.declarations(
-		ref(1, a.variable('foo', 'bar')),
-		ref(2, a.variable('qwe', 'cat')),
-		ref(3, a.handler([], [
-			a.mutation(a.reference(ref(1)), 'set', [a.literal('cat')]),
-			a.mutation(a.reference(ref(2)), 'set', [a.reference(ref(1))])
+		a.variable('foo', 'bar'),
+		a.variable('qwe', 'cat'),
+		ref(1, a.handler([], [
+			a.mutation(a.reference('foo'), 'set', [a.literal('cat')]),
+			a.mutation(a.reference('qwe'), 'set', [a.reference('foo')])
 		]))
 	)
 	.expressions(
-		a.xml('div', { id:a.literal('output') }, [ a.reference(ref(1)) ]),
-		a.xml('button', { id:a.literal('button'), onclick:ref(3) }, [ a.literal('Click me') ])
+		a.xml('div', { id:a.literal('output') }, [ a.reference('foo') ]),
+		a.xml('button', { id:a.literal('button'), onclick:ref(1) }, [ a.literal('Click me') ])
 	)
 
 // Boolean values
