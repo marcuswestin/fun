@@ -24,39 +24,51 @@ fun = {}
  ********/
 	
 	fun.emit = function(parentHookName, value) {
-		if (!value) { return fun.text(hookName, "<NULL>") }
-		if (typeof value == 'number' || typeof value == 'string' || typeof value == 'boolean') { return fun.text(hookName, value) } // This feels wrong
+		if (!value) { return fun.text(parentHookName, "<NULL>") }
+		if (typeof value == 'number' || typeof value == 'string' || typeof value == 'boolean') { return fun.text(parentHookName, value) } // This feels wrong
 		switch(value.type) {
 			case 'REFERENCE':
 				var hookName = fun.hook(fun.name(), parentHookName)
 				fun.observe(namespace(value), function() {
 					_hooks[hookName].innerHTML = ''
-					fun.emit(hookName, fun.get(namespace(value)))
+					var val = fun.get(namespace(value))
+					// This doesn't feel right
+					if (val && val.type == 'OBJECT_LITERAL') { deepEmit(hookName, val.content, namespace(value).split('.')) }
+					else { fun.emit(hookName, val) }
 				})
 				break
 			case 'VALUE_LITERAL':
 				fun.text(parentHookName, value.value)
 				break
 			case 'OBJECT_LITERAL':
-				debugEmitObject(fun.hook(fun.name(), parentHookName), value.content)
+				deepEmit(fun.hook(fun.name(), parentHookName), value.content, [])
 				break
 		}
 	}
 	
-	var debugEmitObject = function(hookName, content) {
+	var deepEmit = function(hookName, content, baseNamespace) {
 		fun.text(hookName, '{ ')
 		var keys = Object.keys(content)
 		for (var i=0, key; key=keys[i]; i++) {
-			var valueHookName = fun.hook(fun.name(), hookName)
+			var valueHookName = fun.hook(fun.name(), hookName),
+				value = content[key]
 			fun.text(valueHookName, key+':')
-			fun.emit(valueHookName, content[key])
+			if (value.type == 'OBJECT_LITERAL') {
+				deepEmit(valueHookName, value.content, baseNamespace.concat(key))
+			} else if (value.type == 'REFERENCE') {
+				fun.emit(valueHookName, value)
+			} else {
+				// This doesn't feel right
+				fun.emit(valueHookName, { type:'REFERENCE', chain:baseNamespace.concat(key) })
+			}
 			if (i+1 < keys.length) { fun.text(valueHookName, ', ') }
 		}
 		fun.text(hookName, ' }')
 	}
 	
 	var namespace = function(reference) {
-		return [reference.value.name].concat(reference.chain).join('.')
+		if (reference.value) { return [reference.value.name].concat(reference.chain).join('.') }
+		else { return reference.chain.join('.') }
 	}
 
 /* Hooks

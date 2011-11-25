@@ -52,6 +52,18 @@ test('drag square with mouse').code(
 	'<div style={ width:100, height:100, background:"red", position:"absolute", top:Mouse.y, left:Mouse.x }/>'
 	)
 
+test('changing object literals').code(
+	'var foo = { a:1 }',
+	'<div id="output">',
+	'	{ foo: { a:foo.a } }',
+	'	{ a:foo.a }',
+	'	foo',
+	'</div onclick=handler(){ foo.a.set(2) }>'
+	)
+	.textIs('#output', '{ foo:{ a:1 } }{ a:1 }{ a:1 }')
+	.click('#output')
+	.textIs('#output', '{ foo:{ a:2 } }{ a:2 }{ a:2 }')
+
 // test('drag square with mouse with composite offset').code(
 // 	'import Mouse',
 // 	'<div style={ width:100, height:100, background:"red", position:"absolute", top:Mouse.y + 50, left:Mouse.x + 50 }/>'
