@@ -13,8 +13,8 @@ test('number literal')
 	.expect(a.literal(1))
 
 test('declaration')
-	.code('let greeting = "hello"')
-	.expect(a.alias('greeting', a.literal("hello")))
+	.code('var greeting = "hello"')
+	.expect(a.variable('greeting', a.literal("hello")))
 
 test('alias single namespace')
 	.code('greeting')
@@ -45,8 +45,8 @@ test('simple if statement')
 	.expect(a.ifElse(a.composite(a.literal(1), '<', a.literal(2)), a.literal(1)))
 
 test('has no null statements or expressions')
-	.code('\nlet foo="bar"\n1\n\n')
-	.expect(a.alias("foo",a.literal("bar")), a.literal(1))
+	.code('var foo="bar"\n1')
+	.expect(a.variable("foo",a.literal("bar")), a.literal(1))
 
 test('variable declaration')
 	.code('var foo = "bar"')
@@ -77,8 +77,11 @@ test('self-closing xml')
 	.expect(a.xml('div'))
 
 test('inline javascript')
-	.code('<script> var i = 1; function a() { alert(i++) }; setInterval(a); </script> let a = 1')
-	.expect(a.inlineScript(' var i = 1; function a() { alert(i++) }; setInterval(a);'), a.alias('a', a.literal(1)))
+	.code('var a = 1\n <script> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
+	.expect(
+		a.variable('a', a.literal(1)),
+		a.inlineScript(' var i = 1; function a() { alert(i++) }; setInterval(a);')
+	)
 
 test('module import')
 	.code('import Test')
@@ -90,35 +93,35 @@ test('file import')
 
 test('nested declaration')
 	.code(
-		'let foo = { nested: { cat:"yay" } }',
-		'let bar = foo.nested',
+		'var foo = { nested: { cat:"yay" } }',
+		'var bar = foo.nested',
 		'foo bar foo.nested'
 	)
 	.expect(
-		a.alias('foo', a.object({ nested:a.object({ cat:a.literal('yay') }) })),
-		a.alias('bar', a.reference('foo.nested')),
+		a.variable('foo', a.object({ nested:a.object({ cat:a.literal('yay') }) })),
+		a.variable('bar', a.reference('foo.nested')),
 		a.reference('foo'), a.reference('bar'), a.reference('foo.nested')
 	)
 
 test('just a declaration')
-	.code('let foo = { bar:1 }')
-	.expect(a.alias('foo', a.object({ bar:a.literal(1) })))
+	.code('var foo = { bar:1 }')
+	.expect(a.variable('foo', a.object({ bar:a.literal(1) })))
 
 test('a handler')
 	.code(
-		'let aHandler = handler(){}'
+		'var aHandler = handler(){}'
 	)
 	.expect(
-		a.alias('aHandler', a.handler())
+		a.variable('aHandler', a.handler())
 	)
 
 test('a button which mutates state')
 	.code(
-		'let foo="bar"',
+		'var foo="bar"',
 		'<button></button onclick=handler(){ foo.set("cat") }>'
 	)
 	.expect(
-		a.alias('foo', a.literal("bar")),
+		a.variable('foo', a.literal("bar")),
 		a.xml('button', { 'onclick':a.handler([],[
 			a.mutation(a.reference('foo'), 'set', [a.literal("cat")])
 		])})
@@ -127,14 +130,14 @@ test('a button which mutates state')
 test('handler with logic')
 	.code(
 		'var cat = "hi"',
-		'let foo = handler() {',
+		'var foo = handler() {',
 		'	if (cat == "hi") { cat.set("bye") }',
 		'	else { cat.set(foo) }',
 		'}'
 	)
 	.expect(
 		a.variable('cat', a.literal('hi')),
-		a.alias('foo', a.handler([], [
+		a.variable('foo', a.handler([], [
 			a.ifElse(a.composite(a.reference('cat'), '==', a.literal('hi')),[
 				a.mutation(a.reference('cat'), 'set', [a.literal('bye')])
 			], [

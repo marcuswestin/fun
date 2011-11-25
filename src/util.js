@@ -1,12 +1,13 @@
 var util = module.exports
 
 var fs = require('fs'),
-	std = require('std')
+	std = require('std'),
+	repeat = require('std/repeat')
 
 util.q = function(val) { return JSON.stringify(val) }
 
 var _uniqueId = 0
-util.name = function(readable) { return '_' + (readable || '') + '$' + (_uniqueId++) }
+util.name = function(readable) { return '_' + (readable || '') + '_' + (_uniqueId++) }
 
 var __uniqueID = 0
 util.uniqueID = function() { return '__uniqueID' + (__uniqueID++) }
@@ -22,13 +23,6 @@ util.cleanup = function(ast) {
 	}
 	var result = clean(ast)
 	return !result ? [] : (std.isArray(result) ? result : [result])
-}
-
-util.shallowCopy = function(obj, merge) {
-	var result = {}
-	for (var key in obj) { result[key] = obj[key] }
-	for (var key in merge) { result[key] = merge[key] }
-	return result
 }
 
 util.create = function(oldObject, props) {
@@ -65,19 +59,11 @@ util.pick = function(arr, fn) {
 
 util.boxComment = function(msg) {
 	var len = msg.length
-	return '/**' + _repeat('*', len) + "**\n" +
+	return '/**' + repeat('*', len) + "**\n" +
 		' * ' + msg	+ " *\n" +
-		' **' + _repeat('*', len) + "**/"
+		' **' + repeat('*', len) + "**/"
 }
 
-
-var bind = util.bind = function(context, method) {
-	var args = Array.prototype.slice.call(arguments,2);
-	return function bound(){
-		method=(typeof method=='string' ? context[method] : method);
-		return method.apply(context, args.concat(Array.prototype.slice.call(arguments,0)))
-	}
-}
 
 util.grabLine = function(code, lineNumber, column, length) {
 	length = length || 1
@@ -85,7 +71,7 @@ util.grabLine = function(code, lineNumber, column, length) {
 		line = _replace(lines[lineNumber - 1], '\t', ' ')
 	
 	return '\n\t' + line + '\n\t'
-		+ _repeat(' ', column - 1) + _repeat('^', length)
+		+ repeat(' ', column - 1) + repeat('^', length)
 }
 
 util.assert = function(ast, ok, msg) { if (!ok) util.halt(ast, msg) }
@@ -116,11 +102,6 @@ util.isUpperCaseLetter = function(letter) {
 
 /* unexposed utility functions
  *****************************/
-function _repeat(str, times) {
-	if (times < 0) { return '' }
-	return new Array(times + 1).join(str)
-}
-
 function _replace(haystack, needle, replacement) {
 	while (haystack.match(needle)) {
 		haystack = haystack.replace(needle, replacement)

@@ -24,16 +24,20 @@ module.exports = {
 	'function':func,
 	'return':ret,
 	mutation:mutation,
-	interface:interface,
-	Text:_type('Text'),
-	Number:_type('Number'),
-	Anything:_type('Anything'),
 	invocation: invocation,
-	'null':nullValue()
+	'null':nullValue(),
+	object:object
+}
+
+function object(kvps) {
+	var content = []
+	for (var key in kvps) { content.push({ name:key, value:kvps[key] }) }
+	return { type:'OBJECT_LITERAL', content:content }
 }
 
 function reference(namespace) {
-	return { type:'REFERENCE', namespace:namespace.split('.') }
+	namespace = namespace.split('.')
+	return { type:'REFERENCE', name:namespace.shift(), chain:namespace }
 }
 
 function nullValue() {
@@ -53,18 +57,8 @@ function func(signature, block) {
 	return { type:'FUNCTION', signature:signature, block:block }
 }
 
-function argument(name, interface) {
-	return { type:'ARGUMENT', name:name, interface:interface }
-}
-
-function _type(name) {
-	return { type:'INTERFACE', name:name }
-}
-
-function interface(content) {
-	return { type:'INTERFACE', content:(isArray(content) ? content : map(content, function(val, key) {
-		return { name:key, value:val }
-	})) }
+function argument(name) {
+	return { type:'ARGUMENT', name:name }
 }
 
 function mutation(operand, operator, args) {
@@ -75,12 +69,11 @@ function literal(value) {
 	return { type:'VALUE_LITERAL', value:value }
 }
 
-function value(value, interface) {
+function value(value) {
 	var ast = {}
 	ast.type = 'VALUE'
 	ast.initialValue = value
 	ast.valueType = typeof value
-	if (typeof interface != 'undefined') { ast.interface = interface }
 	return ast
 }
 
@@ -89,7 +82,8 @@ function alias(name, value) {
 }
 
 function variable(name, initialValue) {
-	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
+	if (typeof initialValue == 'number' || typeof initialValue == 'string') { initialValue = literal(initialValue) }
+	return { type:'VARIABLE', name:name, initialValue:initialValue }
 }
 
 function composite(left, operator, right) {
@@ -97,7 +91,7 @@ function composite(left, operator, right) {
 }
 
 function list() {
-	return { type:'LIST', content:std.slice(arguments, 0) }
+	return { type:'LIST_LITERAL', content:std.slice(arguments, 0) }
 }
 
 function xml(tag, attrs, block) {
@@ -115,7 +109,7 @@ function ifElse(condition, ifBranch, elseBranch) {
 }
 
 function forLoop(iterable, iteratorName, block) {
-	var iterator = { type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: { type:'ITERATOR' } }
+	var iterator = { type:'ITERATOR', name:iteratorName }
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 }
 

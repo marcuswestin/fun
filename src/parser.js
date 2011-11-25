@@ -39,7 +39,7 @@ exports.parse = function(tokens) {
 function parseSetupStatement() {
 	if (peek('keyword', 'import')) { return _parseImportStatement() }
 	if (peek('keyword', 'var')) { return parseVariableDeclaration() }
-	if (peek('keyword', 'let')) { return parseAliasDeclaration() }
+	// if (peek('keyword', 'let')) { return parseAliasDeclaration() }
 }
 
 var _parseImportStatement = astGenerator(function() {
@@ -59,7 +59,7 @@ var parseEmitStatement = function() {
 	if (peek('symbol', '<')) { return parseXML() }
 	if (peek('keyword')) {
 		switch(peek().value) {
-			case 'let':      return parseAliasDeclaration()
+			// case 'let':      return parseAliasDeclaration()
 			case 'for':      return parseForLoopStatement(parseEmitStatement)
 			case 'if':       return parseIfStatement(parseEmitStatement)
 			case 'switch':   return parseSwitchStatement(parseEmitStatement)
@@ -88,7 +88,7 @@ var parseVariableDeclaration = astGenerator(function() {
 		advance('symbol', '=')
 		var initialValue = parseExpression()
 	}
-	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
+	return { type:'VARIABLE', name:name, initialValue:initialValue }
 })
 
 /***************************************************
@@ -168,6 +168,8 @@ var _parseRawValue = function() {
 				case 'handler':  return parseHandlerLiteral()
 				case 'function': return parseFunctionLiteral()
 				case 'null':     return parseNullLiteral()
+				case 'true':     return parseTrueLiteral()
+				case 'false':    return parseFalseLiteral()
 				default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while looking for a value')
 			}
 		default:       halt(peek(), 'Unexpected token type "'+peek().type+'" while looking for a value')
@@ -177,6 +179,16 @@ var _parseRawValue = function() {
 var parseNullLiteral = astGenerator(function() {
 	advance('keyword', 'null')
 	return { type:'VALUE_LITERAL', value:null }
+})
+
+var parseTrueLiteral = astGenerator(function() {
+	advance('keyword', 'true')
+	return { type:'VALUE_LITERAL', value:true }
+})
+
+var parseFalseLiteral = astGenerator(function() {
+	advance('keyword', 'false')
+	return { type:'VALUE_LITERAL', value:false }
 })
 
 var _parseValueLiteral = astGenerator(function() {
@@ -200,7 +212,7 @@ var parseListLiteral = astGenerator(function() {
 	advance('symbol', L_ARRAY)
 	var content = parseList(parseExpression, R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
-	return { type:'LIST', content:content }
+	return { type:'LIST_LITERAL', content:content }
 })
 
 var parseObjectLiteral = astGenerator(function() {
@@ -216,7 +228,7 @@ var parseObjectLiteral = astGenerator(function() {
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:'OBJECT', content:content }
+	return { type:'OBJECT_LITERAL', content:content }
 })
 
 /****************
@@ -240,7 +252,7 @@ var parseXML= astGenerator(function() {
 		var statements = []
 		while(true) {
 			if (peek('symbol', '</')) { break }
-			statements.push(parseStatement())
+			statements.push(parseEmitStatement())
 		}
 		advance('symbol', '</')
 		advance('name', tagName, 'matching XML tags')
@@ -339,8 +351,7 @@ var parseHandlerStatement = function() {
 			switch(token.value) {
 				case 'if':        return parseIfStatement(parseHandlerStatement)
 				case 'debugger':  return parseDebuggerLiteral()
-				case 'let':       return _parseMutationDeclaration()
-				case 'new':       return _parseItemCreation()
+				// case 'let':       return parseAliasDeclaration()
 				default:          log(token); UNKNOWN_MUTATION_KEYWORD
 			}
 		default:
@@ -348,30 +359,15 @@ var parseHandlerStatement = function() {
 	}
 }
 
-var _parseMutationDeclaration = astGenerator(function() {
-	advance('keyword', 'let')
-	var name = advance('name').value
-	advance('symbol', '=')
-	var value = (peek('keyword', 'new')
-		? _parseItemCreation()
-		: parseExpression())
-	return {type: 'MUTATION_DECLARATION', name:name, value:value }
-})
-
 var _parseMutationInvocation = astGenerator(function() {
 	var reference = parseReference(),
-		operator = reference.namespace.pop()
+		operator = reference.chain.pop()
 	advance('symbol', L_PAREN)
 	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of mutation operator')
 	return {type:'MUTATION', operand:reference, operator:operator, arguments:args}
 })
 
-var _parseItemCreation = astGenerator(function() {
-	advance('keyword', 'new')
-	var itemProperties = parseObjectLiteral()
-	return {type: 'MUTATION_ITEM_CREATION', properties:itemProperties}
-})
 
 /*************
 * For loops *
@@ -381,8 +377,7 @@ var parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	
 	var iteratorName = advance('name', null, 'for_loop\'s iterator reference').value,
-		iteratorValue = createAST({ type:'ITERATOR' }),
-		iterator = createAST({ type:'FOR_ITERATOR_DECLARATION', name:iteratorName, value: iteratorValue })
+		iterator = createAST({ type:'ITERATOR', name:iteratorName })
 	
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	var iterable = parseExpression()
@@ -473,27 +468,19 @@ var parseBlock = function(statementParseFn, statementType) {
 	return block
 }
 
-// parses <name1>.<name2>.<name3>...
-// expects the current token to be <name1> (e.g. foo foo.bar.cat)
-var parseNamespace = function(msg) {
-	var namespace = []
-	while(true) {
-		var token = advance('name')
-		namespace.push(token.value)
-		if (!peek('symbol', '.')) { break }
-		advance('symbol', '.', msg)
-	}
-	return namespace
-}
-
-// return an AST for the debugger keyword (translates directly into the javascript debugger keyword in the output code)
 var parseDebuggerLiteral = astGenerator(function() {
 	advance('keyword', 'debugger')
 	return { type:'DEBUGGER' }
 })
 
-var parseReference = astGenerator(function(msg) {
-	return { type: 'REFERENCE', namespace:parseNamespace(msg) }
+var parseReference = astGenerator(function() {
+	var name = advance('name').value
+	var chain = []
+	while(peek('symbol', '.')) {
+		advance('symbol', '.')
+		chain.push(advance('name').value)
+	}
+	return { type:'REFERENCE', name:name, chain:chain }
 })
 
 /****************

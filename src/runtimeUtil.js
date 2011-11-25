@@ -1,43 +1,73 @@
-window.fun = {}
+fun = {}
 ;(function() {
+	var _unique,
+		_hooks, _hookCallbacks,
+		_values, _observers
 	
-	var doc = document
+	var q = function(val) { return JSON.stringify(val) }
 	
-	var _unique = 0
+	fun.reset = function() {
+		_unique = 0
+		_hooks = {}
+		_hookCallbacks = {}
+		_values = { type:'OBJECT_LITERAL', content:{} }
+		_observers = {}
+	}
+	
+	fun.debugDump = function() {
+		console.log({ _unique: 0, _hooks: {}, _hookCallbacks: {}, _values: {}, _observers: {} })
+	}
+	
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
+
+/* Values
+ ********/
 	
-	// var namePromise = getPromise()
-	// namePromise(function(name){ alert('hello '+name) })
-	// namePromise(function(name){ alert('hello '+name) })
-	// namePromise.fulfill('world') // alerts "hello world" twice
-	// alert('hello '+namePromise.fulfillment[0]) // alerts "hello world" once
-	function getPromise() {
-		var waiters = []
-		var promise = function(onFulfilled) {
-			if (promise.fulfillment) { onFulFilled.apply(this, promise.fulfillment) }
-			else { waiters.push(onFulfilled) }
+	fun.emit = function(parentHookName, value) {
+		if (!value) { return fun.text(hookName, "<NULL>") }
+		if (typeof value == 'number' || typeof value == 'string' || typeof value == 'boolean') { return fun.text(hookName, value) } // This feels wrong
+		switch(value.type) {
+			case 'REFERENCE':
+				var hookName = fun.hook(fun.name(), parentHookName)
+				fun.observe(namespace(value), function() {
+					_hooks[hookName].innerHTML = ''
+					fun.emit(hookName, fun.get(namespace(value)))
+				})
+				break
+			case 'VALUE_LITERAL':
+				fun.text(parentHookName, value.value)
+				break
+			case 'OBJECT_LITERAL':
+				debugEmitObject(fun.hook(fun.name(), parentHookName), value.content)
+				break
 		}
-		promise.fulfill = function() {
-			promise.fulfillment = arguments
-			for (var i=0; i < waiters.length; i++) {
-				waiters[i].apply(promise.fulfillment)
-			}
-			delete waiters
+	}
+	
+	var debugEmitObject = function(hookName, content) {
+		fun.text(hookName, '{ ')
+		var keys = Object.keys(content)
+		for (var i=0, key; key=keys[i]; i++) {
+			var valueHookName = fun.hook(fun.name(), hookName)
+			fun.text(valueHookName, key+':')
+			fun.emit(valueHookName, content[key])
+			if (i+1 < keys.length) { fun.text(valueHookName, ', ') }
 		}
-		return promise
+		fun.text(hookName, ' }')
+	}
+	
+	var namespace = function(reference) {
+		return [reference.value.name].concat(reference.chain).join('.')
 	}
 
 /* Hooks
  *******/
-	var _hooks = {},
-		_hookCallbacks = {}
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
 	fun.getHook = function(name) { return _hooks[name] }
 	fun.hook = function(name, parentName, opts) {
 		if (_hooks[name]) { return name }
 		opts = opts || {}
 		var parent = _hooks[parentName],
-			hook = _hooks[name] = doc.createElement(opts.tagName || 'fun')
+			hook = _hooks[name] = document.createElement(opts.tagName || 'fun')
 		
 		for (var key in opts.attrs) { fun.attr(name, key, opts.attrs[key]) }
 		
@@ -64,39 +94,69 @@ window.fun = {}
 
 /* Values
  ********/
-	var values = {},
-		types = {},
-		observers = {}
-	fun.declare = function(id, type, value) {
-		values[id] = value
-		types[id] = type
+	fun.set = function(name, toValue) {
+		var oldValue,
+			penTopValue = _values,
+			namespace = name.split('.'),
+			topName = namespace[namespace.length-1]
+		
+		for (var i=0; i<namespace.length-1; i++) {
+			if (!penTopValue) { throw new Error('Null dereference in set: ' + namespace.slice(1, i).join('.')) }
+			penTopValue = penTopValue.content[namespace[i]]
+		}
+		
+		if (penTopValue.type != 'OBJECT_LITERAL') { throw new Error('Tried to set property on non-object') }
+		
+		oldValue = penTopValue.content[topName]
+		penTopValue.content[topName] = toValue
+		
+		// If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
+		notifyProperties(namespace, oldValue)
+		
+		// If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
+		notifyProperties(namespace, toValue)
+		
+		notify(namespace)
 	}
-	fun.set = function(uniqueID, value) {
-		values[uniqueID] = value
-		for (var observationID in observers[uniqueID]) {
-			observers[uniqueID][observationID]({ value:value })
+	var notifyProperties = function(baseNamespace, value) {
+		if (!value || value.type != 'OBJECT_LITERAL') { return }
+		for (var key in value.content) {
+			var namespace = baseNamespace.concat(key)
+			notify(namespace)
+			notifyProperties(namespace, value.content[key])
 		}
 	}
-	fun.get = function(uniqueID) {
-		return values[uniqueID]
-	}
-	fun.observe = function(uniqueID, callback) {
-		callback({ value:values[uniqueID] })
-		var observationID = _unique++
-		if (!observers[uniqueID]) { observers[uniqueID] = {} }
-		observers[uniqueID][observationID] = callback
-		return observationID
-	}
-	fun.unobserve = function(uniqueID, observationID) {
-		delete observers[uniqueID][observationID]
-	}
-	fun.splitListMutation = function(callback, mutation) {
-		var args = mutation.args
-		for (var i=0, arg; arg = args[i]; i++) {
-			callback(arg, mutation.op)
-		}
+	var notify = function(namespace) {
+		var notify = _observers[namespace.join('.')]
+		for (var id in notify) { notify[id]() }
 	}
 	
+	fun.get = function(name, dontThrow) {
+		var namespace = name.split('.'),
+			value = _values.content[namespace[0]]
+		for (var i=1; i<namespace.length; i++) {
+			if (!value) {
+				if (dontThrow) { return undefined }
+				throw new Error('Null dereference in get: ' + namespace.join('.'))
+			}
+			if (value.type != 'OBJECT_LITERAL') {
+				if (dontThrow) { return undefined }
+				throw new Error('Tried to dereference a non-object in get: ' + namespace.join('.'))
+			}
+			value = value.content[namespace[i]]
+		}
+		return value
+	}
+	fun.observe = function(name, callback) {
+		if (!_observers[name]) { _observers[name] = {} }
+		var uniqueID = 'u'+_unique++
+		_observers[name][uniqueID] = callback
+		callback()
+		return uniqueID
+	}
+	fun.unobserve = function(namespace, observationID) {
+		delete observers[namespace.join('.')][observationID]
+	}
 /* DOM
  *****/
 	fun.attr = function(name, key, value) {
@@ -116,6 +176,23 @@ window.fun = {}
 			if (typeof value == 'number') { value = value + 'px' }
 			if (key == 'float') { key = 'cssFloat' }
 			_hooks[name].style[key] = value
+		}
+	}
+	
+	fun.reflectStyles = function(hookName, values) {
+		for (var key in values) {
+			var value = values[key]
+			switch(value.type) {
+				case 'VALUE_LITERAL':
+					fun.style(hookName, key, value.value)
+					break
+				case 'REFERENCE':
+					(function(value, key) {
+						fun.observe(namespace(value), function() {
+							fun.style(hookName, key, fun.get(namespace(value)).value)
+						})
+					})(value, key)
+			}
 		}
 	}
 	
@@ -195,14 +272,13 @@ window.fun = {}
 		}
 	}
 	
-	fun.waitForPromises = function(promises, callback) {
-		var waitingFor = promises.length + 1
-		function tryNow() {
-			if (!--waitingFor) { callback() }
-		}
-		for (var i=0; i<promises.length; i++) {
-			promises[i](tryNow)
-		}
-		tryNow()
+	fun.displayText = function(namespace) {
+		var val = fun.get(namespace, true)
+		return (typeof val == 'object' ? q(val) : val)
 	}
+	
+/* init & export
+ ***************/
+	fun.reset()
+	if (typeof module != 'undefined') { module.exports = fun }
 })()

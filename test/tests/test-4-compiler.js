@@ -19,7 +19,7 @@ test('a number and a string').code(
 	.htmlIs('div', '<div>Hello 1</div>')
 
 test('clicking a button updates the UI').code(
-	'let foo = "bar"',
+	'var foo = "bar"',
 	'<div id="output">foo</div>',
 	'<button id="button"></button onClick=handler() {',
 	'	foo.set("cat")',
@@ -42,11 +42,20 @@ test('clicking a button updates the UI').code(
 // 	.textIs('#Type', 'Number')
 
 test('object literals').code(
-	'let foo = { nested: { bar:1 } }',
-	'let nested = foo.nested',
-	'<div id="output">foo foo.nested nested foo.nested.bar</div>'
+	'var foo = { nested: { bar:1 } }',
+	'<div id="output">foo foo.nested foo.nested.bar</div>'
 	)
-	.textIs('#output', '{"type":"OBJECT","resolved":{"nested":{"type":"OBJECT","resolved":{"bar":{"type":"VALUE","initialValue":1,"valueType":"number"}}}}}{"type":"OBJECT","resolved":{"bar":{"type":"VALUE","initialValue":1,"valueType":"number"}}}{"type":"OBJECT","resolved":{"bar":{"type":"VALUE","initialValue":1,"valueType":"number"}}}1')
+	.textIs('#output', '{ nested:{ bar:1 } }{ bar:1 }1')
+
+test('drag square with mouse').code(
+	'import Mouse',
+	'<div style={ width:100, height:100, background:"red", position:"absolute", top:Mouse.y, left:Mouse.x }/>'
+	)
+
+// test('drag square with mouse with composite offset').code(
+// 	'import Mouse',
+// 	'<div style={ width:100, height:100, background:"red", position:"absolute", top:Mouse.y + 50, left:Mouse.x + 50 }/>'
+// 	)
 
 // test('handler with logic')
 // 	.code(

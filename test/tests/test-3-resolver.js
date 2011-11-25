@@ -7,12 +7,11 @@ var std = require('std'),
 
 test("a declared alias for a string")
 	.code(
-		'let guy = "Marcus"',
+		'var guy = "Marcus"',
 		'guy'
 	)
-	.values(ref(1, a.value('Marcus')))
-	.expressions(a.value('Marcus'))
-	.expressions(ref(1))
+	.declarations(ref(1, a.variable('guy', a.literal('Marcus'))))
+	.expressions(a.reference(ref(1)))
 
 test("an empty div")
 	.code(
@@ -20,62 +19,56 @@ test("an empty div")
 	)
 	.expressions(a.xml('div'))
 
-test("two nested properties")
+test("nested aliases")
 	.code(
-		'let foo = { bar:1, cat:"cat" }',
-		'foo.bar foo.cat'
+		'var foo = { bar:1, cat:"cat" }',
+		'foo foo.bar foo.cat'
 	)
-	.values(ref(1, a.value(1)), ref(2, a.value("cat")))
-	.expressions(a.value(1), a.value("cat"))
-	.expressions(ref(1), ref(2))
-
-test('nested values')
-	.code(
-		'let foo = { nested: { cat:"yay" } }',
-		'let bar = foo.nested',
-		'let cat = bar.cat',
-		'let cat2 = foo.nested.cat',
-		'foo.nested.cat bar.cat cat bar')
-	.values(
-		ref(1, a.value('cat')),
-		ref(2, a.value({ cat:ref(1) })),
-		ref(3, a.value({ nested:ref(2) })),
-		ref(4, a.dereference(ref(3), 'nested')),
-		ref(5, a.dereference(ref(4), 'cat')),
-		ref(6, a.dereference(ref(3), 'nested.cat'))
+	.declarations(ref(1, a.variable('foo', a.object({ bar:a.literal(1), cat:a.literal('cat') }))))
+	.expressions(
+		a.reference(ref(1)),
+		a.reference(ref(1), 'bar'),
+		a.reference(ref(1), 'cat')
 	)
-	.expressions(a.dereference(), ref(1), ref(1), ref(4))
 
-all values are typed at runtime, and can change type. there are
-	atomics: numbers, text, bool, null
-	collections: list, object
-	collection dereferences: foo.bar.cat, taw[1][4]
-	do we want dynamic dereferencing?: foo[bar]
-an expression is
+// test('nested values and references of references')
+// 	.code(
+// 		'var foo = { nested: { cat:"yay" } }')
+// 		'var bar = foo.nested',
+// 		'var cat = bar.cat',
+// 		'var cat2 = foo.nested.cat',
+// 		'foo.nested.cat bar.cat cat bar')
+// 	.declarations(
+// 		ref(1, a.variable('foo', a.object({ nested:a.object({ cat:a.literal('yay') }) })))
+// 	)
+// 	.expressions(a.reference(), ref(1), ref(1), ref(4))
+// 
+// all values are typed at runtime, and can change type. there are
+// 	atomics: numbers, text, bool, null
+// 	collections: list, object
+// 	collection references: foo.bar.cat, taw[1][4]
+// 	do we want dynamic dereferencing?: foo[bar]
+// an expression is
 	
-
-
-a dereference is a value
-
 test('clicking a button updates the UI')
 	.code(
-		'let foo = "bar"',
-		'let qwe = "cat"',
+		'var foo = "bar"',
+		'var qwe = "cat"',
 		'<div id="output">foo</div>',
 		'<button id="button">"Click me"</button onClick=handler() {',
 		'	foo.set("cat")',
 		'	qwe.set(foo)',
 		'}>')
-	.values(
-		ref(1, a.value("bar")),
-		ref(2, a.value("cat")),
+	.declarations(
+		ref(1, a.variable('foo', 'bar')),
+		ref(2, a.variable('qwe', 'cat')),
 		ref(3, a.handler([], [
-			a.mutation(ref(1), 'set', [a.literal('cat')]),
-			a.mutation(ref(2), 'set', [ref(1)])
+			a.mutation(a.reference(ref(1)), 'set', [a.literal('cat')]),
+			a.mutation(a.reference(ref(2)), 'set', [a.reference(ref(1))])
 		]))
 	)
 	.expressions(
-		a.xml('div', { id:a.literal('output') }, [ ref(1) ]),
+		a.xml('div', { id:a.literal('output') }, [ a.reference(ref(1)) ]),
 		a.xml('button', { id:a.literal('button'), onclick:ref(3) }, [ a.literal('Click me') ])
 	)
 
@@ -128,8 +121,8 @@ function test(name) {
 			runTest('expressions', std.slice(arguments))
 			return this
 		},
-		values: function() {
-			runTest('values', std.slice(arguments))
+		declarations: function() {
+			runTest('declarations', std.slice(arguments))
 			return this
 		}
 	}

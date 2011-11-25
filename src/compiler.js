@@ -2,7 +2,6 @@ var fs = require('fs'),
 	path = require('path'),
 	util = require('./util'),
 	info = require('./info'),
-	bind = util.bind,
 	pick = util.pick,
 	name = util.name,
 	boxComment = util.boxComment,
@@ -13,6 +12,11 @@ var fs = require('fs'),
 	map = require('std/map'),
 	filter = require('std/filter'),
 	curry = require('std/curry'),
+	slice = require('std/slice'),
+	repeat = require('std/repeat'),
+	filter = require('std/filter'),
+	strip = require('std/strip'),
+	each = require('std/each'),
 	
 	tokenizer = require('./tokenizer'),
 	parser = require('./parser'),
@@ -28,7 +32,11 @@ var _doCompile = function(tokens) {
 	var ast = parser.parse(tokens),
 		resolved = resolver.resolve(ast),
 		compiledJS = exports.compile(resolved)
-	return exports._printHTML(compiledJS)
+	return exports._printHTML(_removeWhiteLines(compiledJS))
+}
+
+var _removeWhiteLines = function(js) {
+	return filter(js.split('\n'), function(line) { return strip(line).length > 0 }).join('\n')
 }
 
 exports._printHTML = function(compiledJS) {
@@ -43,172 +51,89 @@ exports._printHTML = function(compiledJS) {
 
 exports.compile = function(resolvedAST) {
 	var rootHook = name('ROOT_HOOK')
-	return code(
-		';(function funApp() {',
-		'	var {{ hookName }} = fun.name("rootHook")',
-		'	fun.setHook({{ hookName }}, document.body)',
-		'	{{ declarationsCode }}',
-		'	{{ code }}',
-		// '	{{ modules }}',
-		'})(); // let\'s kick it',
+	return ';(function funApp() {' + code(
+		'var {{ hookName }} = fun.name("rootHook")',
+		'fun.setHook({{ hookName }}, document.body)',
+		'{{ declarationsCode }}',
+		'{{ code }}',
+		'{{ modules }}',
 		{
 			hookName: rootHook,
 			declarationsCode: map(resolvedAST.declarations, compileDeclaration).join('\n'),
-			code: exports.compileRaw(resolvedAST.expressions, rootHook)
-			// modules: map(modules, function(module, name) {
-			// 	return boxComment('Module: ' + name) + '\n' + module.jsCode
-			// }).join('\n\n\n')
-		})
+			code: exports.compileRaw(resolvedAST.expressions, rootHook),
+			modules: map(resolvedAST.imports, function(module, name) {
+				return boxComment('Module: ' + name) + '\n' + exports.compileRaw(module)
+			}).join('\n\n\n')
+		}) + '})();'
 }
 
 exports.compileRaw = function(ast, rootHook) {
 	// TODO No longer a need for an entire context object. Just make it hookname, and pass that through
 	var context = { hookName:rootHook || name('ROOT_HOOK') }
-	return compile(context, ast)
+	return compileEmitStatement(context, ast)
 }
 
-var compile = function(context, ast) {
-	assert(ast, context && context.hookName, "compile called with invalid context")
-	if (ast instanceof Array) {
-		return map(ast, curry(compile, context)).join('\n') + '\n'
-	} else if (info.expressionTypes[ast.type]) {
-		return compileExpression(context, ast) + '\n'
-	} else {
-		return compileStatement(context, ast) + '\n'
-	}
-}
-
-/************************
- * Top level statements *
- ************************/
-var compileExpression = function(context, ast) {
+/****************************************************
+ * Emit (template), function and handler statements *
+ ****************************************************/
+var compileEmitStatement = function(context, ast) {
+	if (ast instanceof Array) { return map(ast, curry(compileEmitStatement, context)).join('\n') + '\n' }
 	switch(ast.type) {
-		case 'VALUE_LITERAL':     return compileStaticValue(context, ast)
-		case 'VALUE':             return compileValueExpression(context, ast)
-		case 'OBJECT':            return compileObjectLiteralExpression(context, ast)
-		case 'COMPOSITE':         return compileCompositeStatement(context, ast)
-		case 'ITERATOR':          return compileItemProperty(context, ast)
-		case 'ARGUMENT':          return compileTemplateArgument(context, ast)
+		case 'VALUE_LITERAL':     return emitValue(context, ast)
+		case 'REFERENCE':         return emitValue(context, ast)
+		case 'OBJECT_LITERAL':    return emitValue(context, ast)
+		case 'ITERATOR':          return emitValue(context, ast)
+
+		case 'COMPOSITE':         return emitCompositeStatement(context, ast)
+		case 'XML':               return emitXML(context, ast)
+
 		case 'INVOCATION':        return compileInvocation(context, ast)
-		case 'INLINE_SCRIPT':     return ast.inlineJavascript
-		default:                  halt(ast, 'Unknown expression type')
-	}
-}
+		case 'IF_STATEMENT':      return compileIfStatement(compileEmitStatement, context, ast)
+		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileEmitStatement, context, ast)
+		case 'FOR_LOOP':          return compileForLoop(compileEmitStatement, context, ast)
 
-var compileStatement = function(context, ast) {
-	switch (ast.type) {
-		case 'XML':               return compileXML(context, ast)
-		case 'IF_STATEMENT':      return compileIfStatement(context, ast)
-		case 'SWITCH_STATEMENT':  return compileSwitchStatement(context, ast)
-		case 'FOR_LOOP':          return compileForLoop(context, ast)
+		case 'INLINE_SCRIPT':     return '/* INLINE JS */' + ast.inlineJavascript
 		case 'DEBUGGER':          return 'debugger'
-		default:                  halt(ast, 'Unknown statement type')
+
+		default:                  halt(ast, 'Unknown emit statement type '+ast.type)
 	}
 }
 
-var compileTemplateArgument = function(context, ast) {
-	switch(ast.valueType) {
-		case 'ITERATOR':
-			return compileItemProperty(context, ast)
-		default:
-			return compileStaticValue(context, ast)
-	}
+var compileFunctionStatement = function(context, ast) {
+	
 }
 
-/*****************
- * Static values *
- *****************/
-// TODO This should be using Types[ast.value.type].emit(ast.value)
-var compileStaticValue = function(context, ast) {
-	return code(
-		'fun.text({{ parentHook }}, {{ value }})',
-		{
-			parentHook: context.hookName,
-			value: _runtimeValue(ast)
-		})
-}
-
-var _runtimeValue = function(ast) {
-	var prefix = ast.prefix || ''
+var compileHandlerStatement = function(context, ast) {
 	switch(ast.type) {
-		case 'VALUE_LITERAL':     return prefix + q(ast.value)
-		case 'ITERATOR':  return prefix + ast.runtimeName
-		case 'ARGUMENT': return prefix + ast.runtimeName
-		case 'LIST':              return prefix + q(ast.content)
-		// case 'ITEM_PROPERTY':     return prefix + 'fun.cachedValue('+getItemID(ast)+','+getPropertyName(ast)+')'
-		default:                  halt(ast, 'Unknown runtime value type')
-	}
-}
+		case 'MUTATION':          return compileMutationStatement(ast)
+		case 'IF_STATEMENT':      return compileIfStatement(compileHandlerStatement, context, ast)
+		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileHandlerStatement, context, ast)
+		case 'FOR_LOOP':          return compileForLoop(compileHandlerStatement, context, ast)
 
-// TOOD Remove this?
-var getItemID = function(ast) {
-	switch(ast.type) {
-		case 'ITERATOR':
-		case 'ARGUMENT':
-			return ast.runtimeName
-		// case 'ITEM_PROPERTY':
-		// 	return q(ast.item.id)
-		case 'LIST':
-			return info.LOCAL_ID
-		default:
-			halt(ast, 'Unknown item type')
-	}
-}
+		case 'INLINE_SCRIPT':     return '/* INLINE JS */' + ast.inlineJavascript
+		case 'DEBUGGER':          return 'debugger'
 
-// TODO Remove this?
-var getPropertyName = function(ast) {
-	switch(ast.type) {
-		case 'ITERATOR':
-			// assert(ast, ast.iterable.type == 'ITEM_PROPERTY', 'getPropertyName expects ITEM_PROPERTY runtime iterators but found a "'+ast.iterable.type+'"')
-			// If the iterator is being referrenced directly as an item ID, rather than as a an item property, then there is no property
-			return ast.iteratorProperty && q(ast.iteratorProperty)
-		// case 'ITEM_PROPERTY':
-		// 	return q(ast.property.join('.'))
-		case 'ARGUMENT':
-			return q(ast.property)
-		case 'LIST':
-			return q(ast.localName)
-		default:
-			halt(ast, 'Unknown property type')
+		default:             halt(ast, 'Unknown handler statement type')
 	}
 }
 
 /********************************
  * Values (numbers and strings) *
  ********************************/
-var compileValueExpression = function(context, ast) {
+var emitValue = function(context, ast) {
 	return code(
-		'var {{ hookName }} = fun.hook(fun.name(), {{ parentHookName }})',
-		'fun.observe({{ uniqueID }}, function(mutation) {',
-		'	fun.getHook({{ hookName }}).innerHTML = mutation.value',
-		'})',
-		{
-			hookName: name('ValueHook'),
-			parentHookName: context.hookName,
-			uniqueID: q(ast.uniqueID)
-		})
-}
-
-var compileObjectLiteralExpression = function(context, ast) {
-	// var dynamicASTs = _collectDynamicASTs(ast),
-	// 	contentContext = util.shallowCopy(context, { hookName:nodeHookName })
-	// 
-	return code(
-		'var {{ hookName }} = fun.hook(fun.name(), {{ parentHookName }}, { tagName:"pre" })',
-		'fun.getHook({{ hookName }}).innerHTML = {{ contents }}',
-		{
-			hookName: name('ObjectLiteralHook'),
-			parentHookName: context.hookName,
-			contents: q(q(ast))
-		})
+		'fun.emit({{ hookName }}, {{ value }})', {
+		hookName:context.hookName,
+		value:runtimeValue(ast)
+	})
 }
 
 /************************
  * Composite statements *
  ************************/
-var compileCompositeStatement = function(context, ast) {
+var emitCompositeStatement = function(context, ast) {
 	var hookName = name('COMPOSITE_HOOK')
-	return hookCode(hookName, context.hookName) + statementCode(ast,
+	return _hookCode(hookName, context.hookName) + _statementCode(ast,
 		'fun.getHook({{ hookName }}).innerHTML = {{ STATEMENT_VALUE }}',
 		{
 			hookName: hookName,
@@ -218,23 +143,23 @@ var compileCompositeStatement = function(context, ast) {
 /*******
  * XML *
  *******/
-var compileXML = function(context, ast) {
+var emitXML = function(context, ast) {
 	var nodeHookName = name('XML_HOOK'),
-		newContext = util.shallowCopy(context, { hookName:nodeHookName })
+		newContext = copyContext(context, { hookName:nodeHookName })
 	
 	var attributes = _handleXMLAttributes(nodeHookName, ast)
 	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ staticAttributes }} })',
 		'{{ dynamicAttributesCode }}',
-		'{{ childCode }}',
+		'{{ block }}',
 		{
 			parentHook: context.hookName,
 			hookName: nodeHookName,
 			tagName: q(ast.tagName),
 			staticAttributes: q(attributes.staticAttrs),
 			dynamicAttributesCode: attributes.dynamicCode,
-			childCode: ast.block ? compile(newContext, ast.block) : ''
+			block: ast.block ? indent(compileEmitStatement, newContext, ast.block) : ''
 		})
 }
 
@@ -254,34 +179,48 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 	
 	if (name == 'dataType') {
 		// do nothing
+	} else if (name == 'style') {
+		assert(ast, value.type == 'OBJECT_LITERAL' || value.type == 'REFERENCE', 'The style attribute should be an object, e.g. style={ color:"red" }')
+		dynamicCode.push(_compileStyleAttribute(nodeHookName, ast, value))
 	} else if (name == 'data') {
 		// TODO Individual tags should define how to handle the data attribute
 		_handleDataAttribute(nodeHookName, ast, dynamicCode, value, attribute.dataType)
 	} else if (match = name.match(/^on(\w+)$/)) {
 		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
-	} else if (value.type == 'STATIC') {
+	} else if (value.type == 'VALUE_LITERAL') {
 		staticAttrs[name] = value.value
 	} else {
-		assert(ast, value.type != 'OBJECT', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+		assert(ast, value.type != 'OBJECT_LITERAL', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
 		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
+	}
+}
+
+// modifies dynamicCode
+var _compileStyleAttribute = function(hookName, ast, value) {
+	switch(value.type) {
+		case 'OBJECT_LITERAL':
+			return 'fun.reflectStyles('+hookName+', '+q(value.content)+')'
+		case 'REFERENCE':
+			halt(ast, 'TODO implement style attribute by reference')
+		default:
+			halt(ast, 'Unknown style attribute type ' + value.type)
 	}
 }
 
 // modifies dynamicCode
 var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value, dataType) {
 	dynamicCode.push(code(
-		'fun.reflectInput({{ hookName }}, {{ itemID }}, {{ property }}, {{ type }})',
+		'fun.reflectInput({{ hookName }}, {{ value }})',
 		{
 			hookName: nodeHookName,
-			itemID: getItemID(value),
-			property: getPropertyName(value),
+			value: runtimeValue(value),
 			type: q(dataType || 'string')
 		}))
 }
 
 // modifies dynamicCode
 var _handleDynamicAttribute = function(nodeHookName, ast, dynamicCode, attrName, value) {
-	dynamicCode.push(statementCode(value,
+	dynamicCode.push(_statementCode(value,
 		'fun.attr({{ hookName }}, {{ attr }}, {{ STATEMENT_VALUE }})',
 		{
 			attr: q(attrName),
@@ -310,14 +249,14 @@ var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerNa
 /**********************
  * If/Else statements *
  **********************/
-var compileIfStatement = function(context, ast) {
+var compileIfStatement = function(blockCompileFn, context, ast) {
 	var hookName = name('IF_ELSE_HOOK'),
-		ifElseContext = util.shallowCopy(context, { hookName:hookName }),
+		ifElseContext = copyContext(context, { hookName:hookName }),
 		lastValueName = name('LAST_VALUE')
 	
-	return hookCode(hookName, context.hookName)
+	return _hookCode(hookName, context.hookName)
 		+ code('var {{ lastValueName }}', { lastValueName:lastValueName })
-		+ statementCode(ast.condition,
+		+ _statementCode(ast.condition,
 		';(function(ifBranch, elseBranch) {',
 		'	if ({{ STATEMENT_VALUE }} === {{ lastValueName }}) { return }',
 		'	{{ lastValueName }} = {{ STATEMENT_VALUE }}',
@@ -333,8 +272,8 @@ var compileIfStatement = function(context, ast) {
 		')',
 		{
 			hookName: hookName,
-			ifCode: compile(ifElseContext, ast.ifBlock),
-			elseCode: ast.elseBlock && compile(ifElseContext, ast.elseBlock),
+			ifCode: indent(blockCompileFn, ifElseContext, ast.ifBlock),
+			elseCode: ast.elseBlock && indent(blockCompileFn, ifElseContext, ast.elseBlock),
 			lastValueName: lastValueName
 		})
 }
@@ -342,13 +281,13 @@ var compileIfStatement = function(context, ast) {
 /*********************
  * Switch statements *
  *********************/
-var compileSwitchStatement = function(context, ast) {
-	var switchContext = util.shallowCopy(context, { hookName:name('SWITCH_HOOK') })
+var compileSwitchStatement = function(blockCompileFn, context, ast) {
+	var switchContext = copyContext(context, { hookName:name('SWITCH_HOOK') })
 		lastValueName = name('LAST_VALUE')
 
-	return hookCode(switchContext.hookName, context.hookName)
+	return _hookCode(switchContext.hookName, context.hookName)
 		+ code('var {{ lastValueName }}', { lastValueName:lastValueName })
-		+ statementCode(ast.controlValue,
+		+ _statementCode(ast.controlValue,
 		';(function(branches) {',
 		'	if ({{ STATEMENT_VALUE }} === {{ lastValueName }}) { return }',
 		'	{{ lastValueName }} = {{ STATEMENT_VALUE }}',
@@ -358,7 +297,7 @@ var compileSwitchStatement = function(context, ast) {
 					var labels = switchCase.isDefault
 							? 'default:\n'
 							: map(switchCase.values, function(value) {
-								return 'case ' + _runtimeValue(value) + ':\n'
+								return 'case ' + runtimeValue(value) + ':\n'
 							}).join('')
 					return labels
 						+ 'branches['+i+'](); break'
@@ -366,7 +305,7 @@ var compileSwitchStatement = function(context, ast) {
 		'	}',
 		'})([',
 			map(ast.cases, function(switchCase, i) {
-				return 'function branches'+i+'(){ ' + compile(switchContext, switchCase.statements) + '}'
+				return 'function branches'+i+'(){ ' + indent(blockCompileFn, switchContext, switchCase.statements) + '}'
 			}).join(',\n'),
 		'])',
 		{
@@ -380,13 +319,13 @@ var compileSwitchStatement = function(context, ast) {
 /*************
  * For loops *
  *************/
-var compileForLoop = function(context, ast) {
-	var loopContext = util.shallowCopy(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
+var compileForLoop = function(blockCompileFn, context, ast) {
+	var loopContext = copyContext(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	
 	return code(
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
-		'fun.observe("LIST", {{ itemID }}, {{ propertyName }}, function(mutation, value) { fun.splitListMutation(onMutation, mutation, value) })',
+		'fun.observe("LIST_LITERAL", {{ value }}, function(mutation, value) { fun.splitListMutation(onMutation, mutation, value) })',
 		'function onMutation({{ iteratorRuntimeName }}, op) {',
 		'	var {{ emitHookName }} = fun.name()',
 		'	fun.hook({{ emitHookName }}, {{ loopHookName }}, { prepend: (op=="unshift") })',
@@ -395,24 +334,27 @@ var compileForLoop = function(context, ast) {
 		{
 			parentHook: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
-			itemID: getItemID(ast.iterable),
-			propertyName: getPropertyName(ast.iterable),
+			value: runtimeValue(ast),
 			iteratorRuntimeName: ast.iteratorRuntimeName,
 			emitHookName: loopContext.hookName,
-			loopCode: compile(loopContext, ast.block)
+			loopCode: indent(blockCompileFn, loopContext, ast.block)
 		})
 }
 
-/*************
- * Templates *
- *************/
+/****************
+ * Declarations *
+ ****************/
 var compileDeclaration = function(declaration) {
 	switch (declaration.type) {
+		case 'VARIABLE':
+			return code('fun.set({{ name }}, {{ value }})', {
+				name:q(declaration.name),
+				value:runtimeValue(declaration.initialValue)
+			})
 		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
 		case 'HANDLER':       return compileHandlerDeclaration(declaration)
-		case 'LIST':          return compileListLiteral(declaration)
+		case 'LIST_LITERAL':          return compileListLiteral(declaration)
 		case 'VALUE':         return compileValueDeclaration(declaration)
-		// case 'ITEM_PROPERTY': return compileItemPropertyDeclaration(declaration)
 		default:              halt(declaration, 'Found declaration that requires compilation of unknown type')
 	}
 }
@@ -426,28 +368,7 @@ var compileValueDeclaration = function(ast) {
 }
 
 var compileListLiteral = function(ast) {
-	return map(ast.content, function(contentAST) {
-		// TODO wait for content AST IDs
-		return code(
-			'fun.mutate({{ op }}, {{ id }}, {{ prop }}, [{{ args }}])',
-			{
-				op: q('push'),
-				id: q(info.LOCAL_ID),
-				prop: q(ast.localName),
-				args: _cachedValueListCode([contentAST])
-			}
-		)
-	})
-}
-
-var compileItemPropertyDeclaration = function(ast) {
-	return code(
-		'fun.mutate("set", {{ id }}, {{ prop }}, [{{ value }}])',
-		{
-			id: getItemID(ast),
-			prop: getPropertyName(ast),
-			value: q(ast.value)
-		})
+	halt(ast, 'Implement compileListLiteral')
 }
 
 var compileTemplateDeclaration = function(ast) {
@@ -462,7 +383,7 @@ var compileTemplateDeclaration = function(ast) {
 		{
 			templateFunctionName: ast.compiledFunctionName,
 			hookName: hookName,
-			code: compile({hookName:hookName}, ast.block),
+			code: indent(compile, {hookName:hookName}, ast.block),
 			argNames: _commaPrefixJoin(ast.signature, function(arg) { return arg.runtimeName })
 		})
 }
@@ -487,7 +408,7 @@ var compileMutationItemCreation = function(ast) {
 	// get the item creation property values -> fun.create({ prop1:val1, prop2:val2, ... })
 	//  TODO: do we need to wait for promises for the values that are itemProperties?
 	var propertiesCode = pick(value.properties.content, function(prop) {
-		return prop.key + ':' + _runtimeValue(prop.value)
+		return prop.key + ':' + runtimeValue(prop.value)
 	}).join(',')
 	
 	value.promiseName = name('ITEM_CREATION_PROMISE')
@@ -499,9 +420,9 @@ var compileMutationItemCreation = function(ast) {
 		})
 }
 
-/************
- * Handlers *
- ************/
+/**************************************
+ * Handler declarations and mutations *
+ **************************************/
 var compileHandlerDeclaration = function(ast) {
 	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same handler twice')
 	ast.compiledFunctionName = name('HANDLER_FUNCTION')
@@ -513,106 +434,55 @@ var compileHandlerDeclaration = function(ast) {
 		{
 			handlerFunctionName: ast.compiledFunctionName,
 			hookName: hookName,
-			code: map(ast.block, _compileHandlerStatement).join('\n')
+			code: indent(map, ast.block, curry(compileHandlerStatement, ast.closure)).join('\n')
 		})
 }
 
-function _compileHandlerStatement(ast) {
-	switch(ast.type) {
-		case 'DEBUGGER':     return 'debugger'
-		case 'MUTATION':     return _compileMutationStatement(ast)
-		case 'IF_STATEMENT': return _compileIfStatement(ast)
-		default:             halt(ast, 'Unknown handler statement type')
-	}
-}
-
-var compileItemPropertyMutation = function(ast) {
-	// TODO Need to check if any of the ast.args are asynchronously retrieved, in which case we need
-	//  to wait for them
-	var promiseNames = pick(ast.args, function(arg) { return arg.promiseName })
-	return code(
-		'fun.waitForPromises({{ promiseNames }}, function() {',
-		'	fun.mutate({{ operator }}, {{ id }}, {{ prop }}, [{{ args }}])',
-		'})',
-		{
-			promiseNames: '['+promiseNames.join(',')+']',
-			operator: q(ast.method),
-			id: getItemID(ast.value),
-			prop: getPropertyName(ast.value),
-			args: _cachedValueListCode(ast.args)
-		})
-}
-
-var _cachedValueListCode = function(args) {
-	return map(args, function(arg) {
-		switch (arg.type) {
-			case 'STATIC': return q(arg.value)
-			case 'MUTATION_ITEM_CREATION': return arg.promiseName+'.fulfillment[0]' // the fulfillment is [itemID]
-			case 'ITERATOR': return arg.runtimeName
-			case 'ARGUMENT': return arg.runtimeName
-			default: return code(
-				'fun.cachedValue({{ itemID }}, {{ property }})',
-				{
-					itemID: getItemID(arg),
-					property: getPropertyName(arg)
-				})
-		}
-	}).join(',')
-}
-
-var _compileHandlerInvocation = function(context, invocationAST, handlerAST) {
-	util.halt(statementAST, 'TODO Compile handler invocation')
-}
-
-// Mutations
-var _compileMutationStatement = function(ast) {
-	assert(ast, ast.operand && ast.operand.uniqueID, "mutation statement expected an operand value with a unique id")
+var compileMutationStatement = function(ast) {
 	switch(ast.operator) {
-		case 'set':    return _compileSetOperation(ast.operand, ast.arguments)
-		default:       halt(ast, 'Unknown mutation operator "'+ast.operator+'"')
+		case 'set':
+			return code(
+				'fun.set({{ operandValue }}, {{ value }})', {
+					operandValue: namespace(ast.operand),
+					value: runtimeValue(ast.arguments[0])
+				})
+		default:
+			halt(ast, 'Unknown mutation operator "'+ast.operator+'"')
 	}
-	// switch(ast.value.type) {
-	// 	case 'MUTATION_ITEM_CREATION':
-	// 		return compileMutationItemCreation(ast)
-		// case 'ITEM_PROPERTY':
-		// 	return compileItemPropertyMutation(ast)
-	// 	default:
-	// 		halt(ast, "Unknown mutation value type")
-	// }
 }
 
-var _compileSetOperation = function(operand, args) {
-	assert(args, args.length == 1, 'operator "set" expects exactly one operand')
-	return code(
-		'fun.set({{ uniqueID }}, {{ value }})',
-		{
-			uniqueID: q(operand.uniqueID),
-			value: _runtimeValue(args[0])
-		})
+var namespace = function(reference) {
+	return q([reference.value.name].concat(reference.chain).join('.'))
 }
 
-/****************************************
- * Invocations (handlers and templates) *
- ****************************************/
+/***************************************************
+ * Invocations (templates, functions and handlers) *
+ ***************************************************/
+var invocables = { 'TEMPLATE':1, 'FUNCTION':1, 'HANDLER':1 }
 var compileInvocation = function(context, ast) {
-	switch(ast.invocable.type) {
-		case 'TEMPLATE': return _compileTemplateInvocation(context, ast, ast.invocable)
-		default:         util.halt(ast, 'Couldn\'t invoce the value of type "'+ast.type+'". Expected a template or a handler.')
-	}
+	assert(ast, invocables[ast.invocable.type], 'Unknown invocable type')
+	assert(ast, ast.invocable.functionName, 'Invocable is expected to have a function name')
+	return code('{{ functionName }}({{ arguments }}, {{ hookName }})', {
+		functionName:ast.invocable.functionName,
+		arguments:ast.arguments,
+		hookName:context.hookName
+	})
 }
 
 /*********************
  * Utility functions *
  *********************/
-var emitReplaceRegex = /{{\s*(\w+)\s*}}/
+var _emitReplaceRegex = /{{\s*(\w+)\s*}}/,
+	_indentation = 1
 var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
 	var argsLen = arguments.length,
 		injectObj = arguments[argsLen - 1],
-		snippets = Array.prototype.slice.call(arguments, 0, argsLen - 1),
-		output = '\n' + snippets.join('\n'),
+		snippets = slice(arguments, 0, argsLen - 1),
+		splitter = '\n' + repeat('\t', _indentation),
+		output = splitter + snippets.join(splitter),
 		match
 	
-	while (match = output.match(emitReplaceRegex)) {
+	while (match = output.match(_emitReplaceRegex)) {
 		var wholeMatch = match[0],
 			nameMatch = match[1],
 			value = injectObj[nameMatch]
@@ -623,25 +493,46 @@ var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
 	return output
 }
 
-function statementCode(ast /*, line1, line2, ..., lineN, values */) {
+var indent = function(fn /*, arg1, ... argN */) {
+	_indentation++
+	var result = fn.apply(this, slice(arguments, 1))
+	_indentation--
+	return result
+}
+
+var runtimeValue = function(ast) {
+	return q(ast)
+	// switch(ast.type) {
+	// 	case 'VALUE_LITERAL': return q(ast.value)
+	// 	case 'ITERATOR':      return ast.runtimeName
+	// 	case 'ARGUMENT':      return ast.runtimeName
+	// 	case 'LIST_LITERAL':          return q(ast.content)
+	// 	case 'OBJECT_LITERAL':
+	// 		var result = {}
+	// 		each(ast.resolved, function(val, name) { result[name] = runtimeValue(val) })
+	// 		return q(result)
+	// 	default:                  halt(ast, 'Unknown runtime value type ' + ast.type)
+	// }
+}
+
+var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 	var statementLines = Array.prototype.slice.call(arguments, 1, arguments.length - 1),
-		injectValues = arguments[arguments.length - 1],
-		statementValue = _compileStatementValue(ast),
-		dynamicASTs = _collectDynamicASTs(ast)
+		injectValues = arguments[arguments.length - 1]
 	
 	injectValues['STATEMENT_VALUE'] = name('STATEMENT_VALUE')
 	
 	return code(
-		'fun.dependOn({{ dynamicValues }}, function() {',
-		'	var {{ STATEMENT_VALUE }} = {{ statementValue }}',
+		'fun.dependOn({{ __values }}, function() {',
+		'	var {{ STATEMENT_VALUE }} = {{ __statementValue }}',
 			code.apply(this, statementLines.concat(injectValues)),
 		'})',
 		{
 			STATEMENT_VALUE: injectValues['STATEMENT_VALUE'],
-			dynamicValues: _itemPropertiesArray(dynamicASTs),
-			statementValue: statementValue
+			__values: map(ast, runtimeValue),
+			__statementValue: _compileStatementValue(ast)
 		})
 }
+
 var _collectDynamicASTs = function(ast) {
 	if (!ast) { return [] }
 	switch(ast.type) {
@@ -655,23 +546,13 @@ var _collectDynamicASTs = function(ast) {
 		case 'ARGUMENT':
 			// need to know the type of the argument - in the meantime, assume that no type means its a literal value
 			return ast.property.length ? [ast] : []
-		case 'OBJECT':
-			return filter(flatten(map(ast.resolved, _collectDynamicASTs)))
+		case 'OBJECT_LITERAL':
+			return filter(flatten(map(ast.content, _collectDynamicASTs)))
 		default:
 			halt(ast, 'Unknown dynamic AST type');
 	}
 }
-var _itemPropertiesArray = function(ASTs) {
-	if (!ASTs) { return '[]' }
-	var itemProperties = []
-	for (var i=0, ast; ast = ASTs[i]; i++) {
-		if (/*ast.type != 'ITEM_PROPERTY' &&*/ ast.type != 'ITERATOR') { continue }
-		var propertyName = getPropertyName(ast)
-		if (!propertyName) { continue }
-		itemProperties.push('{id:'+getItemID(ast)+', property:'+propertyName+'}')
-	}
-	return '['+itemProperties.join(',')+']'
-}
+
 function _compileStatementValue(ast) {
 	if (!ast) { return '' }
 	switch(ast.type) {
@@ -682,13 +563,13 @@ function _compileStatementValue(ast) {
 		case 'ITERATOR':
 		case 'ARGUMENT':
 		case 'VALUE_LITERAL':
-			return _runtimeValue(ast)
+			return runtimeValue(ast)
 		default:
 			halt(ast, 'Unknown value type: ' + ast.type)
 	}
 }
 
-function hookCode(hookName, parentHookName) {
+function _hookCode(hookName, parentHookName) {
 	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHookName }})',
@@ -696,4 +577,8 @@ function hookCode(hookName, parentHookName) {
 			hookName: hookName,
 			parentHookName: parentHookName
 		})
+}
+
+var copyContext = function(context, addValues) {
+	return addValues // we currently have only a hookName - we can probably get rid of compilation context and just have the hook name
 }

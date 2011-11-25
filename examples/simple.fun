@@ -1,22 +1,17 @@
-"Hello " 1
+var foo = "asd"
 
-let foo = "asd"
+// "Hello " 1
 
-let bar = {
-	nested: { cat:'cat' }
-}
+<div><div><div>
+	<div>'foo=' foo</div>
+	<div>'foo.bar=' foo.bar</div>
+</div></div></div>
 
-let ram = bar.nested
+// <input data=foo />
+<button>"foo.set({ bar:'yessss' })" foo.bar</button onclick=handler() {
+	foo.set({ bar:'yessss' })
+}>
 
-' ' foo
-
-" " bar.nested.cat " " ram.cat
-
-ram
-
-
-
-
-let qwe = { nested: { bar:1 } }
-let nested = qwe.nested
-qwe qwe.nested nested qwe.nested.bar
+<button>"foo.set({ bar:'nooooo' })" foo.bar</button onclick=handler() {
+	foo.set({ bar:'nooooo' })
+}>
