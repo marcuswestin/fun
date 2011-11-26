@@ -52,15 +52,15 @@ test('observe value', function(assert) {
 	set(v1, null)
 })
 
-// test('observe subvalue', function(assert, blocks) {
-// 	set('a', null)
-// 	observeExpect('a.b.c', blocks, [null, 1, null, 2, null, 3])
-// 	set('a', { b:{ c:1 } })
-// 	set('a.b', 9)
-// 	set('a.b', { c:2 })
-// 	set('a.b.c', null)
-// 	set('a.b.c', 3)
-// })
+test('observe subvalue', function(assert) {
+	var v = a.variable(null)
+	observeExpect(v, 'b.c', assert, [null, 1, null, 2, null, 3])
+	set(v, null, { b:{ c:1 } })
+	set(v, 'b', 9)
+	set(v, 'b', { c:2 })
+	set(v, 'b.c', null)
+	set(v, 'b.c', 3)
+})
 
 var q = function(val) { return JSON.stringify(val) }
 
