@@ -151,8 +151,8 @@ fun = {}
 		// If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
 		notifyProperties(variable, chain, toValue)
 		
-		// notify(variable, '')
-		notify(variable, chain ? chain.join('.') : '')
+		if (chain) { notify(variable, chain.join('.')) }
+		notify(variable, '')
 	}
 	var notifyProperties = function(variable, chain, value) {
 		if (!value || value.type != 'OBJECT_LITERAL') { return }

@@ -39,7 +39,7 @@ test('sets and gets', function(assert) {
 test('observe value', function(assert) {
 	var v1 = a.variable({ foo:null })
 	observeExpect(v1, 'foo', assert, [null, 1, 2, { ned:'teq'}, 'qwe', null])
-	// observeExpect(v1, null, assert, [{ foo:null }, { foo:1 }, { foo:2 }, { foo:{ ned:'teq'} }, { foo:'qwe' }, null])
+	observeExpect(v1, null, assert, [{ foo:null }, { foo:1 }, { foo:2 }, { foo:{ ned:'teq'}, blah:'wab' }, { foo:'qwe', blah:'wab' }, null])
 	observeExpect(v1, 'foo.ned', assert, [null, 'teq', null])
 	
 	set(v1, { foo:null })
@@ -75,6 +75,7 @@ var evaluate = function(value, nameString, defaultToUndefined) { return fun.eval
 var observeExpect = function(variable, nameString, assert, values) {
 	assert.blocks.add(values.length)
 	values = map(values, a.value)
+	nameString = nameString || ''
 	fun.observe(variable, nameString, function() {
 		if (!deepEqual(evaluate(variable, nameString), values[0])) { return }
 		values.shift()
