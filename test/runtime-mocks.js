@@ -1,21 +1,22 @@
-module.exports = {
-	variable:variable,
-	value:value
-}
+var mocks = require('./ast-mocks'),
+	runtimeValues = require('../src/runtime/values')
 
-function variable(initialContent) {
+var a = module.exports = Object.create(mocks)
+
+a.variable = function variable(initialContent) {
 	return {
 		type: 'VARIABLE',
 		observers: {},
-		content:value(initialContent)
+		content:a.value(initialContent)
 	}
 }
 
-function value(content) {
-	switch(typeof content) {
+a.value = function value(content) {
+	var type = typeof content
+	switch(type) {
 		case 'string':
 		case 'number':
-		case 'boolean': return { type:'VALUE_LITERAL', content:content }
+		case 'boolean': return runtimeValues[type](content)
 		case 'object':
 			if (!content) { return { type:'VALUE_LITERAL', content:null } }
 			var objectContent = {}

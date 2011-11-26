@@ -1,4 +1,5 @@
-var values = require('./values')
+var values = require('./values'),
+	operators = require('./operators')
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }
@@ -39,10 +40,10 @@ var values = require('./values')
 		switch(expression.type) {
 			case 'VALUE_LITERAL': return expression
 			case 'VARIABLE': return expression.content
-			default: ASDASD
+			case 'COMPOSITE': return operators[expression.operator](getCurrentValue(expression.left), getCurrentValue(expression.right))
 		}
 	}
-
+	
 /* Values
  ********/
 	

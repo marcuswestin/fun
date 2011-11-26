@@ -62,6 +62,15 @@ test('observe subvalue', function(assert) {
 	set(v, 'b.c', 3)
 })
 
+test('evaluate composite expressions', function(assert) {
+	var v1 = a.variable(1),
+		v2 = a.variable(2),
+		v3 = a.variable(3),
+		v4 = a.variable('4')
+	assert.is(evaluate(a.composite(v1, '+', v2)), a.value(3))
+	assert.is(evaluate(a.composite(v4, '+', v1)), a.value('41'))
+})
+
 var q = function(val) { return JSON.stringify(val) }
 
 var set = function(variable, chain, value) {
