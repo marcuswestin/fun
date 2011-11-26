@@ -442,9 +442,9 @@ var compileMutationStatement = function(ast) {
 	switch(ast.operator) {
 		case 'set':
 			return code(
-				'fun.set({{ operandValue }}, {{ value }})', {
-					operandValue: namespace(ast.operand),
-					value: runtimeValue(ast.arguments[0])
+				'fun.set({{ operand }}, fun.evaluate({{ value }}))', {
+					operand: q(ast.operand),
+					value: q(ast.arguments[0])
 				})
 		default:
 			halt(ast, 'Unknown mutation operator "'+ast.operator+'"')

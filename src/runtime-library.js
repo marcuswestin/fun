@@ -19,6 +19,27 @@ fun = {}
 	}
 	
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
+	
+	var nullValue = { type:'VALUE_LITERAL', content:null }
+	fun.evaluate = function(expression, chain) {
+		var value = getCurrentValue(expression)
+		if (chain) {
+			for (var i=0; i<chain.length; i++) {
+				if (!value) { return undefined }
+				value = value.content[chain[i]]
+			}
+		}
+		if (!value) { return nullValue }
+		return value
+	}
+
+	function getCurrentValue(expression) {
+		switch(expression.type) {
+			case 'VALUE_LITERAL': return expression
+			case 'VARIABLE': return expression.content
+			default: ASDASD
+		}
+	}
 
 /* Values
  ********/
@@ -106,29 +127,26 @@ fun = {}
 
 /* Values
  ********/
-	fun.set = function(name, toValue) {
-		var oldValue,
-			penTopValue = _values,
-			namespace = name.split('.'),
-			topName = namespace[namespace.length-1]
-		
-		for (var i=0; i<namespace.length-1; i++) {
-			if (!penTopValue) { throw new Error('Null dereference in set: ' + namespace.slice(1, i).join('.')) }
-			penTopValue = penTopValue.content[namespace[i]]
+	fun.set = function(variable, chain, toValue) {
+		var container = variable
+		if (!chain) {
+			container.content = toValue
+		} else {
+			chain = chain.split('.')
+			var lastName = chain.pop(),
+				container = fun.evaluate(variable, chain)
+			if (container === undefined) { return 'Null dereference in fun.set:fun.evaluate' }
+			if (container.type != 'OBJECT_LITERAL') { return 'Attempted setting property of non-object value' }
+			container.content[lastName] = toValue
 		}
-		
-		if (penTopValue.type != 'OBJECT_LITERAL') { throw new Error('Tried to set property on non-object') }
-		
-		oldValue = penTopValue.content[topName]
-		penTopValue.content[topName] = toValue
-		
-		// If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
-		notifyProperties(namespace, oldValue)
-		
-		// If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
-		notifyProperties(namespace, toValue)
-		
-		notify(namespace)
+		// TODO Notifications
+		// // If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
+		// notifyProperties(namespace, oldValue)
+		// 
+		// // If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
+		// notifyProperties(namespace, toValue)
+		// 
+		// notify(namespace)
 	}
 	var notifyProperties = function(baseNamespace, value) {
 		if (!value || value.type != 'OBJECT_LITERAL') { return }
