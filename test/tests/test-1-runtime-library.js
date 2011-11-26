@@ -2,7 +2,9 @@ var fun = require('../../src/runtime-library'),
 	slice = require('std/slice'),
 	a = require('../runtime-mocks'),
 	isArray = require('std/isArray'),
-	each = require('std/each')
+	each = require('std/each'),
+	map = require('std/map'),
+	deepEqual = require('std/assert/deepEqual')
 
 test('sets and gets', function(assert) {
 	var foo = a.variable(1),
@@ -30,17 +32,26 @@ test('sets and gets', function(assert) {
 	assert.is(a.value('qwe'), evaluate(foo, 'nested.deeper.yet'))
 	assert.is(a.value('hi'), evaluate(bar))
 	assert.is(a.value(null), evaluate(bar, 'qweqweqwe'))
-	assert.is(undefined, evaluate(bar, 'qweqweqwe.asdasd'))
+	assert.is(a.value(null), evaluate(bar, 'qweqweqwe.asdasd'))
+	assert.is(undefined, evaluate(bar, 'qweqweqwe.asdasd', true))
 })
-// 
-// test('observe value', function(assert, blocks) {
-// 	set('v1', { foo:null })
-// 	observeExpect('v1.foo', blocks, [null, 1, 2, 'qwe'])
-// 	set('v1', { foo:1 })
-// 	set('v1.foo', 2)
-// 	set('v1.foo', 'qwe')
-// })
-// 
+
+test('observe value', function(assert) {
+	var v1 = a.variable({ foo:null })
+	observeExpect(v1, 'foo', assert, [null, 1, 2, { ned:'teq'}, 'qwe', null])
+	// observeExpect(v1, null, assert, [{ foo:null }, { foo:1 }, { foo:2 }, { foo:{ ned:'teq'} }, { foo:'qwe' }, null])
+	observeExpect(v1, 'foo.ned', assert, [null, 'teq', null])
+	
+	set(v1, { foo:null })
+	set(v1, { foo:1 })
+	set(v1, 'foo', 2)
+	set(v1, 'blah', 'wab')
+	set(v1, 'foo.blah', 'wab')
+	set(v1, 'foo', { ned:'teq' })
+	set(v1, 'foo', 'qwe')
+	set(v1, null)
+})
+
 // test('observe subvalue', function(assert, blocks) {
 // 	set('a', null)
 // 	observeExpect('a.b.c', blocks, [null, 1, null, 2, null, 3])
@@ -51,7 +62,8 @@ test('sets and gets', function(assert) {
 // 	set('a.b.c', 3)
 // })
 
-var get = function(nameString) { return fun.get(nameString, true) }
+var q = function(val) { return JSON.stringify(val) }
+
 var set = function(variable, chain, value) {
 	if (arguments.length == 2) {
 		value = chain
@@ -59,20 +71,21 @@ var set = function(variable, chain, value) {
 	}
 	return fun.set(variable, chain, a.value(value))
 }
-var evaluate = function(value, chain) { return fun.evaluate(value, chain && chain.split('.')) }
-var observeExpect = function(nameString, blocks, values) {
-	blocks.add(values.length)
-	fun.observe(nameString, function() {
-		if (get(nameString) != values[0]) { return }
+var evaluate = function(value, nameString, defaultToUndefined) { return fun.evaluate(value, nameString && nameString.split('.'), defaultToUndefined) }
+var observeExpect = function(variable, nameString, assert, values) {
+	assert.blocks.add(values.length)
+	values = map(values, a.value)
+	fun.observe(variable, nameString, function() {
+		if (!deepEqual(evaluate(variable, nameString), values[0])) { return }
 		values.shift()
-		blocks.subtract()
+		assert.blocks.subtract()
 	})
 }
 
 function test(name, fn) {
 	module.exports['test ' + name] = function(assert) {
 		fun.reset()
-		var blocks = {
+		assert.blocks = {
 			_count: 0,
 			_done: false,
 			add: function(num) { this._count += (typeof num == 'number' ? num : 1) },
@@ -89,7 +102,7 @@ function test(name, fn) {
 		assert.is = function(val1, val2) {
 			return this.deepEqual(val1, val2)
 		}
-		fn(assert, blocks)
-		blocks.tryNow()
+		fn(assert)
+		assert.blocks.tryNow()
 	}
 }

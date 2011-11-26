@@ -21,11 +21,11 @@ fun = {}
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
 	
 	var nullValue = { type:'VALUE_LITERAL', content:null }
-	fun.evaluate = function(expression, chain) {
+	fun.evaluate = function(expression, chain, defaultToUndefined) {
 		var value = getCurrentValue(expression)
 		if (chain) {
 			for (var i=0; i<chain.length; i++) {
-				if (!value) { return undefined }
+				if (!value || !value.content) { return defaultToUndefined ? undefined : nullValue }
 				value = value.content[chain[i]]
 			}
 		}
@@ -128,8 +128,10 @@ fun = {}
 /* Values
  ********/
 	fun.set = function(variable, chain, toValue) {
-		var container = variable
+		var container = variable,
+			oldValue
 		if (!chain) {
+			oldValue = container.content
 			container.content = toValue
 		} else {
 			chain = chain.split('.')
@@ -137,28 +139,32 @@ fun = {}
 				container = fun.evaluate(variable, chain)
 			if (container === undefined) { return 'Null dereference in fun.set:fun.evaluate' }
 			if (container.type != 'OBJECT_LITERAL') { return 'Attempted setting property of non-object value' }
+			oldValue = container.content[lastName]
 			container.content[lastName] = toValue
+			
+			chain.push(lastName)
 		}
-		// TODO Notifications
-		// // If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
-		// notifyProperties(namespace, oldValue)
-		// 
-		// // If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
-		// notifyProperties(namespace, toValue)
-		// 
-		// notify(namespace)
+		
+		// If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
+		notifyProperties(variable, chain, oldValue)
+
+		// If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
+		notifyProperties(variable, chain, toValue)
+		
+		// notify(variable, '')
+		notify(variable, chain ? chain.join('.') : '')
 	}
-	var notifyProperties = function(baseNamespace, value) {
+	var notifyProperties = function(variable, chain, value) {
 		if (!value || value.type != 'OBJECT_LITERAL') { return }
-		for (var key in value.content) {
-			var namespace = baseNamespace.concat(key)
-			notify(namespace)
-			notifyProperties(namespace, value.content[key])
+		for (var property in value.content) {
+			var chainWithProperty = (chain || []).concat(property)
+			notify(variable, chainWithProperty.join('.'))
+			notifyProperties(variable, chainWithProperty, value.content[property])
 		}
 	}
-	var notify = function(namespace) {
-		var notify = _observers[namespace.join('.')]
-		for (var id in notify) { notify[id]() }
+	var notify = function(variable, namespace) {
+		var observers = variable.observers[namespace]
+		for (var id in observers) { observers[id]() }
 	}
 	
 	fun.get = function(name, dontThrow) {
@@ -177,10 +183,10 @@ fun = {}
 		}
 		return value
 	}
-	fun.observe = function(name, callback) {
-		if (!_observers[name]) { _observers[name] = {} }
+	fun.observe = function(variable, namespace, callback) {
+		if (!variable.observers[namespace]) { variable.observers[namespace] = {} }
 		var uniqueID = 'u'+_unique++
-		_observers[name][uniqueID] = callback
+		variable.observers[namespace][uniqueID] = callback
 		callback()
 		return uniqueID
 	}

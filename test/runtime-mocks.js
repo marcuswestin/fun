@@ -6,7 +6,7 @@ module.exports = {
 function variable(initialContent) {
 	return {
 		type: 'VARIABLE',
-		subscribers: {},
+		observers: {},
 		content:value(initialContent)
 	}
 }
