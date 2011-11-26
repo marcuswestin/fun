@@ -40,7 +40,7 @@ var _removeWhiteLines = function(js) {
 }
 
 exports._printHTML = function(compiledJS) {
-	var runtimeUtilJS = fs.readFileSync(__dirname + '/../src/runtimeUtil.js')
+	var runtimeUtilJS = fs.readFileSync(__dirname + '/../src/runtime-library.js')
 	return [
 		'<!doctype html>',
 		'<html><head></head><body><script>',

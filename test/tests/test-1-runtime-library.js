@@ -1,4 +1,4 @@
-var fun = require('../../src/runtimeUtil'),
+var fun = require('../../src/runtime-library'),
 	slice = require('std/slice'),
 	a = require('../resolver-mocks'),
 	isArray = require('std/isArray'),
