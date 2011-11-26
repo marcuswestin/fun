@@ -1,5 +1,7 @@
-fun = {}
+var values = require('./values')
+
 ;(function() {
+	if (typeof fun == 'undefined') { fun = {} }
 	var _unique,
 		_hooks, _hookCallbacks,
 		_values, _observers

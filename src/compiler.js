@@ -18,6 +18,8 @@ var fs = require('fs'),
 	strip = require('std/strip'),
 	each = require('std/each'),
 	
+	requireCompiler = require('require/compiler'),
+	
 	tokenizer = require('./tokenizer'),
 	parser = require('./parser'),
 	resolver = require('./resolver'),
@@ -40,10 +42,11 @@ var _removeWhiteLines = function(js) {
 }
 
 exports._printHTML = function(compiledJS) {
-	var runtimeUtilJS = fs.readFileSync(__dirname + '/../src/runtime-library.js')
+	runtimeUtilJS = requireCompiler.compile(__dirname + '/../src/runtime/library.js', { minify:false })
 	return [
 		'<!doctype html>',
 		'<html><head></head><body><script>',
+			'fun = {}',
 			runtimeUtilJS + "\n" + compiledJS,
 		'</script></body></html>'
 	].join('\n')
