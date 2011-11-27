@@ -1,14 +1,10 @@
 var mocks = require('./ast-mocks'),
-	runtimeValues = require('../src/runtime/values')
+	expressions = require('../src/runtime/expressions')
 
 var a = module.exports = Object.create(mocks)
 
 a.variable = function variable(initialContent) {
-	return {
-		type: 'VARIABLE',
-		observers: {},
-		content:a.value(initialContent)
-	}
+	return expressions.variable(a.value(initialContent))
 }
 
 a.value = function value(content) {
@@ -16,11 +12,15 @@ a.value = function value(content) {
 	switch(type) {
 		case 'string':
 		case 'number':
-		case 'boolean': return runtimeValues[type](content)
+		case 'boolean': return expressions[type](content)
 		case 'object':
-			if (!content) { return { type:'VALUE_LITERAL', content:null } }
-			var objectContent = {}
-			for (var key in content) { objectContent[key] = value(content[key]) }
-			return { type:'OBJECT_LITERAL', content:objectContent }
+			if (!content) { return expressions.null() }
+			var dictionaryContent = {}
+			for (var key in content) { dictionaryContent[key] = value(content[key]) }
+			return expressions.dictionary(dictionaryContent)
+		default:
+			throw new Error("ASDASD")
 	}
 }
+
+a.composite = expressions.composite

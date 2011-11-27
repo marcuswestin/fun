@@ -1,11 +1,10 @@
-var values = require('./values'),
+var expressions = require('./expressions'),
 	operators = require('./operators')
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }
 	var _unique,
-		_hooks, _hookCallbacks,
-		_values, _observers
+		_hooks, _hookCallbacks, _observers
 	
 	var q = function(val) { return JSON.stringify(val) }
 	
@@ -13,36 +12,14 @@ var values = require('./values'),
 		_unique = 0
 		_hooks = {}
 		_hookCallbacks = {}
-		_values = { type:'OBJECT_LITERAL', content:{} }
 		_observers = {}
 	}
 	
 	fun.debugDump = function() {
-		console.log({ _unique: 0, _hooks: {}, _hookCallbacks: {}, _values: {}, _observers: {} })
+		console.log({ _unique: 0, _hooks: {}, _hookCallbacks: {}, _observers: {} })
 	}
 	
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
-	
-	var nullValue = { type:'VALUE_LITERAL', content:null }
-	fun.evaluate = function(expression, chain, defaultToUndefined) {
-		var value = getCurrentValue(expression)
-		if (chain) {
-			for (var i=0; i<chain.length; i++) {
-				if (!value || !value.content) { return defaultToUndefined ? undefined : nullValue }
-				value = value.content[chain[i]]
-			}
-		}
-		if (!value) { return nullValue }
-		return value
-	}
-
-	function getCurrentValue(expression) {
-		switch(expression.type) {
-			case 'VALUE_LITERAL': return expression
-			case 'VARIABLE': return expression.content
-			case 'COMPOSITE': return operators[expression.operator](getCurrentValue(expression.left), getCurrentValue(expression.right))
-		}
-	}
 	
 /* Values
  ********/
@@ -139,9 +116,9 @@ var values = require('./values'),
 		} else {
 			chain = chain.split('.')
 			var lastName = chain.pop(),
-				container = fun.evaluate(variable, chain)
-			if (container === undefined) { return 'Null dereference in fun.set:fun.evaluate' }
-			if (container.type != 'OBJECT_LITERAL') { return 'Attempted setting property of non-object value' }
+				container = variable.evaluate(chain, false)
+			if (container === undefined) { return 'Null dereference in fun.set:evaluate' }
+			if (container.type != 'dictionary') { return 'Attempted setting property of non-dictionary value' }
 			oldValue = container.content[lastName]
 			container.content[lastName] = toValue
 			
@@ -158,7 +135,7 @@ var values = require('./values'),
 		notify(variable, '')
 	}
 	var notifyProperties = function(variable, chain, value) {
-		if (!value || value.type != 'OBJECT_LITERAL') { return }
+		if (!value || value.type != 'dictionary') { return }
 		for (var property in value.content) {
 			var chainWithProperty = (chain || []).concat(property)
 			notify(variable, chainWithProperty.join('.'))

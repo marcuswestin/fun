@@ -1,4 +1,4 @@
-var values = require('./values')
+var expressions = require('./expressions')
 
 module.exports = {
 	'+': add
@@ -6,7 +6,7 @@ module.exports = {
 
 function add(left, right) {
 	if (left.type == 'number' && right.type == 'number') {
-		return values.number(left.content + right.content)
+		return expressions.number(left.content + right.content)
 	}
-	return values.text(left.toString() + right.toString())
+	return expressions.text(left.toString() + right.toString())
 }

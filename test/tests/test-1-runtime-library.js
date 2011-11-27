@@ -68,6 +68,7 @@ test('evaluate composite expressions', function(assert) {
 		v3 = a.variable(3),
 		v4 = a.variable('4')
 	assert.is(evaluate(a.composite(v1, '+', v2)), a.value(3))
+	assert.is(evaluate(a.composite(v1, '+', v2)), evaluate(v3))
 	assert.is(evaluate(a.composite(v4, '+', v1)), a.value('41'))
 })
 
@@ -80,7 +81,9 @@ var set = function(variable, chain, value) {
 	}
 	return fun.set(variable, chain, a.value(value))
 }
-var evaluate = function(value, nameString, defaultToUndefined) { return fun.evaluate(value, nameString && nameString.split('.'), defaultToUndefined) }
+var evaluate = function(value, nameString, defaultToUndefined) {
+	return value.evaluate(nameString && nameString.split('.'), defaultToUndefined)
+}
 var observeExpect = function(variable, nameString, assert, values) {
 	assert.blocks.add(values.length)
 	values = map(values, a.value)
