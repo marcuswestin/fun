@@ -1,5 +1,5 @@
-var expressions = require('./expressions'),
-	operators = require('./operators')
+var expressions = require('./expressions')
+	
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }

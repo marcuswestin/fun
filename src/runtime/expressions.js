@@ -1,6 +1,5 @@
 var proto = require('std/proto'),
-	extend = require('std/extend'),
-	operators = require('./operators')
+	extend = require('std/extend')
 
 /* Atomic expressions
  ********************/
@@ -94,3 +93,17 @@ var variable = module.exports.variable = proto(function(content) { if (!content.
 	},
 	equals:function(that) { return this.content.equals(that) }
 })
+
+var operators = {
+	'+': add,
+	'==': equals // I wonder if we should make this just =...
+}
+
+function add(left, right) {
+	if (left.type == 'number' && right.type == 'number') {
+		return number(left.content + right.content)
+	}
+	return text(left.asRawString() + right.asRawString())
+}
+
+function equals(left, right) { return left.evaluate().equals(right.evaluate()) }

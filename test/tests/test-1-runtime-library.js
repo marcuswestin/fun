@@ -4,8 +4,7 @@ var fun = require('../../src/runtime/library'),
 	isArray = require('std/isArray'),
 	each = require('std/each'),
 	map = require('std/map'),
-	deepEqual = require('std/assert/deepEqual'),
-	operators = require('../../src/runtime/operators')
+	deepEqual = require('std/assert/deepEqual')
 
 test('sets and gets', function(assert) {
 	var foo = a.variable(1),
@@ -72,7 +71,7 @@ test('evaluate composite expressions', function(assert) {
 	assert.is(evaluate(a.composite(v1, '+', v2)), evaluate(v3))
 	assert.is(evaluate(a.composite(v4, '+', v1)), a.value('41'))
 	assert.is(a.value(true), v3.equals(evaluate(a.composite(v1, '+', v2))))
-	assert.is(a.value(true), operators['=='](v3, a.composite(v1, '+', v2)))
+	assert.is(a.value(true), evaluate(a.composite(a.value(4), '==', a.composite(v1, '+', v3))))
 	assert.is(a.value(false), v3.equals(evaluate(a.composite(v1, '+', v1))))
 })
 
