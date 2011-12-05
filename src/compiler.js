@@ -350,9 +350,10 @@ var compileForLoop = function(blockCompileFn, context, ast) {
 var compileDeclaration = function(declaration) {
 	switch (declaration.type) {
 		case 'VARIABLE':
-			return code('fun.set({{ name }}, {{ value }})', {
-				name:q(declaration.name),
-				value:runtimeValue(declaration.initialValue)
+			return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
+				name:variableName(declaration.name),
+				type:getType(declaration.initialValue),
+				initialContent:runtimeValue(declaration.initialValue)
 			})
 		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
 		case 'HANDLER':       return compileHandlerDeclaration(declaration)
@@ -397,13 +398,13 @@ var _compileTemplateInvocation = function(context, invocationAST, templateAST) {
 		{
 			templateFunctionName: templateAST.compiledFunctionName,
 			hookName: context.hookName,
-			argumentValues: _commaPrefixJoin(invocationAST.args, _compileStatementValue)
+			argumentValues: _commaPrefixJoin(invocationAST.args, runtimeValue)
 		})
 }
 
 var _commaPrefixJoin = function(arr, fn) {
 	if (arr.length == 0) { return '' }
-	return ', ' + map(arr, _compileStatementValue).join(', ')
+	return ', ' + map(arr, runtimeValue).join(', ')
 }
 
 var compileMutationItemCreation = function(ast) {
@@ -442,16 +443,12 @@ var compileHandlerDeclaration = function(ast) {
 }
 
 var compileMutationStatement = function(ast) {
-	switch(ast.operator) {
-		case 'set':
-			return code(
-				'fun.set({{ operand }}, fun.evaluate({{ value }}))', {
-					operand: q(ast.operand),
-					value: q(ast.arguments[0])
-				})
-		default:
-			halt(ast, 'Unknown mutation operator "'+ast.operator+'"')
-	}
+	return code('{{ operand }}.{{ operator }}({{ chain }}, {{ value }})', {
+		operand:runtimeValue(ast.operand),
+		operator:ast.operator,
+		chain:null,
+		value:runtimeValue(ast.arguments[0])
+	})
 }
 
 var namespace = function(reference) {
@@ -504,19 +501,39 @@ var indent = function(fn /*, arg1, ... argN */) {
 }
 
 var runtimeValue = function(ast) {
-	return q(ast)
-	// switch(ast.type) {
-	// 	case 'VALUE_LITERAL': return q(ast.value)
-	// 	case 'ITERATOR':      return ast.runtimeName
-	// 	case 'ARGUMENT':      return ast.runtimeName
-	// 	case 'LIST_LITERAL':          return q(ast.content)
-	// 	case 'OBJECT_LITERAL':
-	// 		var result = {}
-	// 		each(ast.resolved, function(val, name) { result[name] = runtimeValue(val) })
-	// 		return q(result)
-	// 	default:                  halt(ast, 'Unknown runtime value type ' + ast.type)
-	// }
+	switch(ast.type) {
+		case 'VALUE_LITERAL': return code('fun.expressions.{{ type }}({{ value }})', { type:getType(ast), value:q(ast.value) })
+		case 'REFERENCE':     return code('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
+		case 'ITERATOR':      return ast.runtimeName
+		case 'ARGUMENT':      return ast.runtimeName
+		case 'LIST_LITERAL':          return q(ast.content)
+		case 'OBJECT_LITERAL':
+			return code('fun.expressions.dictionary({ {{ content }} })', { 
+				content:map(ast.content, function(value, name) { return name+':'+runtimeValue(value) }).join(', ')
+			})
+		case 'COMPOSITE':
+			return code('fun.expressions.composite({{ left }}, {{ operator }}, {{ right }})', {
+				left:runtimeValue(ast.left),
+				operator:ast.operator,
+				right:runtimeValue(ast.right)
+			})
+		default:                  halt(ast, 'Unknown runtime value type ' + ast.type)
+	}
 }
+
+var variableName = function(name) { return '_variableName_'+name }
+
+var _types = { 'string':'text', 'number':'number', 'boolean':'logic' }
+var getType = function(ast) {
+	switch (ast.type) {
+		case 'VALUE_LITERAL':
+			assert(ast, !!_types[typeof ast.value], 'Unknown value literal type')
+			return _types[typeof ast.value]
+		default:
+			halt(ast, 'Unknown getType type')
+	}
+}
+
 
 var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 	var statementLines = Array.prototype.slice.call(arguments, 1, arguments.length - 1),
@@ -532,7 +549,7 @@ var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 		{
 			STATEMENT_VALUE: injectValues['STATEMENT_VALUE'],
 			__values: map(ast, runtimeValue),
-			__statementValue: _compileStatementValue(ast)
+			__statementValue: runtimeValue(ast)
 		})
 }
 
@@ -553,22 +570,6 @@ var _collectDynamicASTs = function(ast) {
 			return filter(flatten(map(ast.content, _collectDynamicASTs)))
 		default:
 			halt(ast, 'Unknown dynamic AST type');
-	}
-}
-
-function _compileStatementValue(ast) {
-	if (!ast) { return '' }
-	switch(ast.type) {
-		case 'COMPOSITE':
-			var res = _compileStatementValue(ast.left) + ast.operator + _compileStatementValue(ast.right)
-			return ast.hasParens ? '('+res+')' : res
-		// case 'ITEM_PROPERTY':
-		case 'ITERATOR':
-		case 'ARGUMENT':
-		case 'VALUE_LITERAL':
-			return runtimeValue(ast)
-		default:
-			halt(ast, 'Unknown value type: ' + ast.type)
 	}
 }
 

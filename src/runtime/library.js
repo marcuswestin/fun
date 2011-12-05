@@ -20,51 +20,16 @@ var expressions = require('./expressions')
 	}
 	
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
+
+	fun.expressions = expressions
 	
 /* Values
  ********/
-	
 	fun.emit = function(parentHookName, value) {
-		if (!value) { return fun.text(parentHookName, "<NULL>") }
-		if (typeof value == 'number' || typeof value == 'string' || typeof value == 'boolean') { return fun.text(parentHookName, value) } // This feels wrong
-		switch(value.type) {
-			case 'REFERENCE':
-				var hookName = fun.hook(fun.name(), parentHookName)
-				fun.observe(namespace(value), function() {
-					_hooks[hookName].innerHTML = ''
-					var val = fun.get(namespace(value))
-					// This doesn't feel right
-					if (val && val.type == 'OBJECT_LITERAL') { deepEmit(hookName, val.content, namespace(value).split('.')) }
-					else { fun.emit(hookName, val) }
-				})
-				break
-			case 'VALUE_LITERAL':
-				fun.text(parentHookName, value.value)
-				break
-			case 'OBJECT_LITERAL':
-				deepEmit(fun.hook(fun.name(), parentHookName), value.content, [])
-				break
-		}
-	}
-	
-	var deepEmit = function(hookName, content, baseNamespace) {
-		fun.text(hookName, '{ ')
-		var keys = Object.keys(content)
-		for (var i=0, key; key=keys[i]; i++) {
-			var valueHookName = fun.hook(fun.name(), hookName),
-				value = content[key]
-			fun.text(valueHookName, key+':')
-			if (value.type == 'OBJECT_LITERAL') {
-				deepEmit(valueHookName, value.content, baseNamespace.concat(key))
-			} else if (value.type == 'REFERENCE') {
-				fun.emit(valueHookName, value)
-			} else {
-				// This doesn't feel right
-				fun.emit(valueHookName, { type:'REFERENCE', chain:baseNamespace.concat(key) })
-			}
-			if (i+1 < keys.length) { fun.text(valueHookName, ', ') }
-		}
-		fun.text(hookName, ' }')
+		var hookName = fun.hook(fun.name(), parentHookName)
+		value.observe(null, function() {
+			_hooks[hookName].innerText = value.asString()
+		})
 	}
 	
 	var namespace = function(reference) {
@@ -147,32 +112,8 @@ var expressions = require('./expressions')
 		for (var id in observers) { observers[id]() }
 	}
 	
-	fun.get = function(name, dontThrow) {
-		var namespace = name.split('.'),
-			value = _values.content[namespace[0]]
-		for (var i=1; i<namespace.length; i++) {
-			if (!value) {
-				if (dontThrow) { return undefined }
-				throw new Error('Null dereference in get: ' + namespace.join('.'))
-			}
-			if (value.type != 'OBJECT_LITERAL') {
-				if (dontThrow) { return undefined }
-				throw new Error('Tried to dereference a non-object in get: ' + namespace.join('.'))
-			}
-			value = value.content[namespace[i]]
-		}
-		return value
-	}
-	fun.observe = function(variable, namespace, callback) {
-		if (!variable.observers[namespace]) { variable.observers[namespace] = {} }
-		var uniqueID = 'u'+_unique++
-		variable.observers[namespace][uniqueID] = callback
-		callback()
-		return uniqueID
-	}
-	fun.unobserve = function(namespace, observationID) {
-		delete observers[namespace.join('.')][observationID]
-	}
+	fun.observe = function(variable, chain, callback) { return variable.observe(chain, callback) }
+	fun.unobserve = function(chain, observationID) { return variable.unobserve(chain, observationID) }
 /* DOM
  *****/
 	fun.attr = function(name, key, value) {

@@ -17,11 +17,9 @@ var util = require('./util'),
 	assert = util.assert,
 	halt = util.halt
 
-exports.resolve = function(ast, context) {
-	if (!context) {
-		context = { imports:{}, names:{}, declarations:[] }
-	}
-	var expressions = util.cleanup(resolve(context, ast))
+exports.resolve = function(ast) {
+	var context = { imports:{}, names:{}, declarations:[] },
+		expressions = util.cleanup(resolve(context, ast))
 	return {
 		expressions:expressions,
 		declarations:context.declarations,
@@ -195,7 +193,7 @@ var resolveMutation = function(context, ast) {
 var resolveForLoop = function(context, ast) {
 	ast.iterable = lookup(context, ast.iterable)
 	ast.iterator.operand = ast.iterable
-	var loopContext = addScope(context)
+	ast.context = addScope(context)
 	declare(loopContext, ast, ast.iterator.name, ast.iterator)
 	ast.block = resolve(loopContext, ast.block)
 	return ast
@@ -206,9 +204,11 @@ var resolveForLoop = function(context, ast) {
  *****************/
 var resolveIfStatement = function(context, ast) {
 	ast.condition = resolve(context, ast.condition)
-	ast.ifBlock = resolve(addScope(context), ast.ifBlock)
+	ast.ifContext = addScope(context)
+	ast.ifBlock = resolve(ast.ifContext, ast.ifBlock)
 	if (ast.elseBlock) {
-		ast.elseBlock = resolve(addScope(context), ast.elseBlock)
+		ast.elseContext = addScope(context)
+		ast.elseBlock = resolve(ast.elseContext, ast.elseBlock)
 	}
 	return ast
 }
@@ -244,8 +244,8 @@ var setNonEnumerableProperty = function(obj, name, value) {
 var addScope = function(context) {
 	// Creates a scope by prototypically inheriting the names dictionary from the current context.
 	// Reads will propegate up the prototype chain, while writes won't.
-	// However, writes will shadow previous name names.
-	context = util.create(context)
-	context.names = copy(context.names)
+	// New names written to context.names will shadow names written further up the chain, but won't overwrite them.
+	context = util.create(context, { declarations:[] })
+	context.names = copy(context.names) // shouldn't this be create()?
 	return context
 }
