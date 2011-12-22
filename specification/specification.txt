@@ -1,0 +1,46 @@
+Grammar - a fun app is a Template
+---------------------------------
+A Template is : arguments ->
+	UI - html
+		(html event attributes are handlers)
+	variable declarations
+	expressions
+	invocations (of templates)
+	<script> tags
+	(alias declarations)
+
+A Function is : arguments ->
+	(alias declarations)
+	single expression
+
+(Transformer ?)
+A Handler is : arguments ->
+	mutating statements
+	invocations (of handlers)
+	<script> tags
+	(alias declarations)
+
+	Mutating statement is variable.reference.mutation(expression)
+
+An Expression is
+	variable.reference
+	value
+	composite expression (expression? operator expression)
+	invocations (of functions)
+
+
+Values, variables, and references
+---------------------------------
+A value is a snapshot in time: 5, "hello", null, { foo:['bar'] }, #ddeeff. It never changes
+
+A variable is a name which always holds one value
+	The value can change over time (mutate)
+	Getting a static version of the current value must be done explicitly (separate/static - implemented as function)
+
+A reference is an expression and a chain
+	e.g. foo.bar.cat, or ({ foo:['qwe','rty'] }).foo[1]
+	If the underlying expression mutations, the reference is re-evaluated
+
+Value types
+-----------
+Text, Number, Logic, Color, Dictionary, List, Template, Handler, Function (Enum, Interface?)
