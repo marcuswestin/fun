@@ -1,0 +1,31 @@
+Fun -> javascript/DOM compiler
+==============================
+
+Templates
+---------
+HTML compiles straight to dom hooks, with a few attributes special cased
+	`on(click/mouseover/*)` Event handlers
+	`style`, a dictionary where numeric values get "px" added to them
+	(`classes`, a list of texts)
+
+Expressions are observed, and the output is always reflected according to the type.
+	Texts and Numbers are simply printed
+	Dictionaries and Lists print as JSON
+	(Colors print as a dot with that color)
+	Templates, Functions & Handlers print as <code> with their definitions
+
+Expressions
+-----------
+
+
+Function invocations
+--------------------
+A function invocation evaluates to a variable.
+	It "returns" a variable right away.
+	It then observes all of its arguments.
+	Upon mutation of an argument, it re-evaluates its value and mutates the return variable to that value.
+
+Observing values
+----------------
+
+
