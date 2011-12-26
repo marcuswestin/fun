@@ -182,7 +182,7 @@ var reference = module.exports.reference = proto(function(content, chain) { this
 
 var operators = {
 	'+': add,
-	'==': equals // I wonder if we should make this just =...
+	'==': equals // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
 }
 
 function add(left, right) {
