@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "nodeunit": "~0.5.1",
-    "zombie": "~0.10.2"
+    "zombie": "~0.12.9"
   },
   "engines": {
     "node": ">= 0.4.0"
