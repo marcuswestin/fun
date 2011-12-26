@@ -28,7 +28,8 @@ var expressions = require('./expressions')
 	fun.emit = function(parentHookName, value) {
 		var hookName = fun.hook(fun.name(), parentHookName)
 		value.observe(null, function() {
-			_hooks[hookName].innerText = value.asString()
+			_hooks[hookName].innerHTML = ''
+			_hooks[hookName].appendChild(document.createTextNode(value.asString()))
 		})
 	}
 	
