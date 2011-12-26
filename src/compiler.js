@@ -472,13 +472,17 @@ var compileInvocation = function(context, ast) {
 /*********************
  * Utility functions *
  *********************/
+
+var inlineCode = function() { return _code(arguments, false) }
+var code = function() { return _code(arguments, true) }
+
 var _emitReplaceRegex = /{{\s*(\w+)\s*}}/,
 	_indentation = 1
-var code = function(/*, line1, line2, line3, ..., lineN, optionalValues */) {
-	var argsLen = arguments.length,
-		injectObj = arguments[argsLen - 1],
-		snippets = slice(arguments, 0, argsLen - 1),
-		splitter = '\n' + repeat('\t', _indentation),
+var _code = function(args, addNewlines) {
+	var argsLen = args.length,
+		injectObj = args[argsLen - 1],
+		snippets = slice(args, 0, argsLen - 1),
+		splitter = (addNewlines ? ('\n' + repeat('\t', _indentation)) : ' '),
 		output = splitter + snippets.join(splitter),
 		match
 	
