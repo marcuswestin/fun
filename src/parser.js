@@ -271,7 +271,7 @@ var _parseXMLAttributes = function() {
 	return XMLAttributes
 }
 var _parseXMLAttribute = astGenerator(function() {
-	var name = advance('name').value.toLowerCase()
+	var name = advance('name').value
 	advance('symbol', '=')
 	var value =
 		name == 'style' ? parseObjectLiteral(parseExpression) :

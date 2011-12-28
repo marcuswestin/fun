@@ -69,7 +69,7 @@ test('clicking a button updates the UI')
 	)
 	.expressions(
 		a.xml('div', { id:a.literal('output') }, [ a.reference('foo') ]),
-		a.xml('button', { id:a.literal('button'), onclick:ref(1) }, [ a.literal('Click me') ])
+		a.xml('button', { id:a.literal('button'), onClick:ref(1) }, [ a.literal('Click me') ])
 	)
 
 // Boolean values
