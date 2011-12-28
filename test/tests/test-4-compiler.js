@@ -19,6 +19,11 @@ test('a number and a string').code(
 	'<div id="output">"Hello " 1</div>')
 	.textIs('#output', 'Hello 1')
 
+test('a variable in a div').code(
+	'var foo = "foo"',
+	'<div id="output">foo</div>')
+	.textIs('#output', 'foo')
+
 test('clicking a button updates the UI').code(
 	'var foo = "bar"',
 	'<div id="output">foo</div>',
