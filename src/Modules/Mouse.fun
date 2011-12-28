@@ -8,16 +8,16 @@ var Mouse = {
 /* Mouse.x and Mouse.y
  *********************/
 fun.on(document, 'mousemove', function(e) {
-	fun.set('Mouse.x', { type:'VALUE_LITERAL', value:e.clientX })
-	fun.set('Mouse.y', { type:'VALUE_LITERAL', value:e.clientY })
+	_variableName_Mouse.set(['x'], fun.expressions.number(e.clientX))
+	_variableName_Mouse.set(['y'], fun.expressions.number(e.clientY))
 })
 
 /* Mouse.isDown
  **************/
 fun.on(document, 'mousedown', function() {
-	fun.set('Mouse.isDown', { type:'VALUE_LITERAL', value:true })
+	_variableName_Mouse.set(['isDown'], fun.expressions.logic(true))
 })
 fun.on(document, 'mouseup', function() {
-	fun.set('Mouse.isDown', { type:'VALUE_LITERAL', value:false })
+	_variableName_Mouse.set(['isDown'], fun.expressions.logic(false))
 })
 </script>

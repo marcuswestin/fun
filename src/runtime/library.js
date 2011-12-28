@@ -1,4 +1,5 @@
-var expressions = require('./expressions')
+var expressions = require('./expressions'),
+	each = require('std/each')
 	
 
 ;(function() {
@@ -119,39 +120,26 @@ var expressions = require('./expressions')
  *****/
 	fun.attr = function(name, key, value) {
 		var match
-		if (match = key.match(/^style\.(\w+)$/)) {
-			fun.style(name, match[1], value)
-		} else {
-			_hooks[name].setAttribute(key, value)
-		}
+		if (match = key.match(/^style\.(\w+)$/)) { fun.setStyle(name, match[1], value) }
+		else { _hooks[name].setAttribute(key, value) }
 	}
 	
-	// fun.style(hook, 'color', '#fff') or fun.style(hook, { color:'#fff', width:100 })
-	fun.style = function(name, key, value) {
-		if (typeof key == 'object') {
-			for (var styleKey in key) { fun.style(name, styleKey, key[styleKey]) }
-		} else {
-			if (typeof value == 'number') { value = value + 'px' }
-			if (key == 'float') { key = 'cssFloat' }
-			_hooks[name].style[key] = value
-		}
+	// fun.style(hook, 'color', '#fff')
+	fun.setStyle = function(hookName, key, value) {
+		var rawValue = value.evaluate().asString()
+		if (value.type == 'number' || rawValue.match(/\d+/)) { rawValue = rawValue + 'px' }
+		if (key == 'float') { key = 'cssFloat' }
+		_hooks[hookName].style[key] = rawValue
 	}
 	
 	fun.reflectStyles = function(hookName, values) {
-		for (var key in values) {
-			var value = values[key]
-			switch(value.type) {
-				case 'VALUE_LITERAL':
-					fun.style(hookName, key, value.value)
-					break
-				case 'REFERENCE':
-					(function(value, key) {
-						fun.observe(namespace(value), function() {
-							fun.style(hookName, key, fun.get(namespace(value)).value)
-						})
-					})(value, key)
-			}
-		}
+		if (values.type != 'reference')
+		// TODO detect when the dictionary mutates (values added and removed)
+		each(values.content, function(val, key) {
+			val.observe(null, function() {
+				fun.setStyle(hookName, key, val)
+			})
+		})
 	}
 	
 	fun.on = function(element, eventName, handler) {

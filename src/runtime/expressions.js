@@ -108,7 +108,7 @@ var variable = module.exports.variable = proto(function(content) { if (!content.
 	asString:function() { return this.content.asString() },
 	equals:function(that) { return this.content.equals(that) },
 	observe:function(chain, callback) {
-		var namespace = chain.join('.')
+		var namespace = chain ? chain.join('.') : ''
 		if (!this.observers[namespace]) { this.observers[namespace] = {} }
 		var uniqueID = 'u'+_unique++
 		this.observers[namespace][uniqueID] = callback

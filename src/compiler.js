@@ -67,7 +67,7 @@ exports.compile = function(resolvedAST) {
 			modules: map(resolvedAST.imports, function(module, name) {
 				return boxComment('Module: ' + name) + '\n' + exports.compileRaw(module)
 			}).join('\n\n\n')
-		}) + '})();'
+		}) + '\n})();'
 }
 
 exports.compileRaw = function(ast, rootHook) {
@@ -184,7 +184,7 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 		// do nothing
 	} else if (name == 'style') {
 		assert(ast, value.type == 'OBJECT_LITERAL' || value.type == 'REFERENCE', 'The style attribute should be an object, e.g. style={ color:"red" }')
-		dynamicCode.push(_compileStyleAttribute(nodeHookName, ast, value))
+		dynamicCode.push('fun.reflectStyles('+nodeHookName+', '+runtimeValue(value, true)+')')
 	} else if (name == 'data') {
 		// TODO Individual tags should define how to handle the data attribute
 		_handleDataAttribute(nodeHookName, ast, dynamicCode, value, attribute.dataType)
@@ -199,25 +199,12 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 }
 
 // modifies dynamicCode
-var _compileStyleAttribute = function(hookName, ast, value) {
-	switch(value.type) {
-		case 'OBJECT_LITERAL':
-			return 'fun.reflectStyles('+hookName+', '+q(value.content)+')'
-		case 'REFERENCE':
-			halt(ast, 'TODO implement style attribute by reference')
-		default:
-			halt(ast, 'Unknown style attribute type ' + value.type)
-	}
-}
-
-// modifies dynamicCode
 var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value, dataType) {
 	dynamicCode.push(code(
 		'fun.reflectInput({{ hookName }}, {{ value }})',
 		{
 			hookName: nodeHookName,
-			value: runtimeValue(value),
-			type: q(dataType || 'string')
+			value: runtimeValue(value)
 		}))
 }
 
@@ -353,7 +340,7 @@ var compileDeclaration = function(declaration) {
 			return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
 				name:variableName(declaration.name),
 				type:getType(declaration.initialValue),
-				initialContent:runtimeValue(declaration.initialValue)
+				initialContent:runtimeValue(declaration.initialValue, true)
 			})
 		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
 		case 'HANDLER':       return compileHandlerDeclaration(declaration)
@@ -504,19 +491,22 @@ var indent = function(fn /*, arg1, ... argN */) {
 	return result
 }
 
-var runtimeValue = function(ast) {
+var runtimeValue = function(ast, isVariable) {
 	switch(ast.type) {
-		case 'VALUE_LITERAL': return code('fun.expressions.{{ type }}({{ value }})', { type:getType(ast), value:q(ast.value) })
+		case 'VALUE_LITERAL':
+			return isVariable
+				? inlineCode('fun.expressions.variable({{ content }})', { content:runtimeValue(ast, false) })
+				: inlineCode('fun.expressions.{{ type }}({{ value }})', { type:getType(ast), value:q(ast.value) })
 		case 'REFERENCE':     return code('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
 		case 'ITERATOR':      return ast.runtimeName
 		case 'ARGUMENT':      return ast.runtimeName
 		case 'LIST_LITERAL':          return q(ast.content)
 		case 'OBJECT_LITERAL':
 			return code('fun.expressions.dictionary({ {{ content }} })', { 
-				content:map(ast.content, function(value, name) { return name+':'+runtimeValue(value) }).join(', ')
+				content:map(ast.content, function(value, name) { return name+':'+runtimeValue(value, isVariable) }).join(', ')
 			})
 		case 'COMPOSITE':
-			return code('fun.expressions.composite({{ left }}, {{ operator }}, {{ right }})', {
+			return code('fun.expressions.composite({{ left }}, "{{ operator }}", {{ right }})', {
 				left:runtimeValue(ast.left),
 				operator:ast.operator,
 				right:runtimeValue(ast.right)
@@ -533,6 +523,7 @@ var getType = function(ast) {
 		case 'VALUE_LITERAL':
 			assert(ast, !!_types[typeof ast.value], 'Unknown value literal type')
 			return _types[typeof ast.value]
+		case 'OBJECT_LITERAL': return 'dictionary'
 		default:
 			halt(ast, 'Unknown getType type')
 	}

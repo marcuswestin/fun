@@ -18,7 +18,7 @@
 	"require": "0.4.x"
   },
   "devDependencies": {
-    "nodeunit": "~0.5.1",
+    "nodeunit": "~0.6.4",
     "zombie": "~0.12.9"
   },
   "engines": {

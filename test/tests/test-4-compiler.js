@@ -8,15 +8,16 @@ var std = require('std'),
 	zombie = require('zombie'),
 	compilerServerPort = 9797,
 	slice = require('std/slice'),
-	bind = require('std/bind')
+	bind = require('std/bind'),
+	each = require('std/each')
 
 var currentTestCode, compilerServer
 	
 startCompilerServer()
 
 test('a number and a string').code(
-	'<div>"Hello " 1</div>')
-	.htmlIs('div', '<div>Hello 1</div>')
+	'<div id="output">"Hello " 1</div>')
+	.textIs('#output', 'Hello 1')
 
 test('clicking a button updates the UI').code(
 	'var foo = "bar"',
@@ -27,6 +28,38 @@ test('clicking a button updates the UI').code(
 	.textIs('#output', 'bar')
 	.click('#button')
 	.textIs('#output', 'cat')
+
+test('object literals').code(
+	'var foo = { nested: { bar:1 } }',
+	'<div id="output">foo foo.nested foo.nested.bar</div>'
+	)
+	.textIs('#output', '{ nested:{ bar:1 } }{ bar:1 }1')
+
+test('divs follow mouse').code(
+	'import Mouse',
+	'<div id="output1" style={ position:"absolute", top:Mouse.y, left:Mouse.x }/>',
+	'<div id="output2" style={ position:"absolute", top:Mouse.y + 50, left:Mouse.x + 50 }/>'
+	)
+	.moveMouse(100, 100)
+	.positionIs('#output1', 100, 100)
+	.positionIs('#output2', 150, 150)
+
+// test('changing object literals').code(
+// 	'var foo = { a:1 }',
+// 	'<div id="output">',
+// 	'	{ foo: { a:foo.a } }',
+// 	'	{ a:foo.a }',
+// 	'	foo',
+// 	'</div onclick=handler(){ foo.a.set(2) }>'
+// 	)
+// 	.textIs('#output', '{ foo:{ a:1 } }{ a:1 }{ a:1 }')
+// 	.click('#output')
+// 	.textIs('#output', '{ foo:{ a:2 } }{ a:2 }{ a:2 }')
+
+
+
+
+
 
 // test('value changes type')
 // 	.compile(
@@ -40,34 +73,6 @@ test('clicking a button updates the UI').code(
 // 	.click('#button')
 // 	.textIs('#value', 1)
 // 	.textIs('#Type', 'Number')
-
-test('object literals').code(
-	'var foo = { nested: { bar:1 } }',
-	'<div id="output">foo foo.nested foo.nested.bar</div>'
-	)
-	.textIs('#output', '{ nested:{ bar:1 } }{ bar:1 }1')
-
-test('drag square with mouse').code(
-	'import Mouse',
-	'<div style={ width:100, height:100, background:"red", position:"absolute", top:Mouse.y, left:Mouse.x }/>'
-	)
-
-test('changing object literals').code(
-	'var foo = { a:1 }',
-	'<div id="output">',
-	'	{ foo: { a:foo.a } }',
-	'	{ a:foo.a }',
-	'	foo',
-	'</div onclick=handler(){ foo.a.set(2) }>'
-	)
-	.textIs('#output', '{ foo:{ a:1 } }{ a:1 }{ a:1 }')
-	.click('#output')
-	.textIs('#output', '{ foo:{ a:2 } }{ a:2 }{ a:2 }')
-
-// test('drag square with mouse with composite offset').code(
-// 	'import Mouse',
-// 	'<div style={ width:100, height:100, background:"red", position:"absolute", top:Mouse.y + 50, left:Mouse.x + 50 }/>'
-// 	)
 
 // test('handler with logic')
 // 	.code(
@@ -90,7 +95,8 @@ test('changing object literals').code(
  ******/
 var isFirstTest = true
 function test(name) {
-	return {
+	var actionHandlers = createActionHandlers()
+	var testObj = {
 		code: function() {
 			var code = std.slice(arguments).join('\n'),
 				actions = this._actions = []
@@ -122,39 +128,51 @@ function test(name) {
 						try {
 							actionHandlers[action.name].apply(this, [assert, browser, nextAction].concat(action.args))
 						} catch(e) {
-							console.log('compiler threw:', e.stack, '\nThe code that caused the throw:\n', currentTestCode)
+							console.log('compiler threw -', e.stack, '\n\nThe test code that caused the error:\n', currentTestCode)
 						}
 					}
 					nextAction()
 				})
 			}
 			return this
+		}
+	}
+	
+	each(actionHandlers, function(handler, name) {
+		testObj[name] = function chainableAction() {
+			this._actions.push({ name:name, args:slice(arguments) })
+			return this
+		}
+	})
+	
+	return testObj
+}
+
+function createActionHandlers() {
+	return {
+		// Events
+		click: function(assert, browser, next, selector) {
+			var target = browser.querySelector(selector)
+			browser.fire('click', target, next)
 		},
-		htmlIs: chainableAction('htmlIs'),
-		textIs: chainableAction('textIs'),
-		click: chainableAction('click')
-	}
-}
-
-function chainableAction(name) {
-	return function() {
-		this._actions.push({ name:name, args:slice(arguments) })
-		return this
-	}
-}
-
-var actionHandlers  = {
-	click: function(assert, browser, next, selector) {
-		var target = browser.querySelector(selector)
-		browser.fire('click', target, next)
-	},
-	htmlIs: function(assert, browser, next, selector, expectedHTML) {
-		assert.deepEqual(expectedHTML, browser.html(selector))
-		next()
-	},
-	textIs: function(assert, browser, next, selector, expectedHTML) {
-		assert.deepEqual(expectedHTML, browser.text(selector))
-		next()
+		moveMouse: function(assert, browser, next, clientX, clientY) {
+			browser.fire('mousemove', browser.document, { attributes: {clientX:clientX, clientY:clientY} }, next)
+		},
+		// Asserts
+		htmlIs: function(assert, browser, next, selector, expectedHTML) {
+			assert.deepEqual(expectedHTML, browser.html(selector))
+			next()
+		},
+		textIs: function(assert, browser, next, selector, expectedHTML) {
+			assert.deepEqual(expectedHTML, browser.text(selector))
+			next()
+		},
+		positionIs: function(assert, browser, next, selector, x, y) {
+			var style = browser.querySelector(selector).style
+			assert.deepEqual(style.left, x+'px')
+			assert.deepEqual(style.top, y+'px')
+			next()
+		}
 	}
 }
 
