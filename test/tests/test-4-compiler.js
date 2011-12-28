@@ -120,7 +120,7 @@ function test(name) {
 				}
 				
 				if (isFirstTest) { console.log('loading headless browser - hang tight!'); isFirstTest = false }
-				zombie.visit('http://localhost:'+compilerServerPort, function(err, browser, status) {
+				zombie.visit('http://localhost:'+compilerServerPort, { debug:false }, function(err, browser, status) {
 					if (err) { console.log("ERROR:", err.stack) }
 					if (status != 200) { throw new Error("Got bad status from compiler server:", status) }
 					(function nextAction() {
