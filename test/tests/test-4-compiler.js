@@ -49,6 +49,14 @@ test('divs follow mouse').code(
 	.positionIs('#output1', 100, 100)
 	.positionIs('#output2', 150, 150)
 
+test('script tag variable passing').code(
+	'var foo = "foo"',
+	'<script fooVariable=foo>',
+	'	fooVariable.set(null, fun.expressions.text("bar"))',
+	'</script>',
+	'<div id="output">foo</div>')
+	.textIs('#output', 'bar')
+
 // test('changing object literals').code(
 // 	'var foo = { a:1 }',
 // 	'<div id="output">',

@@ -121,8 +121,11 @@ function importModule(name) {
 	return { type:'IMPORT_MODULE', name:name }
 }
 
-function inlineScript(js) {
-	return { type:'INLINE_SCRIPT', inlineJavascript:js }
+function inlineScript(attributes, js) {
+	attributes = map(attributes, function(val, key) {
+		return { name:key, value:val }
+	})
+	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js }
 }
 
 function handler(signature, block) {

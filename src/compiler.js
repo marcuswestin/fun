@@ -95,7 +95,7 @@ var compileEmitStatement = function(context, ast) {
 		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileEmitStatement, context, ast)
 		case 'FOR_LOOP':          return compileForLoop(compileEmitStatement, context, ast)
 
-		case 'INLINE_SCRIPT':     return '/* INLINE JS */' + ast.inlineJavascript
+		case 'SCRIPT_TAG':        return compileScript(context, ast)
 		case 'DEBUGGER':          return 'debugger'
 
 		default:                  halt(ast, 'Unknown emit statement type '+ast.type)
@@ -113,13 +113,24 @@ var compileHandlerStatement = function(context, ast) {
 		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileHandlerStatement, context, ast)
 		case 'FOR_LOOP':          return compileForLoop(compileHandlerStatement, context, ast)
 
-		case 'INLINE_SCRIPT':     return '/* INLINE JS */' + ast.inlineJavascript
+		case 'SCRIPT_TAG':        return compileScript(context, ast)
 		case 'DEBUGGER':          return 'debugger'
 
 		default:             halt(ast, 'Unknown handler statement type')
 	}
 }
 
+var compileScript = function(context, ast) {
+	return code(';(function(){ /* INLINE JS */',
+	'	{{ variables }}',
+	'	{{ javascript }}',
+	'})()', {
+		variables:map(ast.attributes, function(attr) {
+			return 'var '+attr.name+' = '+runtimeValue(attr.value)
+		}).join('\n'),
+		javascript:ast.inlineJavascript
+	})
+}
 /********************************
  * Values (numbers and strings) *
  ********************************/

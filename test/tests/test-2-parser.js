@@ -77,10 +77,10 @@ test('self-closing xml')
 	.expect(a.xml('div'))
 
 test('inline javascript')
-	.code('var a = 1\n <script> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
+	.code('var foo = 1\n <script fooVariable=foo> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
 	.expect(
-		a.variable('a', a.literal(1)),
-		a.inlineScript(' var i = 1; function a() { alert(i++) }; setInterval(a);')
+		a.variable('foo', a.literal(1)),
+		a.inlineScript({ fooVariable:a.reference('foo') }, ' var i = 1; function a() { alert(i++) }; setInterval(a);')
 	)
 
 test('module import')

@@ -44,7 +44,7 @@ var resolve = function(context, ast) {
 		case 'VALUE':                return ast
 		case 'NULL':                 return ast
 		case 'DEBUGGER':             return ast
-		case 'INLINE_SCRIPT':        return ast
+		case 'SCRIPT_TAG':           return ast
 
 		case 'HANDLER':              return resolveInvocable(context, ast)
 		case 'TEMPLATE':             return resolveInvocable(context, ast)
