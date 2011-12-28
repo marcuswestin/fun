@@ -1,0 +1,4 @@
+pass in variable names to <script> tags
+	_variableName_Mouse
+
+Fix deep object reflection
