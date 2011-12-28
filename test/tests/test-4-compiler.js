@@ -123,7 +123,7 @@ function test(name) {
 				zombie.visit('http://localhost:'+compilerServerPort, function(err, browser, status) {
 					if (err) { console.log("ERROR:", err.stack) }
 					if (status != 200) { throw new Error("Got bad status from compiler server:", status) }
-					var nextAction = function() {
+					(function nextAction() {
 						if (!actions.length) {
 							assert.done()
 							scheduleCompilerServerShutdown()
@@ -135,8 +135,7 @@ function test(name) {
 						} catch(e) {
 							console.log('compiler threw -', e.stack, '\n\nThe test code that caused the error:\n', currentTestCode)
 						}
-					}
-					nextAction()
+					})()
 				})
 			}
 			return this
