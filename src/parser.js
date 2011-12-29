@@ -38,7 +38,6 @@ exports.parse = function(tokens) {
  ************************************************************/
 function parseSetupStatement() {
 	if (peek('keyword', 'import')) { return _parseImportStatement() }
-	if (peek('keyword', 'var')) { return parseVariableDeclaration() }
 	// if (peek('keyword', 'let')) { return parseAliasDeclaration() }
 }
 
@@ -60,6 +59,7 @@ var parseEmitStatement = function() {
 	if (peek('keyword')) {
 		switch(peek().value) {
 			// case 'let':      return parseAliasDeclaration()
+			case 'var':      return parseVariableDeclaration()
 			case 'for':      return parseForLoopStatement(parseEmitStatement)
 			case 'if':       return parseIfStatement(parseEmitStatement)
 			case 'switch':   return parseSwitchStatement(parseEmitStatement)

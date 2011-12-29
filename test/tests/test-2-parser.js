@@ -148,6 +148,20 @@ test('handler with logic')
 		]))
 	)
 
+test('parse emits then declarations')
+	.code(
+		'var foo="foo"',
+		'<div></div>',
+		'var cat="cat"'
+	)
+	.expect(
+		a.variable('foo', a.literal('foo')),
+		a.xml('div'),
+		a.variable('cat', a.literal('cat'))
+	)
+
+
+
 /* Util
  ******/
 function test(name) {
