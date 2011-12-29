@@ -86,10 +86,9 @@ var compileEmitStatement = function(context, ast) {
 		case 'REFERENCE':         return emitValue(context, ast)
 		case 'OBJECT_LITERAL':    return emitValue(context, ast)
 		case 'ITERATOR':          return emitValue(context, ast)
-
-		case 'COMPOSITE':         return emitCompositeStatement(context, ast)
+		case 'COMPOSITE':         return emitValue(context, ast)
+		
 		case 'XML':               return emitXML(context, ast)
-
 		case 'INVOCATION':        return compileInvocation(context, ast)
 		case 'IF_STATEMENT':      return compileIfStatement(compileEmitStatement, context, ast)
 		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileEmitStatement, context, ast)
@@ -131,27 +130,15 @@ var compileScript = function(context, ast) {
 		javascript:ast.inlineJavascript
 	})
 }
-/********************************
- * Values (numbers and strings) *
- ********************************/
+/*********************************************************
+ * Values (numbers, texts, collections, references, ...) *
+ *********************************************************/
 var emitValue = function(context, ast) {
 	return code(
 		'fun.emit({{ hookName }}, {{ value }})', {
 		hookName:context.hookName,
 		value:runtimeValue(ast)
 	})
-}
-
-/************************
- * Composite statements *
- ************************/
-var emitCompositeStatement = function(context, ast) {
-	var hookName = name('COMPOSITE_HOOK')
-	return _hookCode(hookName, context.hookName) + _statementCode(ast,
-		'fun.getHook({{ hookName }}).innerHTML = {{ STATEMENT_VALUE }}',
-		{
-			hookName: hookName,
-		})
 }
 
 /*******
