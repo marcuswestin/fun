@@ -72,6 +72,12 @@ test('clicking a button updates the UI')
 		a.xml('button', { id:a.literal('button'), onClick:ref(1) }, [ a.literal('Click me') ])
 	)
 
+test('variable declaration inside div')
+	.code('<div>var cat="cat"</div>')
+	.declarations(a.variable('cat', 'cat'))
+	.expressions(a.xml('div'))
+
+
 // Boolean values
 // Null values
 // Handlers, Functions and Templates as expressions and being emitted

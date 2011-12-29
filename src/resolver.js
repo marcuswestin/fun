@@ -6,7 +6,8 @@ var fs = require('fs'),
 	isArray = require('std/isArray'),
 	map = require('std/map'),
 	curry = require('std/curry'),
-	copy = require('std/copy')
+	copy = require('std/copy'),
+	filter = require('std/filter')
 
 var tokenizer = require('./tokenizer'),
 	parser = require('./parser')
@@ -126,7 +127,7 @@ var resolveXML = function(context, ast) {
 	each(ast.attributes, function(attribute) {
 		attribute.value = resolve(context, attribute.value)
 	})
-	ast.block = resolve(context, ast.block)
+	ast.block = filter(resolve(context, ast.block))
 	return ast
 }
 
@@ -174,7 +175,7 @@ var resolveInvocable = function(context, ast) {
 	context.declarations.push(ast)
 	setNonEnumerableProperty(ast, 'closure', addScope(context))
 	each(ast.signature, function(argument) { declare(ast.closure, ast, argument.name, argument) })
-	ast.block = resolve(ast.closure, ast.block)
+	ast.block = filter(resolve(ast.closure, ast.block))
 	return ast
 }
 
@@ -195,7 +196,7 @@ var resolveForLoop = function(context, ast) {
 	ast.iterator.operand = ast.iterable
 	ast.context = addScope(context)
 	declare(loopContext, ast, ast.iterator.name, ast.iterator)
-	ast.block = resolve(loopContext, ast.block)
+	ast.block = filter(resolve(loopContext, ast.block))
 	return ast
 }
 

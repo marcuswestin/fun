@@ -160,7 +160,9 @@ test('parse emits then declarations')
 		a.variable('cat', a.literal('cat'))
 	)
 
-
+test('variable declaration inside div')
+	.code('<div>var cat="cat"</div>')
+	.expect(a.xml('div', null, [a.variable('cat', a.literal('cat'))]))
 
 /* Util
  ******/

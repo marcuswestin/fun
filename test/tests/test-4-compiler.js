@@ -57,6 +57,13 @@ test('script tag variable passing').code(
 	'<div id="output">foo</div>')
 	.textIs('#output', 'bar')
 
+test('variable declaration inside div').code(
+	'<div>',
+	'	var cat = "cat"',
+	'	<div id="output">cat</div>',
+	'</div>')
+	.textIs('#output', 'cat')
+	
 // test('changing object literals').code(
 // 	'var foo = { a:1 }',
 // 	'<div id="output">',
