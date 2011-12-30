@@ -135,9 +135,10 @@ function test(name) {
 				}
 				
 				if (isFirstTest) { console.log('loading headless browser - hang tight!'); isFirstTest = false }
-				zombie.visit('http://localhost:'+compilerServerPort, { debug:false }, function(err, browser, status) {
-					if (err) { console.log("ERROR:", err.stack) }
-					if (status != 200) { throw new Error("Got bad status from compiler server:", status) }
+				zombie.visit('http://localhost:'+compilerServerPort, { debug:false }, function(err, browser) {
+					if (err || browser.statusCode != 200) {
+						throw new Error("Error: " + err + " " + browser.statusCode + " " + browser.errors)
+					}
 					(function nextAction() {
 						if (!actions.length) {
 							assert.done()
@@ -197,12 +198,14 @@ function createActionHandlers() {
 
 function startCompilerServer() {
 	compilerServer = http.createServer(function(res, res) {
-		var tokens = tokenizer.tokenize(currentTestCode),
-			parsedAST = parser.parse(tokens),
-			resolvedAST = resolver.resolve(parsedAST)
-		
-		try { var result = compiler._printHTML(compiler.compile(resolvedAST)) }
-		catch(e) { var error = e; }
+		try {
+			var tokens = tokenizer.tokenize(currentTestCode),
+				parsedAST = parser.parse(tokens),
+				resolvedAST = resolver.resolve(parsedAST),
+				result = compiler._printHTML(compiler.compile(resolvedAST))
+		} catch(e) {
+			var error = e
+		}
 		
 		if (error) {
 			console.log("compiler server error", error.stack)
