@@ -66,15 +66,10 @@ var collectionBase = {
 		return '{ '+map(this.content, function(value, name) { return name+':'+value.asString() }).join(', ')+' }'
 	},
 	evaluate:function(chain, defaultToUndefined) {
-		var value = this
-		if (chain) {
-			for (var i=0; i<chain.length; i++) {
-				if (!value || !value.content) { return defaultToUndefined ? undefined : nullValue }
-				value = value.content[chain[i]]
-			}
-		}
-		if (!value) { return nullValue }
-		return value
+		if (!chain || !chain.length) { return this }
+		var value = this.content[chain[0]]
+		if (!value) { return defaultToUndefined ? undefined : nullValue }
+		return value.evaluate(chain.slice(1))
 	},
 	equals:function(that) { return falseValue },
 	observe:function(namespace, callback) { return callback() }

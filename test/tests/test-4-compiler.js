@@ -64,17 +64,17 @@ test('variable declaration inside div').code(
 	'</div>')
 	.textIs('#output', 'cat')
 	
-// test('changing object literals').code(
-// 	'var foo = { a:1 }',
-// 	'<div id="output">',
-// 	'	{ foo: { a:foo.a } }',
-// 	'	{ a:foo.a }',
-// 	'	foo',
-// 	'</div onclick=handler(){ foo.a.set(2) }>'
-// 	)
-// 	.textIs('#output', '{ foo:{ a:1 } }{ a:1 }{ a:1 }')
-// 	.click('#output')
-// 	.textIs('#output', '{ foo:{ a:2 } }{ a:2 }{ a:2 }')
+test('changing object literals').code(
+	'var foo = { a:1 }',
+	'<div id="output">',
+	'	{ foo: { a:foo.a } }',
+	'	{ a:foo.a }',
+	'	foo',
+	'</div onclick=handler(){ foo.a.set(2) }>'
+	)
+	.textIs('#output', '{ foo:{ a:1 } }{ a:1 }{ a:1 }')
+	.click('#output')
+	.textIs('#output', '{ foo:{ a:2 } }{ a:2 }{ a:2 }')
 
 
 

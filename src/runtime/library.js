@@ -1,6 +1,7 @@
 var expressions = require('./expressions'),
-	each = require('std/each')
-	
+	each = require('std/each'),
+	curry = require('std/curry'),
+	throttle = require('std/throttle')
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }
@@ -28,9 +29,22 @@ var expressions = require('./expressions'),
  ********/
 	fun.emit = function(parentHookName, value) {
 		var hookName = fun.hook(fun.name(), parentHookName)
-		value.observe(null, function() {
+		_deepObserve(value, throttle(function() {
 			_hooks[hookName].innerHTML = ''
 			_hooks[hookName].appendChild(document.createTextNode(value.asString()))
+		}))
+	}
+	
+	var _deepObserve = function(value, callback) {
+		value.observe(null, function() {
+			callback()
+			var evaluated = value.evaluate()
+			if (evaluated.atomic) { return }
+			evaluated.observe(null, function() {
+				each(evaluated.content, function(subValue) {
+					_deepObserve(subValue, callback)
+				})
+			})
 		})
 	}
 	

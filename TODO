@@ -1,7 +1,9 @@
-Fix deep object reflection
 TODO app
 	List of tasks
 	Loop that emits
 	Mutate list (push)
 	Store task list locally
 Twitter app
+
+Observe collection add and remove mutation
+Remove observations
