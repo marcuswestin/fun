@@ -337,7 +337,6 @@ var compileDeclaration = function(declaration) {
 		case 'VARIABLE':
 			return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
 				name:variableName(declaration.name),
-				type:getType(declaration.initialValue),
 				initialContent:runtimeValue(declaration.initialValue, true)
 			})
 		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
@@ -457,7 +456,6 @@ var compileInvocation = function(context, ast) {
 /*********************
  * Utility functions *
  *********************/
-
 var inlineCode = function() { return _code(arguments, false) }
 var code = function() { return _code(arguments, true) }
 
@@ -494,36 +492,41 @@ var runtimeValue = function(ast, isVariable) {
 		case 'VALUE_LITERAL':
 			return isVariable
 				? inlineCode('fun.expressions.variable({{ content }})', { content:runtimeValue(ast, false) })
-				: inlineCode('fun.expressions.{{ type }}({{ value }})', { type:getType(ast), value:q(ast.value) })
-		case 'REFERENCE':     return code('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
-		case 'ITERATOR':      return ast.runtimeName
-		case 'ARGUMENT':      return ast.runtimeName
-		case 'LIST_LITERAL':          return q(ast.content)
+				: inlineCode('fun.expressions.{{ type }}({{ value }})', { type:_getType(ast), value:q(ast.value) })
+		case 'REFERENCE':
+			return inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
+		case 'ITERATOR':
+			return ast.runtimeName
+		case 'ARGUMENT':
+			return ast.runtimeName
+		case 'LIST_LITERAL':
+			return q(ast.content)
 		case 'OBJECT_LITERAL':
-			return code('fun.expressions.dictionary({ {{ content }} })', { 
+			return inlineCode('fun.expressions.dictionary({ {{ content }} })', { 
 				content:map(ast.content, function(value, name) { return name+':'+runtimeValue(value, isVariable) }).join(', ')
 			})
 		case 'COMPOSITE':
-			return code('fun.expressions.composite({{ left }}, "{{ operator }}", {{ right }})', {
+			return inlineCode('fun.expressions.composite({{ left }}, "{{ operator }}", {{ right }})', {
 				left:runtimeValue(ast.left),
 				operator:ast.operator,
 				right:runtimeValue(ast.right)
 			})
-		default:                  halt(ast, 'Unknown runtime value type ' + ast.type)
+		default:
+			halt(ast, 'Unknown runtime value type ' + ast.type)
 	}
 }
 
 var variableName = function(name) { return '_variableName_'+name }
 
 var _types = { 'string':'text', 'number':'number', 'boolean':'logic' }
-var getType = function(ast) {
+var _getType = function(ast) {
 	switch (ast.type) {
 		case 'VALUE_LITERAL':
 			assert(ast, !!_types[typeof ast.value], 'Unknown value literal type')
 			return _types[typeof ast.value]
 		case 'OBJECT_LITERAL': return 'dictionary'
 		default:
-			halt(ast, 'Unknown getType type')
+			halt(ast, 'Unknown _getType type')
 	}
 }
 
