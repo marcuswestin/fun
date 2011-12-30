@@ -141,7 +141,7 @@ function test(name) {
 				if (isFirstTest) { console.log('loading headless browser - hang tight!'); isFirstTest = false }
 				zombie.visit('http://localhost:'+compilerServerPort, { debug:false }, function(err, browser) {
 					if (err || browser.statusCode != 200) {
-						throw new Error("Error: " + err + " " + browser.statusCode + " " + browser.errors)
+						throw new Error("Error: " + err + " " + browser.statusCode + " " + browser.errors + " " + browser.dump())
 					}
 					(function nextAction() {
 						if (!actions.length) {
