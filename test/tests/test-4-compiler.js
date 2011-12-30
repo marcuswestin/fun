@@ -222,6 +222,7 @@ function startCompilerServer() {
 function scheduleCompilerServerShutdown() {
 	clearTimeout(scheduleCompilerServerShutdown.timeout)
 	scheduleCompilerServerShutdown.timeout = setTimeout(function() {
+		console.log("Tests done, shutting down compiler server")
 		compilerServer.close()
-	}, 100)
+	}, 200)
 }
