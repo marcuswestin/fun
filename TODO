@@ -7,3 +7,12 @@ Twitter app
 
 Observe collection add and remove mutation
 Remove observations
+Handler arguments
+
+WANTS
+	function that interpolates values
+	function that persists variable locally
+	color type
+	for loop over static list ['one', 'two', 'three']
+	for loop over twitter stream with jsonp
+	function that persists variable remotely
