@@ -76,7 +76,11 @@ test('changing object literals').code(
 	.click('#output')
 	.textIs('#output', '{ foo:{ a:2 } }{ a:2 }{ a:2 }')
 
-
+test('null values').code(
+	'var foo=null',
+	'<div id="output">"null:"foo " null:"null</div>'
+	)
+	.textIs('#output', 'null: null:')
 
 
 

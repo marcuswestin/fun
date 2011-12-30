@@ -518,12 +518,13 @@ var runtimeValue = function(ast, isVariable) {
 
 var variableName = function(name) { return '_variableName_'+name }
 
-var _types = { 'string':'text', 'number':'number', 'boolean':'logic' }
+var _types = { 'string':'text', 'number':'number', 'boolean':'logic', 'null':'null' }
 var _getType = function(ast) {
 	switch (ast.type) {
 		case 'VALUE_LITERAL':
-			assert(ast, !!_types[typeof ast.value], 'Unknown value literal type')
-			return _types[typeof ast.value]
+			var type = (ast.value === null ? 'null' : typeof ast.value)
+			assert(ast, !!_types[type], 'Unknown value literal type')
+			return _types[type]
 		case 'OBJECT_LITERAL': return 'dictionary'
 		default:
 			halt(ast, 'Unknown _getType type')

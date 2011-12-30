@@ -59,6 +59,7 @@ var parseEmitStatement = function() {
 	if (peek('keyword')) {
 		switch(peek().value) {
 			// case 'let':      return parseAliasDeclaration()
+			case 'null':     return parseNullLiteral()
 			case 'var':      return parseVariableDeclaration()
 			case 'for':      return parseForLoopStatement(parseEmitStatement)
 			case 'if':       return parseIfStatement(parseEmitStatement)

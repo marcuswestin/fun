@@ -25,7 +25,7 @@ module.exports = {
 	'return':ret,
 	mutation:mutation,
 	invocation: invocation,
-	'null':nullValue(),
+	'null':nullValue,
 	object:object
 }
 
@@ -41,7 +41,7 @@ function reference(namespace) {
 }
 
 function nullValue() {
-	return { type:'NULL' }
+	return { type:'VALUE_LITERAL', value:null }
 }
 
 function invocation(invocable /*, arg1, arg2, ... */) {
