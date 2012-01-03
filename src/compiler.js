@@ -178,13 +178,10 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 		value = attribute.value,
 		match
 	
-	if (name == 'dataType') {
-		// do nothing
-	} else if (name == 'style') {
+	if (name == 'style') {
 		assert(ast, value.type == 'OBJECT_LITERAL' || value.type == 'REFERENCE', 'The style attribute should be an object, e.g. style={ color:"red" }')
 		dynamicCode.push('fun.reflectStyles('+nodeHookName+', '+runtimeValue(value, true)+')')
 	} else if (name == 'data') {
-		// TODO Individual tags should define how to handle the data attribute
 		_handleDataAttribute(nodeHookName, ast, dynamicCode, value, attribute.dataType)
 	} else if (match = name.match(/^on(\w+)$/)) {
 		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
