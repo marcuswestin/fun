@@ -44,9 +44,9 @@ function nullValue() {
 	return { type:'VALUE_LITERAL', value:null }
 }
 
-function invocation(invocable /*, arg1, arg2, ... */) {
+function invocation(operand /*, arg1, arg2, ... */) {
 	var args = slice(arguments, 1)
-	return { type:'INVOCATION', invocable:invocable, arguments:args }
+	return { type:'INVOCATION', operand:operand, arguments:args }
 }
 
 function ret(value) {

@@ -203,7 +203,7 @@ var _parseReferenceOrInvocation = astGenerator(function() {
 	advance('symbol', L_PAREN)
 	var args = parseList(parseExpression, R_PAREN)
 	advance('symbol', R_PAREN, 'end of invocation')
-	return { type:'INVOCATION', invocable:reference, arguments:args }
+	return { type:'INVOCATION', operand:reference, arguments:args }
 })
 
 /************************************

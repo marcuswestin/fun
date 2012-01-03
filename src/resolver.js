@@ -158,12 +158,9 @@ var _importFile = function(context, ast, filePath) {
 /***************
  * Invocations *
  ***************/
-var invocables = { 'TEMPLATE':1, 'FUNCTION':1, 'HANDLER':1 }
 var resolveInvocation = function(context, ast) {
 	ast.operand = lookup(context, ast.operand)
-	assert(ast, invocables[ast.operand.type], 'Unknown invocable type "'+ast.operand.type+'"')
 	ast.arguments = resolve(context, ast.arguments)
-	assert(ast.arguments, ast.arguments.length == ast.operand.signature.length, 'Expected '+ast.operand.signature.length+' arguments but found '+ast.arguments.length)
 	return ast
 }
 

@@ -455,9 +455,9 @@ var namespace = function(reference) {
 var invocables = { 'TEMPLATE':1, 'FUNCTION':1, 'HANDLER':1 }
 var compileInvocation = function(context, ast) {
 	assert(ast, invocables[ast.invocable.type], 'Unknown invocable type')
-	assert(ast, ast.invocable.functionName, 'Invocable is expected to have a function name')
+	assert(ast, ast.operand.functionName, 'Invocable is expected to have a function name')
 	return code('{{ functionName }}({{ arguments }}, {{ hookName }})', {
-		functionName:ast.invocable.functionName,
+		functionName:ast.operand.functionName,
 		arguments:ast.arguments,
 		hookName:context.hookName
 	})
