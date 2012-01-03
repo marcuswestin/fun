@@ -17,6 +17,7 @@ var fs = require('fs'),
 	filter = require('std/filter'),
 	strip = require('std/strip'),
 	each = require('std/each'),
+	arrayToObject = require('std/arrayToObject'),
 	
 	requireCompiler = require('require/compiler'),
 	
@@ -81,6 +82,7 @@ exports.compileRaw = function(ast, rootHook) {
  ****************************************************/
 var compileEmitStatement = function(context, ast) {
 	if (ast instanceof Array) { return map(ast, curry(compileEmitStatement, context)).join('\n') + '\n' }
+	if (controlStatements[ast.type]) { return compileControlStatement(context, ast) }
 	switch(ast.type) {
 		case 'VALUE_LITERAL':     return emitValue(context, ast)
 		case 'REFERENCE':         return emitValue(context, ast)
@@ -90,32 +92,8 @@ var compileEmitStatement = function(context, ast) {
 		
 		case 'XML':               return emitXML(context, ast)
 		case 'INVOCATION':        return compileInvocation(context, ast)
-		case 'IF_STATEMENT':      return compileIfStatement(compileEmitStatement, context, ast)
-		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileEmitStatement, context, ast)
-		case 'FOR_LOOP':          return compileForLoop(compileEmitStatement, context, ast)
-
-		case 'SCRIPT_TAG':        return compileScript(context, ast)
-		case 'DEBUGGER':          return 'debugger'
 
 		default:                  halt(ast, 'Unknown emit statement type '+ast.type)
-	}
-}
-
-var compileFunctionStatement = function(context, ast) {
-	
-}
-
-var compileHandlerStatement = function(context, ast) {
-	switch(ast.type) {
-		case 'MUTATION':          return compileMutationStatement(ast)
-		case 'IF_STATEMENT':      return compileIfStatement(compileHandlerStatement, context, ast)
-		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileHandlerStatement, context, ast)
-		case 'FOR_LOOP':          return compileForLoop(compileHandlerStatement, context, ast)
-
-		case 'SCRIPT_TAG':        return compileScript(context, ast)
-		case 'DEBUGGER':          return 'debugger'
-
-		default:             halt(ast, 'Unknown handler statement type')
 	}
 }
 
@@ -231,9 +209,22 @@ var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerNa
 			handlerFunctionCode: handlerFunctionCode
 		}))
 }
-/**********************
- * If/Else statements *
- **********************/
+/************************************************************************
+ * Control statements - if/else, switch, for loop, script tag, debugger *
+ ************************************************************************/
+var controlStatements = arrayToObject(['IF_STATEMENT', 'SWITCH_STATEMENT', 'FOR_LOOP', 'SCRIPT_TAG', 'DEBUGGER', 'VARIABLE_DECLARATION'])
+var compileControlStatement = function(context, ast) {
+	switch(ast.type) {
+		case 'VARIABLE_DECLARATION': return compileVariableDeclaration(context, ast)
+		case 'IF_STATEMENT':      return compileIfStatement(compileHandlerStatement, context, ast)
+		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileHandlerStatement, context, ast)
+		case 'FOR_LOOP':          return compileForLoop(compileHandlerStatement, context, ast)
+		case 'SCRIPT_TAG':        return compileScript(context, ast)
+		case 'DEBUGGER':          return 'debugger'
+		default:                  halt(ast, 'Unknown control statement')
+	}
+}
+
 var compileIfStatement = function(blockCompileFn, context, ast) {
 	var hookName = name('IF_ELSE_HOOK'),
 		ifElseContext = copyContext(context, { hookName:hookName }),
@@ -263,9 +254,6 @@ var compileIfStatement = function(blockCompileFn, context, ast) {
 		})
 }
 
-/*********************
- * Switch statements *
- *********************/
 var compileSwitchStatement = function(blockCompileFn, context, ast) {
 	var switchContext = copyContext(context, { hookName:name('SWITCH_HOOK') })
 		lastValueName = name('LAST_VALUE')
@@ -299,11 +287,6 @@ var compileSwitchStatement = function(blockCompileFn, context, ast) {
 		})
 }
 
-
-
-/*************
- * For loops *
- *************/
 var compileForLoop = function(blockCompileFn, context, ast) {
 	var loopContext = copyContext(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	
@@ -405,6 +388,38 @@ var compileMutationItemCreation = function(ast) {
 		})
 }
 
+/* Functions
+ ***********/
+var compileFunctionDefinition = function(ast) {
+	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same function twice')
+	ast.compiledFunctionName = name('FUNCTION_JS_NAME')
+	return code(
+		'function {{ functionJsName }}({{ arguments }}) {',
+		'	var __functionReturnValue__ = fun.expressions.variable()',
+		'	{{ block }}',
+		'	return __functionReturnValue__',
+		'}',
+		{
+			functionJsName:ast.compiledFunctionName,
+			arguments:map(ast.signature, function(argument, i) { return argument.name }).join(', '),
+			block:indent(map, ast.block, curry(compileFunctionStatement, ast.closure)).join('\n')
+		})
+}
+
+var compileFunctionStatement = function(context, ast) {
+	if (controlStatements[ast.type]) { return compileControlStatement(context, ast) }
+	switch(ast.type) {
+		case 'RETURN':       return compileFunctionReturn(ast)
+		default:             halt(ast, 'Unknown function statement type')
+	}
+}
+
+var compileFunctionReturn = function(ast) {
+	return code(
+		'__functionReturnValue__.set({{ value }})', { value:runtimeValue(ast.value) }
+	)
+}
+
 /**************************************
  * Handler declarations and mutations *
  **************************************/
@@ -421,6 +436,14 @@ var compileHandlerDeclaration = function(ast) {
 			hookName: hookName,
 			code: indent(map, ast.block, curry(compileHandlerStatement, ast.closure)).join('\n')
 		})
+}
+
+var compileHandlerStatement = function(context, ast) {
+	if (controlStatements[ast.type]) { return compileControlStatement(context, ast) }
+	switch(ast.type) {
+		case 'MUTATION':          return compileMutationStatement(ast)
+		default:                  halt(ast, 'Unknown handler statement type')
+	}
 }
 
 var compileMutationStatement = function(ast) {
@@ -508,6 +531,13 @@ var runtimeValue = function(ast, isVariable) {
 				operator:ast.operator,
 				right:runtimeValue(ast.right)
 			})
+		case 'FUNCTION':      return compileFunctionDefinition(ast)
+		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
+		case 'HANDLER':       return compileHandlerDeclaration(declaration)
+		case 'FUNCTION':      return compileFunctionDeclaration(declaration)
+		case 'LIST_LITERAL':  return compileListLiteral(declaration)
+		case 'VALUE':         return compileValueDeclaration(declaration)
+		
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
 	}

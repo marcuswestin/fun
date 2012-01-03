@@ -311,7 +311,6 @@ var parseTemplateLiteral = astGenerator(function() {
 })
 
 var parseHandlerLiteral = astGenerator(function() {
-	if (peek('name')) { return parseReference() }
 	var callable = _parseCallable(parseHandlerStatement, 'handler')
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
