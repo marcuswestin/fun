@@ -35,7 +35,7 @@ http.createServer(function(req, res) {
 	try {
 		res.end(compiler.compileFile(filePath))
 	} catch(e) {
-		res.end(e.stack)
+		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
 	}
 }).listen(port, host)
 console.log("fun running in development mode on", host+':'+port)
