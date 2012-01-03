@@ -483,8 +483,8 @@ var _code = function(args, addNewlines) {
 		var wholeMatch = match[0],
 			nameMatch = match[1],
 			value = injectObj[nameMatch]
-		if (typeof value == 'function') { log(nameMatch); ILLEGAL_CODE_VALUE }
-		if (typeof value == 'undefined') { log(nameMatch); MISSING_INJECT_VALUE }
+		if (typeof value == 'function') { throw new Error('Illegal code value: "'+nameMatch+'"') }
+		if (typeof value == 'undefined') { throw new Error('Missing inject value: "'+nameMatch+'"') }
 		output = output.replace(wholeMatch, value)
 	}
 	return output
