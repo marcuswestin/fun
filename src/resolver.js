@@ -19,11 +19,10 @@ var util = require('./util'),
 	halt = util.halt
 
 exports.resolve = function(ast) {
-	var context = { imports:{}, names:{}, declarations:[] },
+	var context = { imports:{}, names:{} },
 		expressions = util.cleanup(resolve(context, ast))
 	return {
 		expressions:expressions,
-		declarations:context.declarations,
 		imports:context.imports
 	}
 }
@@ -37,7 +36,6 @@ var resolve = function(context, ast) {
 		// Setup statements
 		case 'IMPORT_MODULE':        handleModuleImport(context, ast)        ;break
 		case 'IMPORT_FILE':          handleFileImport(context, ast)          ;break
-		case 'VARIABLE':             handleVariable(context, ast)            ;break
 		
 		case 'VALUE_LITERAL':        return ast
 		case 'ARGUMENT':             return ast
@@ -47,6 +45,7 @@ var resolve = function(context, ast) {
 		case 'DEBUGGER':             return ast
 		case 'SCRIPT_TAG':           return ast
 
+		case 'VARIABLE_DECLARATION': return resolveVariableDeclaration(context, ast)
 		case 'HANDLER':              return resolveInvocable(context, ast)
 		case 'TEMPLATE':             return resolveInvocable(context, ast)
 		case 'FUNCTION':             return resolveInvocable(context, ast)
@@ -64,6 +63,7 @@ var resolve = function(context, ast) {
 		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
 		
 		case 'MUTATION':             return resolveMutation(context, ast)
+		case 'RETURN':               return resolveReturn(context, ast)
 		
 		// case 'ALIAS':                return resolve(context, lookup(context, ast))
 		default:                     halt(ast, '_resolveStatement: Unknown AST type "'+ast.type+'"')
@@ -73,15 +73,15 @@ var resolve = function(context, ast) {
 /****************
  * Declarations *
  ****************/
-var handleVariable = function(context, ast) {
+var resolveVariableDeclaration = function(context, ast) {
 	declare(context, ast, ast.name, ast)
 	ast.initialValue = resolve(context, ast.initialValue)
+	return ast
 }
 
 var declare = function(context, ast, name, value) {
 	assert(ast, !context.names.hasOwnProperty(ast.name), ast.name + ' is already declared in this scope')
 	context.names[name] = value
-	context.declarations.push(value)
 }
 
 /************************
@@ -172,19 +172,23 @@ var resolveInvocation = function(context, ast) {
  **************************************************/
 var resolveInvocable = function(context, ast) {
 	if (ast.closure) { return ast } // already resolved
-	context.declarations.push(ast)
 	setNonEnumerableProperty(ast, 'closure', addScope(context))
 	each(ast.signature, function(argument) { declare(ast.closure, ast, argument.name, argument) })
 	ast.block = filter(resolve(ast.closure, ast.block))
 	return ast
 }
 
-/*************
- * Mutations *
- *************/
+/*******************************
+ * Handler/Function statements *
+ *******************************/
 var resolveMutation = function(context, ast) {
 	ast.arguments = map(ast.arguments, curry(resolve, context))
 	ast.operand = resolve(context, ast.operand)
+	return ast
+}
+
+var resolveReturn = function(context, ast) {
+	ast.value = resolve(context, ast.value)
 	return ast
 }
 
@@ -246,7 +250,7 @@ var addScope = function(context) {
 	// Creates a scope by prototypically inheriting the names dictionary from the current context.
 	// Reads will propegate up the prototype chain, while writes won't.
 	// New names written to context.names will shadow names written further up the chain, but won't overwrite them.
-	context = util.create(context, { declarations:[] })
+	context = util.create(context)
 	context.names = copy(context.names) // shouldn't this be create()?
 	return context
 }

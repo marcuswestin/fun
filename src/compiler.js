@@ -58,12 +58,10 @@ exports.compile = function(resolvedAST) {
 	return ';(function funApp() {' + code(
 		'var {{ hookName }} = fun.name("rootHook")',
 		'fun.setHook({{ hookName }}, document.body)',
-		'{{ declarationsCode }}',
-		'{{ code }}',
 		'{{ modules }}',
+		'{{ code }}',
 		{
 			hookName: rootHook,
-			declarationsCode: map(resolvedAST.declarations, compileDeclaration).join('\n'),
 			code: exports.compileRaw(resolvedAST.expressions, rootHook),
 			modules: map(resolvedAST.imports, function(module, name) {
 				return boxComment('Module: ' + name) + '\n' + exports.compileRaw(module)
@@ -225,6 +223,13 @@ var compileControlStatement = function(context, ast) {
 	}
 }
 
+var compileVariableDeclaration = function(context, ast) {
+	return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
+		name:variableName(ast.name),
+		initialContent:runtimeValue(ast.initialValue, true)
+	})
+}
+
 var compileIfStatement = function(blockCompileFn, context, ast) {
 	var hookName = name('IF_ELSE_HOOK'),
 		ifElseContext = copyContext(context, { hookName:hookName }),
@@ -312,21 +317,6 @@ var compileForLoop = function(blockCompileFn, context, ast) {
 /****************
  * Declarations *
  ****************/
-var compileDeclaration = function(declaration) {
-	switch (declaration.type) {
-		case 'VARIABLE':
-			return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
-				name:variableName(declaration.name),
-				initialContent:runtimeValue(declaration.initialValue, true)
-			})
-		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
-		case 'HANDLER':       return compileHandlerDeclaration(declaration)
-		case 'LIST_LITERAL':          return compileListLiteral(declaration)
-		case 'VALUE':         return compileValueDeclaration(declaration)
-		default:              halt(declaration, 'Found declaration that requires compilation of unknown type')
-	}
-}
-
 var compileValueDeclaration = function(ast) {
 	return code('fun.declare({{ uniqueID }}, {{ valueType }}, {{ initialValue }})', {
 		uniqueID: q(ast.uniqueID),

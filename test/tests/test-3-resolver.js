@@ -10,22 +10,22 @@ test("a declared alias for a string")
 		'var guy = "Marcus"',
 		'guy'
 	)
-	.declarations(a.variable('guy', a.literal('Marcus')))
-	.expressions(a.reference('guy'))
+	.expect(
+		a.variable('guy', a.literal('Marcus')),
+		a.reference('guy')
+	)
 
 test("an empty div")
-	.code(
-		'<div/>'
-	)
-	.expressions(a.xml('div'))
+	.code('<div/>')
+	.expect(a.xml('div'))
 
 test("nested aliases")
 	.code(
 		'var foo = { bar:1, cat:"cat" }',
 		'foo foo.bar foo.cat'
 	)
-	.declarations(a.variable('foo', a.object({ bar:a.literal(1), cat:a.literal('cat') })))
-	.expressions(
+	.expect(
+		a.variable('foo', a.object({ bar:a.literal(1), cat:a.literal('cat') })),
 		a.reference('foo'),
 		a.reference('foo.bar'),
 		a.reference('foo.cat')
@@ -59,24 +59,23 @@ test('clicking a button updates the UI')
 		'	foo.set("cat")',
 		'	qwe.set(foo)',
 		'}>')
-	.declarations(
+	.expect(
 		a.variable('foo', 'bar'),
 		a.variable('qwe', 'cat'),
-		ref(1, a.handler([], [
+		a.xml('div', { id:a.literal('output') }, [ a.reference('foo') ]),
+		a.xml('button', { id:a.literal('button'), onClick:a.handler([], [
 			a.mutation(a.reference('foo'), 'set', [a.literal('cat')]),
 			a.mutation(a.reference('qwe'), 'set', [a.reference('foo')])
-		]))
-	)
-	.expressions(
-		a.xml('div', { id:a.literal('output') }, [ a.reference('foo') ]),
-		a.xml('button', { id:a.literal('button'), onClick:ref(1) }, [ a.literal('Click me') ])
+		]) }, [ a.literal('Click me') ])
 	)
 
 test('variable declaration inside div')
 	.code('<div>var cat="cat"</div>')
-	.declarations(a.variable('cat', 'cat'))
-	.expressions(a.xml('div'))
+	.expect(a.xml('div', [], [a.variable('cat', 'cat')]))
 
+test('function invocation')
+	.code('var fun = function() { return 1 }', 'fun()')
+	.expect(a.variable('fun', a.function([], [a.return(a.literal(1))])), a.invocation(a.reference('fun')))
 
 // Boolean values
 // Null values
@@ -123,26 +122,22 @@ function test(name) {
 			inputCode = std.slice(arguments).join('\n')
 			return this
 		},
-		expressions: function() {
-			runTest('expressions', std.slice(arguments))
-			return this
-		},
-		declarations: function() {
-			runTest('declarations', std.slice(arguments))
+		expect: function() {
+			runTest(std.slice(arguments))
 			return this
 		}
 	}
-	function runTest(type, expectedAST) {
+	function runTest(expectedAST) {
 		var inputAST = parser.parse(tokenizer.tokenize(inputCode))
 		util.resetUniqueID() // TODO the unique IDs function should probably be on the resolver
 		var count = 1,
-			testName = type+'\t'+'"'+name+'" ' + (count++ == 1 ? '' : count)
+			testName = '"'+name+'" ' + (count++ == 1 ? '' : count)
 		while (module.exports[testName]) {
-			testName = type+'\t'+'"'+name+'" ' + (count++)
+			testName = '"'+name+'" ' + (count++)
 		}
 		module.exports[testName] = function(assert) {
 			try {
-				var actualAST = resolver.resolve(inputAST)[type]
+				var actualAST = resolver.resolve(inputAST).expressions
 				assert.deepEqual(expectedAST, actualAST)
 				assert.done()
 			} catch(e) {

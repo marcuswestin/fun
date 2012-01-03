@@ -89,7 +89,7 @@ var parseVariableDeclaration = astGenerator(function() {
 		advance('symbol', '=')
 		var initialValue = parseLiteralExpression(parseLiteralExpression)
 	}
-	return { type:'VARIABLE', name:name, initialValue:initialValue }
+	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
 })
 
 /***************************************************

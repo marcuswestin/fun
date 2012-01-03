@@ -83,7 +83,7 @@ function alias(name, value) {
 
 function variable(name, initialValue) {
 	if (typeof initialValue == 'number' || typeof initialValue == 'string') { initialValue = literal(initialValue) }
-	return { type:'VARIABLE', name:name, initialValue:initialValue }
+	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
 }
 
 function composite(left, operator, right) {
