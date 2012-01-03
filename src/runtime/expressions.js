@@ -95,7 +95,7 @@ var composite = module.exports.composite = proto(function(left, operator, right)
 })
 
 var _unique = 1
-var variable = module.exports.variable = proto(function(content) { if (!content.evaluate) { asdasd }; this.content = content, this.observers = {} }, {
+var variable = module.exports.variable = proto(function(content) { this.content = content, this.observers = {} }, {
 	type:'variable',
 	evaluate:function(chain, defaultToUndefined) {
 		return this.content.evaluate(chain, defaultToUndefined)
