@@ -477,7 +477,9 @@ var runtimeValue = function(ast, isVariable) {
 				? inlineCode('fun.expressions.variable({{ content }})', { content:runtimeValue(ast, false) })
 				: inlineCode('fun.expressions.{{ type }}({{ value }})', { type:_getType(ast), value:q(ast.value) })
 		case 'REFERENCE':
-			return inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
+			return ast.chain.length
+				? inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
+				: variableName(ast.name)
 		case 'ITERATOR':
 			return ast.runtimeName
 		case 'ARGUMENT':
