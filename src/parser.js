@@ -338,6 +338,7 @@ var parseFunctionStatement = astGenerator(function() {
 		var value = parseExpression()
 		return { type:'RETURN', value:value }
 	}
+	if (peek('keyword', 'debugger')) { return parseDebuggerLiteral() }
 	halt(ast, 'Implement parseFunctionStatement')
 })
 
