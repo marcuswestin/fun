@@ -168,6 +168,17 @@ test('null value')
 	.code('null')
 	.expect(a.null())
 
+test('function arguments')
+	.code('var fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
+	.expect(
+		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
+			a.return(
+				a.composite(a.reference('arg1'), '+', a.reference('arg2'))
+			)
+		])),
+		a.invocation(a.reference('fun'), a.literal(1), a.literal(2))
+	)
+
 /* Util
  ******/
 function test(name) {

@@ -82,6 +82,11 @@ test('null values').code(
 	)
 	.textIs('#output', 'null: null:')
 
+test('function invocation').code(
+	'var fun = function() { return 1 }',
+	'<div id="output">fun()</div>'
+	)
+	.textIs('#output', '1')
 
 
 

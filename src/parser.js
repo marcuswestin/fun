@@ -323,7 +323,7 @@ var parseFunctionLiteral = astGenerator(function() {
 var _parseCallable = function(statementParseFn, keyword) {
 	advance('keyword', keyword)
 	advance('symbol', L_PAREN)
-	var signature = parseList(function() { createAST({ type:'ARGUMENT', name:advance('name').value }) }, R_PAREN)
+	var signature = parseList(function() { return createAST({ type:'ARGUMENT', name:advance('name').value }) }, R_PAREN)
 	advance('symbol', R_PAREN)
 	var block = parseBlock(statementParseFn, keyword)
 	return [signature, block]

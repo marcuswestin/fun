@@ -79,6 +79,15 @@ var dictionary = module.exports.dictionary = proto(function(content) { this.cont
 	type:'dictionary'
 }))
 
+/* Functions, handlers, templates
+ ********************************/
+module.exports.function = proto(function(fn) { this.fn = fn }, extend(atomicBase, {
+	type:'function',
+	invoke:function(hookName, args) {
+		return this.fn.apply(this, args)
+	}
+}))
+
 /* Composite, variable and reference expressions
  ***********************************************/
 var composite = module.exports.composite = proto(function(left, operator, right) { this.left = left, this.operator = operator, this.right = right }, {

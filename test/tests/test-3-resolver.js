@@ -77,6 +77,15 @@ test('function invocation')
 	.code('var fun = function() { return 1 }', 'fun()')
 	.expect(a.variable('fun', a.function([], [a.return(a.literal(1))])), a.invocation(a.reference('fun')))
 
+test('function arguments')
+	.code('var fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
+	.expect(
+		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
+			a.return(a.composite(a.reference('arg1'), '+', a.reference('arg2')))
+		])),
+		a.invocation(a.reference('fun'), a.literal(1), a.literal(2))
+	)
+
 // Boolean values
 // Null values
 // Handlers, Functions and Templates as expressions and being emitted

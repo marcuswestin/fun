@@ -87,9 +87,9 @@ var compileEmitStatement = function(context, ast) {
 		case 'OBJECT_LITERAL':    return emitValue(context, ast)
 		case 'ITERATOR':          return emitValue(context, ast)
 		case 'COMPOSITE':         return emitValue(context, ast)
+		case 'INVOCATION':        return emitValue(context, ast)
 		
 		case 'XML':               return emitXML(context, ast)
-		case 'INVOCATION':        return compileInvocation(context, ast)
 
 		default:                  halt(ast, 'Unknown emit statement type '+ast.type)
 	}
@@ -346,16 +346,6 @@ var compileTemplateDeclaration = function(ast) {
 		})
 }
 
-var _compileTemplateInvocation = function(context, invocationAST, templateAST) {
-	return code(
-		'{{ templateFunctionName }}({{ hookName }} {{ argumentValues }})',
-		{
-			templateFunctionName: templateAST.compiledFunctionName,
-			hookName: context.hookName,
-			argumentValues: _commaPrefixJoin(invocationAST.args, runtimeValue)
-		})
-}
-
 var _commaPrefixJoin = function(arr, fn) {
 	if (arr.length == 0) { return '' }
 	return ', ' + map(arr, runtimeValue).join(', ')
@@ -381,16 +371,13 @@ var compileMutationItemCreation = function(ast) {
 /* Functions
  ***********/
 var compileFunctionDefinition = function(ast) {
-	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same function twice')
-	ast.compiledFunctionName = name('FUNCTION_JS_NAME')
 	return code(
-		'function {{ functionJsName }}({{ arguments }}) {',
+		'fun.expressions.function(function({{ arguments }}) {',
 		'	var __functionReturnValue__ = fun.expressions.variable()',
 		'	{{ block }}',
 		'	return __functionReturnValue__',
-		'}',
+		'})',
 		{
-			functionJsName:ast.compiledFunctionName,
 			arguments:map(ast.signature, function(argument, i) { return argument.name }).join(', '),
 			block:indent(map, ast.block, curry(compileFunctionStatement, ast.closure)).join('\n')
 		})
@@ -406,7 +393,7 @@ var compileFunctionStatement = function(context, ast) {
 
 var compileFunctionReturn = function(ast) {
 	return code(
-		'__functionReturnValue__.set({{ value }})', { value:runtimeValue(ast.value) }
+		'__functionReturnValue__.set(null, {{ value }})', { value:runtimeValue(ast.value) }
 	)
 }
 
@@ -447,20 +434,6 @@ var compileMutationStatement = function(ast) {
 
 var namespace = function(reference) {
 	return q([reference.value.name].concat(reference.chain).join('.'))
-}
-
-/***************************************************
- * Invocations (templates, functions and handlers) *
- ***************************************************/
-var invocables = { 'TEMPLATE':1, 'FUNCTION':1, 'HANDLER':1 }
-var compileInvocation = function(context, ast) {
-	assert(ast, invocables[ast.invocable.type], 'Unknown invocable type')
-	assert(ast, ast.operand.functionName, 'Invocable is expected to have a function name')
-	return code('{{ functionName }}({{ arguments }}, {{ hookName }})', {
-		functionName:ast.operand.functionName,
-		arguments:ast.arguments,
-		hookName:context.hookName
-	})
 }
 
 /*********************
@@ -520,6 +493,11 @@ var runtimeValue = function(ast, isVariable) {
 				left:runtimeValue(ast.left),
 				operator:ast.operator,
 				right:runtimeValue(ast.right)
+			})
+		case 'INVOCATION':
+			return inlineCode('{{ function }}.evaluate().invoke({{ arguments }})', {
+				function:runtimeValue(ast.operand),
+				arguments:'['+map(ast.arguments, function(arg) { return runtimeValue(arg) }).join(',')+']'
 			})
 		case 'FUNCTION':      return compileFunctionDefinition(ast)
 		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
