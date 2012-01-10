@@ -513,7 +513,7 @@ var runtimeValue = function(ast, isVariable) {
 	}
 }
 
-var variableName = function(name) { return '_variableName_'+name }
+var variableName = function(name) { return '__variableName__'+name }
 
 var _types = { 'string':'text', 'number':'number', 'boolean':'logic', 'null':'null' }
 var _getType = function(ast) {
