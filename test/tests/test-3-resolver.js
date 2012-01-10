@@ -146,8 +146,8 @@ function test(name) {
 		}
 		module.exports[testName] = function(assert) {
 			try {
-				var actualAST = resolver.resolve(inputAST).expressions
-				assert.deepEqual(expectedAST, actualAST)
+				var output = resolver.resolve(inputAST).expressions
+				assert.deepEqual(expectedAST, output)
 				assert.done()
 			} catch(e) {
 				console.log('resolver threw', e.stack)
