@@ -30,3 +30,9 @@ For example, drawUser does not depend on user.id so it could specify a smaller i
 	}
 	drawUser2({ id:1, name:"Marcus" }) // this runs
 	drawUser2({ name:"Ashley" }) // as does this
+
+Getting the type of a value is simple. This emits "Number":
+
+	var a = 1
+	a.Type
+

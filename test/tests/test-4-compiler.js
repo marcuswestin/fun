@@ -103,37 +103,6 @@ test('statements after return do not evaluate').code(
 	)
 	.textIs('#output', '1')
 
-
-// test('value changes type')
-// 	.compile(
-// 		'let foo = "bar"',
-// 		'<div id="value">foo</div>',
-// 		'<div id="Type">foo.Type</div>',
-// 		'<button id="button"></button onClick=handler() { foo.set(1) }>'
-// 	)
-// 	.textIs('#value', 'bar')
-// 	.textIs('#Type', 'Text')
-// 	.click('#button')
-// 	.textIs('#value', 1)
-// 	.textIs('#Type', 'Number')
-
-// test('handler with logic')
-// 	.code(
-// 		'let cat = "hi1"',
-// 		'let foo = handler() {',
-// 		'	if (cat == "hi1") { cat.set("hi2") }',
-// 		'	else { cat.set("hi3") }',
-// 		'}',
-// 		'<button id="button" onclick=foo/>',
-// 		'<div id="output">cat</div>'
-// 	)
-// 	.textIs('#output', 'hi1')
-// 	.click('#button')
-// 	.textIs('#output', 'hi2')
-// 	.click('#button')
-// 	.textIs('#output', 'hi3')
-
-
 /* Util
  ******/
 var isFirstTest = true
