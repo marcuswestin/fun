@@ -103,6 +103,13 @@ test('statements after return do not evaluate').code(
 	)
 	.textIs('#output', '1')
 
+test('if/else in a div')
+	.code(
+		'var foo = 120',
+		'<div id="output"> if (foo >= 100) { "mouse.x >= 100" }',
+		'else { "foo < 100" }</div>')
+	.textIs('#output', 'mouse.x >= 100')
+
 /* Util
  ******/
 var isFirstTest = true

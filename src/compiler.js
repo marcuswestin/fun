@@ -80,7 +80,7 @@ exports.compileRaw = function(ast, rootHook) {
  ****************************************************/
 var compileEmitStatement = function(context, ast) {
 	if (ast instanceof Array) { return map(ast, curry(compileEmitStatement, context)).join('\n') + '\n' }
-	if (controlStatements[ast.type]) { return compileControlStatement(context, ast) }
+	if (controlStatements[ast.type]) { return compileControlStatement(compileEmitStatement, context, ast) }
 	switch(ast.type) {
 		case 'VALUE_LITERAL':     return emitValue(context, ast)
 		case 'REFERENCE':         return emitValue(context, ast)
@@ -211,12 +211,12 @@ var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerNa
  * Control statements - if/else, switch, for loop, script tag, debugger *
  ************************************************************************/
 var controlStatements = arrayToObject(['IF_STATEMENT', 'SWITCH_STATEMENT', 'FOR_LOOP', 'SCRIPT_TAG', 'DEBUGGER', 'VARIABLE_DECLARATION'])
-var compileControlStatement = function(context, ast) {
+var compileControlStatement = function(blockCompileFn, context, ast) {
 	switch(ast.type) {
 		case 'VARIABLE_DECLARATION': return compileVariableDeclaration(context, ast)
-		case 'IF_STATEMENT':      return compileIfStatement(compileHandlerStatement, context, ast)
-		case 'SWITCH_STATEMENT':  return compileSwitchStatement(compileHandlerStatement, context, ast)
-		case 'FOR_LOOP':          return compileForLoop(compileHandlerStatement, context, ast)
+		case 'IF_STATEMENT':      return compileIfStatement(blockCompileFn, context, ast)
+		case 'SWITCH_STATEMENT':  return compileSwitchStatement(blockCompileFn, context, ast)
+		case 'FOR_LOOP':          return compileForLoop(blockCompileFn, context, ast)
 		case 'SCRIPT_TAG':        return compileScript(context, ast)
 		case 'DEBUGGER':          return 'debugger'
 		default:                  halt(ast, 'Unknown control statement')
@@ -233,16 +233,16 @@ var compileVariableDeclaration = function(context, ast) {
 var compileIfStatement = function(blockCompileFn, context, ast) {
 	var hookName = name('IF_ELSE_HOOK'),
 		ifElseContext = copyContext(context, { hookName:hookName }),
-		lastValueName = name('LAST_VALUE')
+		lastOutcomeName = name('LAST_VALUE')
 	
 	return _hookCode(hookName, context.hookName)
-		+ code('var {{ lastValueName }}', { lastValueName:lastValueName })
+		+ code('var {{ lastOutcomeName }}', { lastOutcomeName:lastOutcomeName })
 		+ _statementCode(ast.condition,
 		';(function(ifBranch, elseBranch) {',
-		'	if ({{ STATEMENT_VALUE }} === {{ lastValueName }}) { return }',
-		'	{{ lastValueName }} = {{ STATEMENT_VALUE }}',
+		'	if ({{ lastOutcome }} && !{{ STATEMENT_VALUE }}.equals({{ lastOutcome }})) { return }',
+		'	{{ lastOutcome }} = {{ STATEMENT_VALUE }}',
 		'	fun.destroyHook({{ hookName }})',
-		'	if({{ STATEMENT_VALUE }}) { ifBranch() } else { elseBranch() }',
+		'	if({{ lastOutcome }}.evaluate().content) { ifBranch() } else { elseBranch() }',
 		'})(',
 		'	function ifBranch(){',
 		'		{{ ifCode }}',
@@ -255,7 +255,7 @@ var compileIfStatement = function(blockCompileFn, context, ast) {
 			hookName: hookName,
 			ifCode: indent(blockCompileFn, ifElseContext, ast.ifBlock),
 			elseCode: ast.elseBlock && indent(blockCompileFn, ifElseContext, ast.elseBlock),
-			lastValueName: lastValueName
+			lastOutcome: lastOutcomeName
 		})
 }
 
@@ -382,7 +382,7 @@ var compileFunctionDefinition = function(ast) {
 }
 
 var compileFunctionStatement = function(context, ast) {
-	if (controlStatements[ast.type]) { return compileControlStatement(context, ast) }
+	if (controlStatements[ast.type]) { return compileControlStatement(compileFunctionStatement, context, ast) }
 	switch(ast.type) {
 		case 'RETURN':       return compileFunctionReturn(ast)
 		default:             halt(ast, 'Unknown function statement type')
@@ -414,7 +414,7 @@ var compileHandlerDeclaration = function(ast) {
 }
 
 var compileHandlerStatement = function(context, ast) {
-	if (controlStatements[ast.type]) { return compileControlStatement(context, ast) }
+	if (controlStatements[ast.type]) { return compileControlStatement(compileHandleStatement, context, ast) }
 	switch(ast.type) {
 		case 'MUTATION':          return compileMutationStatement(ast)
 		default:                  halt(ast, 'Unknown handler statement type')
@@ -469,6 +469,7 @@ var indent = function(fn /*, arg1, ... argN */) {
 }
 
 var runtimeValue = function(ast, isVariable) {
+	assert(ast, typeof ast == 'object', 'ASTs should always be objects')
 	switch(ast.type) {
 		case 'VALUE_LITERAL':
 			return isVariable
@@ -535,13 +536,12 @@ var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 	injectValues['STATEMENT_VALUE'] = name('STATEMENT_VALUE')
 	
 	return code(
-		'fun.dependOn({{ __values }}, function() {',
-		'	var {{ STATEMENT_VALUE }} = {{ __statementValue }}',
-			code.apply(this, statementLines.concat(injectValues)),
+		'{{ __statementValue }}.observe(null, function() {',
+		'	var {{ STATEMENT_VALUE }} = {{ __statementValue }}.evaluate()',
+		'	' + code.apply(this, statementLines.concat(injectValues)),
 		'})',
 		{
 			STATEMENT_VALUE: injectValues['STATEMENT_VALUE'],
-			__values: map(ast, runtimeValue),
 			__statementValue: runtimeValue(ast)
 		})
 }

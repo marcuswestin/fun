@@ -179,6 +179,22 @@ test('function arguments')
 		a.invocation(a.reference('fun'), a.literal(1), a.literal(2))
 	)
 
+test('if/else in a div')
+	.code(
+		'<div> if (Mouse.x >= 100) { "mouse.x >= 100" }',
+		'else { "mouse.x < 100" }</div>')
+	.expect(
+		a.xml('div', null, [
+			a.ifElse(a.composite(a.reference('Mouse.x'), '>=', a.literal(100)), [
+				a.literal('mouse.x >= 100')
+			], [
+				a.literal('mouse.x < 100')
+			])
+		])
+	)
+
+
+
 /* Util
  ******/
 function test(name) {

@@ -66,6 +66,8 @@ util.boxComment = function(msg) {
 
 
 util.grabLine = function(code, lineNumber, column, length) {
+	if (!code) { return undefined }
+	
 	length = length || 1
 	var lines = code.split('\n'),
 		line = _replace(lines[lineNumber - 1], '\t', ' ')
