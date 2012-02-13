@@ -88,6 +88,14 @@ test('function invocation').code(
 	)
 	.textIs('#output', '1')
 
+test('statements after return do not evaluate').code(
+	'var fun = function() {',
+	'	return 1',
+	'	return 2',
+	'}',
+	'<div id="output">fun()</div>'
+	)
+	.textIs('#output', '1')
 
 
 // test('value changes type')
