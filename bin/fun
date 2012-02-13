@@ -8,7 +8,8 @@ var fs = require('fs'),
 	tokenizer = require('../src/tokenizer'),
 	parser = require('../src/parser'),
 	resolver = require('../src/resolver'),
-	compiler = require('../src/compiler')
+	compiler = require('../src/compiler'),
+	map = require('std/map')
 
 /* Commandline options
  *********************/
@@ -24,11 +25,21 @@ if (argv.h || argv.help) {
 }
 
 http.createServer(function(req, res) {
+	if (req.url == '/') { return welcome(res) }
 	if (req.url == '/favicon.ico') { return res.end(); }
 	if (req.url == '/develop') { return develop(res) }
 	if (req.url == '/compile') { return compile(req, res) }
-	var filePath = __dirname + '/../examples' + req.url
-	if (!fs.statSync(filePath).isFile()) {
+	var filePath = __dirname + '/..' + req.url,
+		stat
+	
+	try {
+		stat = fs.statSync(filePath)
+	} catch(e) {
+		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
+		return
+	}
+	
+	if (!stat.isFile()) {
 		res.end('Not found. Try /simple.fun')
 		return
 	}
@@ -40,6 +51,21 @@ http.createServer(function(req, res) {
 }).listen(port, host)
 console.log("fun running in development mode on", host+':'+port)
 
+
+function welcome(res) {
+	var examples = map(fs.readdirSync('./examples'), function(example) {
+		if (!example.match(/^[^\.].*\.fun$/)) { return '' }
+		return '<li><a href="/examples/'+example+'">'+example+'</a></li>'
+	}).join('\n')
+	var apps = map(fs.readdirSync('./apps'), function(app) {
+		if (app[0] == '.') { return '' }
+		return '<li><a href="/apps/'+app+'/'+app+'.fun">'+app+'</a></li>'
+	})
+
+	var html = 'Examples<br/><ul>' + examples + '</ul>Apps<br/><ul>'+apps
+	res.writeHead(200, { 'Content-Type':'text/html', 'Content-Length':html.length })
+	res.end(html)
+}
 
 function develop(res) {
 	res.writeHead(200, { 'Content-Type':'text/html' })

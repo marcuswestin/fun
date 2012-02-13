@@ -1,8 +1,7 @@
-import Global
 import Mouse
 
 <div>
-	"mouse: (" Mouse.x "," Mouse.y ")"
+	"Mouse: { x:" Mouse.x ", y:" Mouse.y " }"
 </div>
 
 <div>

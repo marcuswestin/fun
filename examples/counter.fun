@@ -1,6 +1,6 @@
 import Global
 
-let incr = handler(){ Global.counter.increment() }
+var incr = handler(){ Global.counter.increment() }
 
 <div style={ color:'#444', fontFamily:'Helvetica', margin: 50 }>
 	'Counter: ' Global.counter
