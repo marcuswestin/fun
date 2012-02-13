@@ -1,5 +1,6 @@
 intended v0.2.8
 + if/else statements work as expected again
++ script tags inside function bodies parse
 
 v0.2.7
 + Unit tests for parser, resolver, compiler and runtime library

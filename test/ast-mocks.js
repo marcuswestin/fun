@@ -54,6 +54,7 @@ function ret(value) {
 }
 
 function func(signature, block) {
+	signature = map(signature, function(arg) { return typeof arg == 'string' ? argument(arg) : arg })
 	return { type:'FUNCTION', signature:signature, block:block }
 }
 
@@ -123,9 +124,10 @@ function importModule(name) {
 
 function inlineScript(attributes, js) {
 	attributes = map(attributes, function(val, key) {
+		val = typeof val == 'string' ? reference(val) : val
 		return { name:key, value:val }
 	})
-	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js }
+	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js || '' }
 }
 
 function handler(signature, block) {

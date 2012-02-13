@@ -193,6 +193,19 @@ test('if/else in a div')
 		])
 	)
 
+test('script tag in function parses')
+	.code(
+		'var foo = function(qwe) {',
+		'	<script missing=missing>',
+		'	</script>',
+		'	return 1',
+		'}')
+	.expect(
+		a.variable('foo', a.function(['qwe'], [
+			a.inlineScript({ missing:'missing' }),
+			a.return(a.literal(1))
+		]))
+	)
 
 
 /* Util

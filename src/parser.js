@@ -339,7 +339,14 @@ var parseFunctionStatement = astGenerator(function() {
 		return { type:'RETURN', value:value }
 	}
 	if (peek('keyword', 'debugger')) { return parseDebuggerLiteral() }
-	halt(ast, 'Implement parseFunctionStatement')
+	
+	if (peek('symbol', '<') && peek('name', 'script', 2)) {
+		advance('symbol', '<', 'Script tag open')
+		advance('name', 'script', 'Script tag name')
+		return _parseScript()
+	}
+	
+	halt(peek(), 'Implement parseFunctionStatement')
 })
 
 /**********************
