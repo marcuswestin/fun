@@ -1,3 +1,11 @@
+v0.2.7
++ Unit tests for parser, resolver, compiler and runtime library
++ Proper JS bridge: <script jsVar=funVar> ... jsVar.set(...) </script>
++ Mouse module
++ Styles with dynamic values: <div id="output1" style={ background:'red', width:100, height:100, position:"absolute", top:Mouse.y, left:Mouse.x }/>
++ Object literal emission
++ Variables are now dynamically typed, and expression type-evaluated at runtime
+
 v0.2.6
 + npm install works again
 
@@ -43,13 +51,6 @@ All expressions should have type:EXPRESSION | INVOCATION | COMPOSITE - each expr
 
 --------------
 
-There's ambiguity between
-	anInvocation(a + b)
-and
-	aValue (a + b)
-
-------------
-
 Fix prefixes.
 	-3
 and
@@ -62,11 +63,6 @@ does not, nor does
 --------------
 
 - Add valueType to each AST with a value
-- No static values!
-	let greeting = 'hey'
-	greeting
-	<button>"shout"</button onclick=handler() { greeting.set('HEY!') }>
-- Resolve what a emit value or mutation reference is based on its value type
 - Make chat.fun derive global.messages and message.text from the declared classes rather than syntactically
 - Add enum type?
 	enum State {
@@ -85,14 +81,6 @@ does not, nor does
 	1) write an app
 	2) write another one
 	3) tell the world about them
-
-- "Composite alias values - mouse drag offset"
-	X 1) Allow for composite values when parsing a declaration
-		let MouseYPlus100 = Mouse.y + 100
-	X 2) Allow for composite values in XML attributes
-		<div style={ position:'absolute', top:mouseYPlus100, width:100, height:100, background:'red' } />
-	X 3) Allow for inline composite values in XML attributes
-		<div style={ position:'absolute', top:Mouse.y + 100, width:100, height:100, background:'red' } />
 
 - "Template arguments"
 	1) Pass in arguments to template invocations
@@ -130,19 +118,7 @@ does not, nor does
 		Global.onConnect = handler() { ... }
 		Global.onDisconnect = handler() { ... }
 
-- "Composite statements"
-	X 1) rename parseValueOrAlias to parseValue
-	X 2) in parseValue, if parsed number, text or alias
-		if next token is operator (e.g. "+")
-			parseCompositeStatement(value, operator)
-	X 3) <input data=Local.x /> "+" <input data=Local.y /> "=" Local.x + Local.y
-	X 4) Grouped composite statements, e.g. (6 * (5 + 4))
-	X 5) Allow for composite statements as if/else conditionals
-	6) Allow for unary operators !, -, + at the beginning of conditional composite statements
-
-- "Deferred values"
-	X 1) Come up with a common way to wait on a series of values before executing a function of compiled code
-	2) If all the values are static, don't bother creating a delayed function
+- Allow for unary operators !, -, + at the beginning of conditional composite statements
 
 - "Type checking"
 	X 1) Tags with data should have the dataType attribute <input data=Local.x dataType="number" />
@@ -152,28 +128,11 @@ does not, nor does
 	5) MIGRATE all type checking from the parser to the resolver. Right now the parser is selective about what type of
 		value can be where. The resolver should do all of that checking.
 
-- "Aliased object literal styles"
-	1) Allow for saying
-		let aStyle = { display:'block' }
-		<div style=aStyle />
-	2) Enable merging object literals, e.g.
-		let aStyle = { display:'block', color:'red' }
-		let bStyle = aStyle + { font:'Helvetica', display:'inline' }
-
 - "List/Range literals (and list comprehensions?)"
 	See examples/for_loop_literal.fun
 	1) Implement list literals (e.g. for (number in [1,2,3]) { ... })
 	2) Implement ranges (e.g. for (number in [1..10]) { ... })
 	3) Investigate list comprehension - are they useful for fun?
-
-- "Unit testing"
-	1) Figure out what unit testing framework to use
-	2) unit test parser
-	3) unit test resolver
-	4) unit test compiler
-	5) unit test fin client api
-	6) unit tests for the persistence engine api(!)
-	7) unit tests for the pubsub engine api(!)
 
 - "Fun Engines"
 	1) separate out the persistence and the storage engines from each other
@@ -187,12 +146,6 @@ does not, nor does
 		are properly initialized, and that no properties that are not used are initialized
 
 BUGS
-
-- "Already subscribed to item property doesn't show up after created"
-	Add these lines to the top of chatrooms.fun and start with no data:
-		let a = @1
-		a.name
-	Now create a new room. The room does not show up in the for loop, nor does it show up at the "a.name" hook
 
 - "Relative file imports"
 	file imports are relative to the process directory but should be relative to the file's directory
