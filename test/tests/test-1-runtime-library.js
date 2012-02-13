@@ -99,7 +99,7 @@ var observeExpect = function(variable, nameString, assert, values) {
 }
 
 function test(name, fn) {
-	module.exports['test ' + name] = function(assert) {
+	module.exports[name] = function(assert) {
 		fun.reset()
 		assert.blocks = {
 			_count: 0,
