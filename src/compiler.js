@@ -376,7 +376,7 @@ var compileFunctionDefinition = function(ast) {
 		'	{{ block }}',
 		'})',
 		{
-			arguments:map(ast.signature, function(argument, i) { return argument.name }).join(', '),
+			arguments:map(ast.signature, function(argument, i) { return variableName(argument.name) }).join(', '),
 			block:indent(map, ast.block, curry(compileFunctionStatement, ast.closure)).join('\n')
 		})
 }
@@ -495,9 +495,10 @@ var runtimeValue = function(ast, isVariable) {
 				right:runtimeValue(ast.right)
 			})
 		case 'INVOCATION':
-			return inlineCode('{{ function }}.evaluate().invoke({{ arguments }})', {
+			return inlineCode('{{ function }}.evaluate().invoke({{ hookName }}, {{ arguments }})', {
 				function:runtimeValue(ast.operand),
-				arguments:'['+map(ast.arguments, function(arg) { return runtimeValue(arg) }).join(',')+']'
+				arguments:'['+map(ast.arguments, function(arg) { return runtimeValue(arg) }).join(',')+']',
+				hookName:null // TODO Need to pass in context for hookName 
 			})
 		case 'FUNCTION':      return compileFunctionDefinition(ast)
 		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)

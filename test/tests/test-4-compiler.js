@@ -88,6 +88,12 @@ test('function invocation').code(
 	)
 	.textIs('#output', '1')
 
+test('function argument').code(
+	'var fun = function(arg) { return arg }',
+	'<div id="output">fun(1) fun("hello")</div>'
+	)
+	.textIs('#output', '1hello')
+
 test('statements after return do not evaluate').code(
 	'var fun = function() {',
 	'	return 1',
