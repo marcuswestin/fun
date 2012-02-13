@@ -168,12 +168,12 @@ var expressions = require('./expressions'),
 		_hooks[name].appendChild(document.createTextNode(text))
 	}
 	
-	fun.reflectInput = function(hookName, itemID, property, dataType) {
+	fun.reflectInput = function(hookName, property, dataType) {
 		var input = _hooks[hookName]
-		fun.observe('BYTES', itemID, property, function(mutation) {
-			input.value = mutation.value
+		property.observe(null, function() {
+			input.value = property.evaluate().asString()
 		})
-		fun.on(input, "keypress", function(e) {
+		fun.on(input, 'keypress', function(e) {
 			var oldValue = input.value
 			setTimeout(function() {
 				var value = input.value
@@ -186,10 +186,11 @@ var expressions = require('./expressions'),
 						input.value = oldValue
 						return
 					}
+					property.set(null, fun.expressions.number(value))
+				} else {
+					property.set(null, fun.expressions.text(value))
 				}
 				input.value = value
-				if (value == fun.cachedValue(itemID, property)) { return }
-				fun.mutate("set", itemID, property, [value])
 			}, 0)
 		})
 	}
