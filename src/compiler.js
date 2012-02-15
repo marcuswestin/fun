@@ -96,15 +96,16 @@ var compileEmitStatement = function(context, ast) {
 }
 
 var compileScript = function(context, ast) {
-	return code(';(function(){ /* INLINE JS */',
+	var variables = (ast.attributes.length == 0) ? '' : 'var '+map(ast.attributes, function(attr) {
+		return attr.name+'='+runtimeValue(attr.value)
+	}).join(', ')+';'
+	return code(';(function(){',
 	'	{{ variables }}',
 	'/* START INLINE JAVASCRIPT */',
 	'{{ javascript }}',
 	'/* END INLINE JAVASCRIPT */',
 	'})()', {
-		variables:'var '+map(ast.attributes, function(attr) {
-			return attr.name+'='+runtimeValue(attr.value)
-		}).join(', ')+';',
+		variables:variables,
 		javascript:ast.inlineJavascript
 	})
 }
