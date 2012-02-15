@@ -127,7 +127,7 @@ var resolveXML = function(context, ast) {
 	each(ast.attributes, function(attribute) {
 		attribute.value = resolve(context, attribute.value)
 	})
-	ast.block = filter(resolve(context, ast.block))
+	ast.block = ast.block && filter(resolve(context, ast.block))
 	return ast
 }
 
