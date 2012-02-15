@@ -3,7 +3,8 @@ var std = require('std'),
 	curry = require('std/curry'),
 	q = util.q,
 	log = util.log,
-	halt = util.halt
+	halt = util.halt,
+	assert = util.assert
 
 var L_PAREN = '(', R_PAREN = ')',
 	L_CURLY = '{', R_CURLY = '}',
