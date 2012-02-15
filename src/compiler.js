@@ -373,7 +373,11 @@ var compileMutationItemCreation = function(ast) {
 var compileFunctionDefinition = function(ast) {
 	return code(
 		'fun.expressions.function(function({{ arguments }}) {',
-		'	{{ block }}',
+		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.null)',
+		'	void function block() {',
+		'		{{ block }}',
+		'	}()',
+		'	return __functionReturnValue__',
 		'})',
 		{
 			arguments:map(ast.signature, function(argument, i) { return variableName(argument.name) }).join(', '),
@@ -391,7 +395,7 @@ var compileFunctionStatement = function(context, ast) {
 
 var compileFunctionReturn = function(ast) {
 	return code(
-		'return fun.expressions.variable({{ value }})', { value:runtimeValue(ast.value) }
+		'__functionReturnValue__.set(null, {{ value }}); return', { value:runtimeValue(ast.value) }
 	)
 }
 
