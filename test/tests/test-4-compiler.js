@@ -116,6 +116,19 @@ test('returning an argument reference from a function')
 		'<div id="output">fun({ foo:"bar" })</div>')
 	.textIs('#output', 'bar')
 
+test('function with script that mutates return value')
+	.code(
+		'var fun = function() { <script>yieldValue(fun.expressions.number(1))</script> }',
+		'<div id="output">fun()</div>')
+	.textIs('#output', 1)
+
+test('function returns closure value')
+	.code(
+		"var bar = 'qwe'",
+		"var fun = function() { return bar }",
+		"<div id='output'>fun()</div>")
+	.textIs('#output', "qwe")
+
 /* Util
  ******/
 var isFirstTest = true

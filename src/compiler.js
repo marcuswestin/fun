@@ -375,7 +375,9 @@ var compileMutationItemCreation = function(ast) {
 var compileFunctionDefinition = function(ast) {
 	return code(
 		'fun.expressions.function(function({{ arguments }}) {',
-		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.null)',
+		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.null),',
+		'		yieldValue = function(val) { __functionReturnValue__.set(null, val) }',
+		// TODO observe the arguments and re-evaluate when one mutates
 		'	void function block() {',
 		'		{{ block }}',
 		'	}()',
