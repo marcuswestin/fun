@@ -110,6 +110,12 @@ test('if/else in a div')
 		'else { "foo < 100" }</div>')
 	.textIs('#output', 'mouse.x >= 100')
 
+test('returning an argument reference from a function')
+	.code(
+		'var fun = function(arg) { return arg.foo }',
+		'<div id="output">fun({ foo:"bar" })</div>')
+	.textIs('#output', 'bar')
+
 /* Util
  ******/
 var isFirstTest = true
