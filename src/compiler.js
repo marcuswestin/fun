@@ -307,7 +307,7 @@ var compileForLoop = function(blockCompileFn, context, ast) {
 		{
 			parentHook: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
-			value: runtimeValue(ast),
+			value: runtimeValue(ast.iterable),
 			iteratorRuntimeName: ast.iteratorRuntimeName,
 			emitHookName: loopContext.hookName,
 			loopCode: indent(blockCompileFn, loopContext, ast.block)
