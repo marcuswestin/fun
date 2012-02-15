@@ -98,7 +98,9 @@ var compileEmitStatement = function(context, ast) {
 var compileScript = function(context, ast) {
 	return code(';(function(){ /* INLINE JS */',
 	'	{{ variables }}',
-	'	{{ javascript }}',
+	'/* START INLINE JAVASCRIPT */',
+	'{{ javascript }}',
+	'/* END INLINE JAVASCRIPT */',
 	'})()', {
 		variables:'var '+map(ast.attributes, function(attr) {
 			return attr.name+'='+runtimeValue(attr.value)
