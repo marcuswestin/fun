@@ -193,11 +193,10 @@ var resolveReturn = function(context, ast) {
  * For loops *
  *************/
 var resolveForLoop = function(context, ast) {
-	ast.iterable = lookup(context, ast.iterable)
 	ast.iterator.operand = ast.iterable
 	ast.context = addScope(context)
-	declare(loopContext, ast, ast.iterator.name, ast.iterator)
-	ast.block = filter(resolve(loopContext, ast.block))
+	declare(ast.context, ast, ast.iterator.name, ast.iterator)
+	ast.block = filter(resolve(ast.context, ast.block))
 	return ast
 }
 
