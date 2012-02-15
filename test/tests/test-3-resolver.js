@@ -132,11 +132,15 @@ function test(name) {
 			return this
 		},
 		expect: function() {
-			runTest(std.slice(arguments))
+			runTest(null, std.slice(arguments))
+			return this
+		},
+		expectError: function(expectedErrorRe) {
+			runTest(expectedErrorRe, null)
 			return this
 		}
 	}
-	function runTest(expectedAST) {
+	function runTest(expectedErrorRe, expectedAST) {
 		var inputAST = parser.parse(tokenizer.tokenize(inputCode))
 		util.resetUniqueID() // TODO the unique IDs function should probably be on the resolver
 		var count = 1,
@@ -150,7 +154,12 @@ function test(name) {
 				assert.deepEqual(expectedAST, output)
 				assert.done()
 			} catch(e) {
-				console.log('resolver threw', e.stack)
+				if (expectedErrorRe && e.message.match(expectedErrorRe)) {
+					assert.done()
+				} else {
+					console.log('resolver threw', e.stack)
+					process.exit(0)
+				}
 			}
 		}
 	}
