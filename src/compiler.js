@@ -100,9 +100,9 @@ var compileScript = function(context, ast) {
 	'	{{ variables }}',
 	'	{{ javascript }}',
 	'})()', {
-		variables:map(ast.attributes, function(attr) {
-			return 'var '+attr.name+' = '+runtimeValue(attr.value)
-		}).join('\n'),
+		variables:'var '+map(ast.attributes, function(attr) {
+			return attr.name+'='+runtimeValue(attr.value)
+		}).join(', ')+';',
 		javascript:ast.inlineJavascript
 	})
 }
