@@ -86,6 +86,15 @@ test('function arguments')
 		a.invocation(a.reference('fun'), a.literal(1), a.literal(2))
 	)
 
+test('missing script tag attribute value is caught')
+	.code(
+		'var foo = function(qwe) {',
+		'	<script missing=missing>',
+		'	</script>',
+		'	return 1',
+		'}')
+	.expectError(/^Couldn't find a variable called "missing"/)
+
 // Boolean values
 // Null values
 // Handlers, Functions and Templates as expressions and being emitted
