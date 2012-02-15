@@ -5,10 +5,6 @@ var fs = require('fs'),
 	http = require('http'),
 	path = require('path'),
 	optimist = require('optimist'),
-	tokenizer = require('../src/tokenizer'),
-	parser = require('../src/parser'),
-	resolver = require('../src/resolver'),
-	compiler = require('../src/compiler'),
 	map = require('std/map')
 
 /* Commandline options
@@ -44,7 +40,7 @@ http.createServer(function(req, res) {
 		return
 	}
 	try {
-		res.end(compiler.compileFile(filePath))
+		res.end(loadCompiler().compileFile(filePath))
 	} catch(e) {
 		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
 	}
@@ -84,7 +80,7 @@ function compile(req, res) {
 	req.on('end', function() {
 		try {
 			// code == "code=<URI+encoded+code>"
-			var result = compiler.compileCode(decodeURIComponent(code.substr(5).replace(/\+/g, ' ')))
+			var result = loadCompiler().compileCode(decodeURIComponent(code.substr(5).replace(/\+/g, ' ')))
 		} catch(e) {
 			res.writeHead(500)
 			res.end(e.stack)
@@ -93,4 +89,11 @@ function compile(req, res) {
 		res.writeHead(200)
 		res.end(result)
 	})
+}
+
+function loadCompiler() {
+	for (var key in require.cache) {
+		delete require.cache[key]
+	}
+	return require('../src/compiler')
 }
