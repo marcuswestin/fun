@@ -51,24 +51,31 @@ var _parseImportStatement = astGenerator(function() {
 	}
 })
 
-/****************************************************
- * Control flow statements and emitting expressions *
- ****************************************************/
+/***********************
+ * Emitting statements *
+ ***********************/
 var parseEmitStatement = function() {
 	if (peek('symbol', '<')) { return parseXML() }
-	if (peek('keyword')) {
-		switch(peek().value) {
-			// case 'let':      return parseAliasDeclaration()
-			case 'null':     return parseNullLiteral()
-			case 'var':      return parseVariableDeclaration()
-			case 'for':      return parseForLoopStatement(parseEmitStatement)
-			case 'if':       return parseIfStatement(parseEmitStatement)
-			case 'switch':   return parseSwitchStatement(parseEmitStatement)
-			case 'debugger': return parseDebuggerLiteral()
-			default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while trying to parse an emit statement')
-		}
-	}
+	if (peek('keyword')) { return parseControlStatement(parseEmitStatement) }
 	return parseExpression()
+}
+
+
+/***************************
+ * Control flow statements *
+ ***************************/
+var parseControlStatement = function(blockParseFunction) {
+	assert(peek(), peek('keyword'), 'parseControlStatement expected to see a keyword')
+	switch(peek().value) {
+		// case 'let':      return parseAliasDeclaration()
+		case 'null':     return parseNullLiteral()
+		case 'var':      return parseVariableDeclaration()
+		case 'for':      return parseForLoopStatement(blockParseFunction)
+		case 'if':       return parseIfStatement(blockParseFunction)
+		case 'switch':   return parseSwitchStatement(blockParseFunction)
+		case 'debugger': return parseDebuggerLiteral()
+		default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while trying to parse an emit statement')
+	}
 }
 
 /****************
@@ -333,12 +340,15 @@ var _parseCallable = function(statementParseFn, keyword) {
  * Function statements *
  ***********************/
 var parseFunctionStatement = astGenerator(function() {
-	if (peek('keyword', 'return')) {
-		advance('keyword', 'return')
-		var value = parseExpression()
-		return { type:'RETURN', value:value }
+	if (peek('keyword')) {
+		if (peek('keyword', 'return')) {
+			advance('keyword', 'return')
+			var value = parseExpression()
+			return { type:'RETURN', value:value }
+		} else {
+			return parseControlStatement(parseFunctionStatement)
+		}
 	}
-	if (peek('keyword', 'debugger')) { return parseDebuggerLiteral() }
 	
 	if (peek('symbol', '<') && peek('name', 'script', 2)) {
 		advance('symbol', '<', 'Script tag open')

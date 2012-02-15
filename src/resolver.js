@@ -43,7 +43,6 @@ var resolve = function(context, ast) {
 		case 'VALUE':                return ast
 		case 'NULL':                 return ast
 		case 'DEBUGGER':             return ast
-		case 'SCRIPT_TAG':           return ast
 
 		case 'VARIABLE_DECLARATION': return resolveVariableDeclaration(context, ast)
 		case 'HANDLER':              return resolveInvocable(context, ast)
@@ -54,6 +53,7 @@ var resolve = function(context, ast) {
 		case 'LIST_LITERAL':         return resolveList(context, ast)
 
 		case 'XML':                  return resolveXML(context, ast)
+		case 'SCRIPT_TAG':           return resolveXML(context, ast)
 		case 'IF_STATEMENT':         return resolveIfStatement(context, ast)
 		case 'SWITCH_STATEMENT':     return resolveSwitchStatement(context, ast)
 		case 'FOR_LOOP':             return resolveForLoop(context, ast)
