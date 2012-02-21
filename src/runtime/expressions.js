@@ -283,5 +283,21 @@ var reference = module.exports.reference = proto(atomicBase,
 )
 
 
+/* Util
+ ******/
+var fromJsValue = module.exports.fromJsValue = function(val) {
+	switch (typeof val) {
+		case 'string': return text(val)
+		case 'number': return number(val)
+		case 'boolean': return logic(val)
+		case 'object':
+			if (base.isPrototypeOf(val)) { return val }
+			if (isArray(val)) { throw new Error("TODO: implement lists") }
+			if (val == null) { return nullValue }
+			var content = {}
+			each(val, function(contentVal, contentKey) {
+				content[contentKey] = fromJsValue(contentVal)
+			})
+			return dictionary(content)
 	}
 }
