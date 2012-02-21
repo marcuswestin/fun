@@ -1,6 +1,0 @@
-[submodule "node_modules/require"]
-	path = node_modules/require
-	url = git@github.com:marcuswestin/require.git
-[submodule "node_modules/std"]
-	path = node_modules/std
-	url = git@github.com:marcuswestin/std.js.git
