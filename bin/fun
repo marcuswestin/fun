@@ -9,7 +9,7 @@ var fs = require('fs'),
 
 /* Commandline options
  *********************/
-var argv = optimist.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=8080]').argv
+var argv = optimist.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=8080 --file]').argv
 
 // Variables
 var port = argv.port || 8080,
@@ -21,15 +21,17 @@ if (argv.h || argv.help) {
 }
 
 http.createServer(function(req, res) {
-	if (req.url == '/') { return welcome(res) }
-	if (req.url == '/favicon.ico') { return res.end(); }
-	if (req.url == '/develop') { return develop(res) }
-	if (req.url == '/compile') { return compile(req, res) }
-	var filePath = __dirname + '/..' + req.url,
-		stat
+	if (!argv.file) {
+		if (req.url == '/') { return welcome(res) }
+		if (req.url == '/favicon.ico') { return res.end(); }
+		if (req.url == '/develop') { return develop(res) }
+		if (req.url == '/compile') { return compile(req, res) }
+	}
+	
+	var filePath = argv.file ? path.join(process.cwd(), argv.file) : __dirname + '/..' + req.url
 	
 	try {
-		stat = fs.statSync(filePath)
+		var stat = fs.statSync(filePath)
 	} catch(e) {
 		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
 		return
