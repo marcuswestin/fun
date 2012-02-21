@@ -1,8 +1,10 @@
 var util = module.exports
 
 var fs = require('fs'),
-	std = require('std'),
-	repeat = require('std/repeat')
+	repeat = require('std/repeat'),
+	map = require('std/map'),
+	pick = require('std/pick'),
+	isArray = require('std/isArray')
 
 util.q = function(val) { return JSON.stringify(val) }
 
@@ -17,12 +19,12 @@ util.cleanup = function(ast) {
 	function clean(ast) {
 		if (ast instanceof Array) {
 			if (ast.length == 1) { return clean(ast[0]) }
-			return std.map(std.pick(ast), clean)
+			return map(pick(ast), clean)
 		}
 		return ast || []
 	}
 	var result = clean(ast)
-	return !result ? [] : (std.isArray(result) ? result : [result])
+	return !result ? [] : (isArray(result) ? result : [result])
 }
 
 util.create = function(oldObject, props) {

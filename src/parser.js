@@ -1,6 +1,6 @@
-var std = require('std'),
-	util = require('./util'),
+var util = require('./util'),
 	curry = require('std/curry'),
+	isArray = require('std/isArray'),
 	q = util.q,
 	log = util.log,
 	halt = util.halt,
@@ -125,8 +125,8 @@ var _operatorBinding = {
 var _doParseExpression = astGenerator(function(operatorSymbols, operatorKeywords, leftOperatorBinding) {
 	if (!leftOperatorBinding) { leftOperatorBinding = 0 }
 
-	var parseMore = std.curry(_doParseExpression, operatorSymbols, operatorKeywords),
-		peekOperator = std.curry(_peekOperator, operatorSymbols, operatorKeywords)
+	var parseMore = curry(_doParseExpression, operatorSymbols, operatorKeywords),
+		peekOperator = curry(_peekOperator, operatorSymbols, operatorKeywords)
 
 	if (peek('symbol', _prefixOperators)) {
 		var prefix = advance('symbol').value,
@@ -560,7 +560,7 @@ function astGenerator(generatorFn) {
 function createAST(astObj, startToken, endToken) {
 	if (!startToken) { startToken = gToken }
 	if (!endToken) { endToken = gToken }
-	if (std.isArray(astObj)) { return astObj }
+	if (isArray(astObj)) { return astObj }
 	var ast = Object.create({
 		info: {
 			inputFile: startToken.inputFile,

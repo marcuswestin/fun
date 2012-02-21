@@ -2,7 +2,6 @@
 
 var fs = require('fs'),
 	path = require('path'),
-	std = require('std'),
 	isArray = require('std/isArray'),
 	map = require('std/map'),
 	curry = require('std/curry'),

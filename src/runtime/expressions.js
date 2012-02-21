@@ -1,6 +1,9 @@
 var proto = require('std/proto'),
+	create = require('std/create'),
 	extend = require('std/extend'),
-	map = require('std/map')
+	map = require('std/map'),
+	isArray = require('std/isArray'),
+	each = require('std/each')
 
 /* Atomic expressions
  ********************/
