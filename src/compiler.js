@@ -428,7 +428,7 @@ var compileHandlerDeclaration = function(ast) {
 }
 
 var compileHandlerStatement = function(context, ast) {
-	if (controlStatements[ast.type]) { return compileControlStatement(compileHandleStatement, context, ast) }
+	if (controlStatements[ast.type]) { return compileControlStatement(compileHandlerStatement, context, ast) }
 	switch(ast.type) {
 		case 'MUTATION':          return compileMutationStatement(ast)
 		default:                  halt(ast, 'Unknown handler statement type')
