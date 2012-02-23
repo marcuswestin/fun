@@ -99,7 +99,7 @@ var expressions = require('./expressions'),
 			var lastName = chain.pop(),
 				container = variable.evaluate(chain, false)
 			if (container === undefined) { return 'Null dereference in fun.set:evaluate' }
-			if (container.type != 'dictionary') { return 'Attempted setting property of non-dictionary value' }
+			if (container.type != 'Dictionary') { return 'Attempted setting property of non-dictionary value' }
 			oldValue = container.content[lastName]
 			container.content[lastName] = toValue
 			
@@ -116,7 +116,7 @@ var expressions = require('./expressions'),
 		notify(variable, '')
 	}
 	var notifyProperties = function(variable, chain, value) {
-		if (!value || value.type != 'dictionary') { return }
+		if (!value || value.type != 'Dictionary') { return }
 		for (var property in value.content) {
 			var chainWithProperty = (chain || []).concat(property)
 			notify(variable, chainWithProperty.join('.'))
@@ -141,7 +141,7 @@ var expressions = require('./expressions'),
 	// fun.style(hook, 'color', '#fff')
 	fun.setStyle = function(hookName, key, value) {
 		var rawValue = value.evaluate().asString()
-		if (value.type == 'number' || rawValue.match(/\d+/)) { rawValue = rawValue + 'px' }
+		if (value.type == 'Number' || rawValue.match(/^\d+$/)) { rawValue = rawValue + 'px' }
 		if (key == 'float') { key = 'cssFloat' }
 		_hooks[hookName].style[key] = rawValue
 	}
@@ -186,9 +186,9 @@ var expressions = require('./expressions'),
 						input.value = oldValue
 						return
 					}
-					property.set(null, fun.expressions.number(value))
+					property.set(null, fun.expressions.Number(value))
 				} else {
-					property.set(null, fun.expressions.text(value))
+					property.set(null, fun.expressions.Text(value))
 				}
 				input.value = value
 			}, 0)

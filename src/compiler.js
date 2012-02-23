@@ -83,10 +83,13 @@ var compileEmitStatement = function(context, ast) {
 	if (isArray(ast)) { return map(ast, curry(compileEmitStatement, context)).join('\n') + '\n' }
 	if (controlStatements[ast.type]) { return compileControlStatement(compileEmitStatement, context, ast) }
 	switch(ast.type) {
-		case 'VALUE_LITERAL':     return emitValue(context, ast)
+		case 'NUMBER_LITERAL':    return emitValue(context, ast)
+		case 'TEXT_LITERAL':      return emitValue(context, ast)
+		case 'LOGIC_LITERAL':     return emitValue(context, ast)
+		case 'NULL_LITERAL':      return emitValue(context, ast)
 		case 'REFERENCE':         return emitValue(context, ast)
-		case 'OBJECT_LITERAL':    return emitValue(context, ast)
-		case 'ITERATOR':          return emitValue(context, ast)
+		case 'DICTIONARY_LITERAL':return emitValue(context, ast)
+		case 'LIST_LITERAL':      return emitValue(context, ast)
 		case 'COMPOSITE':         return emitValue(context, ast)
 		case 'INVOCATION':        return emitValue(context, ast)
 		
@@ -159,16 +162,16 @@ var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, 
 		match
 	
 	if (name == 'style') {
-		assert(ast, value.type == 'OBJECT_LITERAL' || value.type == 'REFERENCE', 'The style attribute should be an object, e.g. style={ color:"red" }')
+		assert(ast, value.type == 'DICTIONARY_LITERAL' || value.type == 'REFERENCE', 'The style attribute should be an object, e.g. style={ color:"red" }')
 		dynamicCode.push('fun.reflectStyles('+nodeHookName+', '+runtimeValue(value, true)+')')
 	} else if (name == 'data') {
 		_handleDataAttribute(nodeHookName, ast, dynamicCode, value, attribute.dataType)
 	} else if (match = name.match(/^on(\w+)$/)) {
 		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
-	} else if (value.type == 'VALUE_LITERAL') {
+	} else if (_isAtomic(value)) {
 		staticAttrs[name] = value.value
 	} else {
-		assert(ast, value.type != 'OBJECT_LITERAL', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
+		assert(ast, value.type != 'DICTIONARY_LITERAL', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
 		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
 	}
 }
@@ -298,23 +301,24 @@ var compileSwitchStatement = function(blockCompileFn, context, ast) {
 
 var compileForLoop = function(blockCompileFn, context, ast) {
 	var loopContext = copyContext(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
-	
 	return code(
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
-		'fun.observe("LIST_LITERAL", {{ value }}, function(mutation, value) { fun.splitListMutation(onMutation, mutation, value) })',
-		'function onMutation({{ iteratorRuntimeName }}, op) {',
-		'	var {{ emitHookName }} = fun.name()',
-		'	fun.hook({{ emitHookName }}, {{ loopHookName }}, { prepend: (op=="unshift") })',
-		'	{{ loopCode }}',
-		'}',
+		'{{ iterableValue }}.observe(null, function() {',
+		'	fun.destroyHook({{ loopHookName }})',
+		'	{{ iterableValue }}.evaluate().iterate(function({{ iteratorName }}) {',
+		'		var {{ emitHookName }} = fun.name()',
+		'		fun.hook({{ emitHookName }}, {{ loopHookName }})',
+		'		{{ loopBlock }}',
+		'	})',
+		'})',
 		{
 			parentHook: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
-			value: runtimeValue(ast.iterable),
-			iteratorRuntimeName: ast.iteratorRuntimeName,
+			iterableValue: runtimeValue(ast.iterable),
+			iteratorName: variableName(ast.iterator.name),
 			emitHookName: loopContext.hookName,
-			loopCode: indent(blockCompileFn, loopContext, ast.block)
+			loopBlock: indent(blockCompileFn, loopContext, ast.block)
 		})
 }
 
@@ -376,8 +380,8 @@ var compileMutationItemCreation = function(ast) {
  ***********/
 var compileFunctionDefinition = function(ast) {
 	return code(
-		'fun.expressions.function(function({{ arguments }}) {',
-		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.null),',
+		'fun.expressions.Function(function({{ arguments }}) {',
+		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.Null),',
 		'		yieldValue = function(val) { __functionReturnValue__.set(null, fun.expressions.fromJsValue(val)) }',
 		// TODO observe the arguments and re-evaluate when one mutates
 		'	void function block() {',
@@ -481,23 +485,28 @@ var indent = function(fn /*, arg1, ... argN */) {
 var runtimeValue = function(ast, isVariable) {
 	assert(ast, typeof ast == 'object', 'ASTs should always be objects')
 	switch(ast.type) {
-		case 'VALUE_LITERAL':
+		case 'TEXT_LITERAL':
+		case 'NUMBER_LITERAL':
+		case 'NULL_LITERAL':
+		case 'LOGIC_LITERAL':
 			return isVariable
 				? inlineCode('fun.expressions.variable({{ content }})', { content:runtimeValue(ast, false) })
-				: inlineCode('fun.expressions.{{ type }}({{ value }})', { type:_getType(ast), value:q(ast.value) })
+				: inlineCode('fun.expressions.{{ valueType }}({{ value }})', { valueType:_getType(ast), value:q(ast.value) })
 		case 'REFERENCE':
 			return ast.chain.length
 				? inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
 				: variableName(ast.name)
-		case 'ITERATOR':
-			return ast.runtimeName
 		case 'ARGUMENT':
 			return ast.runtimeName
+		case 'DICTIONARY_LITERAL':
+			return inlineCode('fun.expressions.Dictionary({ {{ content }} })', { 
+				content:map(ast.content, function(value, name) {
+					return name+':'+runtimeValue(value, isVariable)
+				}).join(', ')
+			})
 		case 'LIST_LITERAL':
-			return q(ast.content)
-		case 'OBJECT_LITERAL':
-			return inlineCode('fun.expressions.dictionary({ {{ content }} })', { 
-				content:map(ast.content, function(value, name) { return name+':'+runtimeValue(value, isVariable) }).join(', ')
+			return inlineCode('fun.expressions.List([ {{ content }} ])', {
+				content:map(ast.content, runtimeValue).join(', ')
 			})
 		case 'COMPOSITE':
 			return inlineCode('fun.expressions.composite({{ left }}, "{{ operator }}", {{ right }})', {
@@ -512,11 +521,6 @@ var runtimeValue = function(ast, isVariable) {
 				hookName:null // TODO Need to pass in context for hookName 
 			})
 		case 'FUNCTION':      return compileFunctionDefinition(ast)
-		case 'TEMPLATE':      return compileTemplateDeclaration(declaration)
-		case 'HANDLER':       return compileHandlerDeclaration(declaration)
-		case 'FUNCTION':      return compileFunctionDeclaration(declaration)
-		case 'LIST_LITERAL':  return compileListLiteral(declaration)
-		case 'VALUE':         return compileValueDeclaration(declaration)
 		
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
@@ -525,16 +529,20 @@ var runtimeValue = function(ast, isVariable) {
 
 var variableName = function(name) { return '__variableName__'+name }
 
-var _types = { 'string':'text', 'number':'number', 'boolean':'logic', 'null':'null' }
+var _types = { 'TEXT_LITERAL':'Text', 'NUMBER_LITERAL':'Number', 'LOGIC_LITERAL':'Logic', 'NULL_LITERAL':'Null', 'DICTIONARY_LITERAL':'Dictionary', 'LIST_LITERAL':'List' }
 var _getType = function(ast) {
-	switch (ast.type) {
-		case 'VALUE_LITERAL':
-			var type = (ast.value === null ? 'null' : typeof ast.value)
-			assert(ast, !!_types[type], 'Unknown value literal type')
-			return _types[type]
-		case 'OBJECT_LITERAL': return 'dictionary'
+	assert(ast, !!_types[ast.type], 'Unknown value literal type')
+	return _types[ast.type]
+}
+var _isAtomic = function(ast) {
+	switch(ast.type) {
+		case 'TEXT_LITERAL':
+		case 'NUMBER_LITERAL':
+		case 'LOGIC_LITERAL':
+		case 'NULL_LITERAL':
+			return true
 		default:
-			halt(ast, 'Unknown _getType type')
+			return false
 	}
 }
 

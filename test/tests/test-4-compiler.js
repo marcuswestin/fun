@@ -1,5 +1,4 @@
-var std = require('std'),
-	tokenizer = require('../../src/tokenizer'),
+var tokenizer = require('../../src/tokenizer'),
 	parser = require('../../src/parser'),
 	resolver = require('../../src/resolver'),
 	compiler = require('../../src/compiler'),
@@ -52,7 +51,7 @@ test('divs follow mouse').code(
 test('script tag variable passing').code(
 	'var foo = "foo"',
 	'<script fooVariable=foo>',
-	'	fooVariable.set(null, fun.expressions.text("bar"))',
+	'	fooVariable.set(null, fun.expressions.Text("bar"))',
 	'</script>',
 	'<div id="output">foo</div>')
 	.textIs('#output', 'bar')
@@ -116,9 +115,15 @@ test('returning an argument reference from a function')
 		'<div id="output">fun({ foo:"bar" })</div>')
 	.textIs('#output', 'bar')
 
-test('function with script that mutates return value')
+test('function with script that mutates return value 1')
 	.code(
-		'var fun = function() { <script>yieldValue(fun.expressions.number(1))</script> }',
+		'var fun = function() { <script>yieldValue(fun.expressions.Number(1))</script> }',
+		'<div id="output">fun()</div>')
+	.textIs('#output', 1)
+
+test('function with script that mutates return value 2')
+	.code(
+		'var fun = function() { <script>yieldValue(1)</script> }',
 		'<div id="output">fun()</div>')
 	.textIs('#output', 1)
 
@@ -136,7 +141,7 @@ function test(name) {
 	var actionHandlers = createActionHandlers()
 	var testObj = {
 		code: function() {
-			var code = std.slice(arguments).join('\n'),
+			var code = slice(arguments).join('\n'),
 				actions = this._actions = []
 			
 			module.exports['compile\t"'+name+'"'] = function(assert) {

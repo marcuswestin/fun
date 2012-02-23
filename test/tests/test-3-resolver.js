@@ -1,9 +1,9 @@
-var std = require('std'),
-	a = require('../resolver-mocks'),
+var a = require('../resolver-mocks'),
 	resolver = require('../../src/resolver'),
 	parser = require('../../src/parser'),
 	tokenizer = require('../../src/tokenizer'),
-	util = require('../../src/util')
+	util = require('../../src/util'),
+	slice = require('std/slice')
 
 test("a declared alias for a string")
 	.code(
@@ -25,7 +25,7 @@ test("nested aliases")
 		'foo foo.bar foo.cat'
 	)
 	.expect(
-		a.variable('foo', a.object({ bar:a.literal(1), cat:a.literal('cat') })),
+		a.variable('foo', a.literal({ bar:1, cat:'cat' })),
 		a.reference('foo'),
 		a.reference('foo.bar'),
 		a.reference('foo.cat')
@@ -60,8 +60,8 @@ test('clicking a button updates the UI')
 		'	qwe.set(foo)',
 		'}>')
 	.expect(
-		a.variable('foo', 'bar'),
-		a.variable('qwe', 'cat'),
+		a.variable('foo', a.literal('bar')),
+		a.variable('qwe', a.literal('cat')),
 		a.xml('div', { id:a.literal('output') }, [ a.reference('foo') ]),
 		a.xml('button', { id:a.literal('button'), onClick:a.handler([], [
 			a.mutation(a.reference('foo'), 'set', [a.literal('cat')]),
@@ -71,7 +71,7 @@ test('clicking a button updates the UI')
 
 test('variable declaration inside div')
 	.code('<div>var cat="cat"</div>')
-	.expect(a.xml('div', [], [a.variable('cat', 'cat')]))
+	.expect(a.xml('div', [], [a.variable('cat', a.literal('cat'))]))
 
 test('function invocation')
 	.code('var fun = function() { return 1 }', 'fun()')
@@ -137,11 +137,11 @@ function test(name) {
 	var inputCode
 	return {
 		code: function(/* line1, line2, ... */) {
-			inputCode = std.slice(arguments).join('\n')
+			inputCode = slice(arguments).join('\n')
 			return this
 		},
 		expect: function() {
-			runTest(null, std.slice(arguments))
+			runTest(null, slice(arguments))
 			return this
 		},
 		expectError: function(expectedErrorRe) {

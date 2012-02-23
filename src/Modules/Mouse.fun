@@ -7,8 +7,8 @@ var Mouse = {
 <script Mouse=Mouse>
 // Mouse.x, Mouse.y
 fun.on(document, 'mousemove', function(e) {
-	Mouse.set(['x'], fun.expressions.number(e.clientX))
-	Mouse.set(['y'], fun.expressions.number(e.clientY))
+	Mouse.set(['x'], fun.expressions.Number(e.clientX))
+	Mouse.set(['y'], fun.expressions.Number(e.clientY))
 })
 // Mouse.isDown
 fun.on(document, 'mousedown', function() {

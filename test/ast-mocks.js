@@ -1,18 +1,14 @@
-var std = require('std'),
-	util = require('../src/util'),
+var util = require('../src/util'),
 	map = require('std/map'),
 	isArray = require('std/isArray'),
 	slice = require('std/slice')
 
 module.exports = {
-	value: value,
 	literal: literal,
 	alias: alias,
 	variable: variable,
 	reference: reference,
 	composite: composite,
-	value: value,
-	list: list,
 	xml: xml,
 	ifElse: ifElse,
 	forLoop: forLoop,
@@ -25,14 +21,7 @@ module.exports = {
 	'return':ret,
 	mutation:mutation,
 	invocation: invocation,
-	'null':nullValue,
-	object:object
-}
-
-function object(kvps) {
-	var content = []
-	for (var key in kvps) { content.push({ name:key, value:kvps[key] }) }
-	return { type:'OBJECT_LITERAL', content:content }
+	'null':nullValue
 }
 
 function reference(namespace) {
@@ -41,7 +30,7 @@ function reference(namespace) {
 }
 
 function nullValue() {
-	return { type:'VALUE_LITERAL', value:null }
+	return { type:'NULL_LITERAL', value:null }
 }
 
 function invocation(operand /*, arg1, arg2, ... */) {
@@ -66,33 +55,16 @@ function mutation(operand, operator, args) {
 	return { type:'MUTATION', operand:operand, operator:operator, arguments:args }
 }
 
-function literal(value) {
-	return { type:'VALUE_LITERAL', value:value }
-}
-
-function value(value) {
-	var ast = {}
-	ast.type = 'VALUE'
-	ast.initialValue = value
-	ast.valueType = typeof value
-	return ast
-}
-
 function alias(name, value) {
 	return { type:'ALIAS_DECLARATION', name:name, value:value }
 }
 
 function variable(name, initialValue) {
-	if (typeof initialValue == 'number' || typeof initialValue == 'string') { initialValue = literal(initialValue) }
 	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
 }
 
 function composite(left, operator, right) {
 	return { type:'COMPOSITE', operator:operator, left:left, right:right }
-}
-
-function list() {
-	return { type:'LIST_LITERAL', content:std.slice(arguments, 0) }
 }
 
 function xml(tag, attrs, block) {
@@ -103,14 +75,14 @@ function xml(tag, attrs, block) {
 }
 
 function ifElse(condition, ifBranch, elseBranch) {
-	if (!std.isArray(ifBranch)) { ifBranch = [ifBranch] }
-	if (elseBranch && !std.isArray(elseBranch)) { elseBranch = [elseBranch] }
+	if (!isArray(ifBranch)) { ifBranch = [ifBranch] }
+	if (elseBranch && !isArray(elseBranch)) { elseBranch = [elseBranch] }
 	var ast = { type:'IF_STATEMENT', condition:condition, ifBlock:ifBranch, elseBlock:elseBranch || null }
 	return ast
 }
 
-function forLoop(iterable, iteratorName, block) {
-	var iterator = { type:'ITERATOR', name:iteratorName }
+function forLoop(iteratorName, iterable, block) {
+	var iterator = { type:'REFERENCE', name:iteratorName, chain:null }
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 }
 
@@ -132,4 +104,27 @@ function inlineScript(attributes, js) {
 
 function handler(signature, block) {
 	return { type:'HANDLER', signature:signature || [], block:block || [] }
+}
+
+
+
+function literal(val) {
+	switch (typeof val) {
+		case 'number': return { type:'NUMBER_LITERAL', value:val }
+		case 'string': return { type:'TEXT_LITERAL', value:val }
+		case 'boolean': return { type:'LOGIC_LITERAL', value:val }
+		case 'object':
+			if (val == null) { return nullValue() }
+			if (isArray(val)) { return _list(val) }
+			return _object(val)
+		default: val
+	}
+}
+function _object(kvps) {
+	var content = []
+	for (var key in kvps) { content.push({ name:key, value:literal(kvps[key]) }) }
+	return { type:'DICTIONARY_LITERAL', content:content }
+}
+function _list(val) {
+	return { type:'LIST_LITERAL', content:map(val, literal) }
 }

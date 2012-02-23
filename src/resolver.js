@@ -36,9 +36,12 @@ var resolve = function(context, ast) {
 		case 'IMPORT_MODULE':        handleModuleImport(context, ast)        ;break
 		case 'IMPORT_FILE':          handleFileImport(context, ast)          ;break
 		
-		case 'VALUE_LITERAL':        return ast
+		case 'TEXT_LITERAL':         return ast
+		case 'NUMBER_LITERAL':       return ast
+		case 'LOGIC_LITERAL':        return ast
+		case 'NULL_LITERAL':         return ast
+		
 		case 'ARGUMENT':             return ast
-		case 'ITERATOR':             return ast
 		case 'VALUE':                return ast
 		case 'NULL':                 return ast
 		case 'DEBUGGER':             return ast
@@ -48,7 +51,7 @@ var resolve = function(context, ast) {
 		case 'TEMPLATE':             return resolveInvocable(context, ast)
 		case 'FUNCTION':             return resolveInvocable(context, ast)
 
-		case 'OBJECT_LITERAL':       return resolveObjectLiteral(context, ast)
+		case 'DICTIONARY_LITERAL':       return resolveObjectLiteral(context, ast)
 		case 'LIST_LITERAL':         return resolveList(context, ast)
 
 		case 'XML':                  return resolveXML(context, ast)
@@ -104,8 +107,8 @@ function resolveObjectLiteral(context, ast) {
 }
 
 function resolveList(context, ast) {
-	each(ast.content, function(content) {
-		content.value = resolve(context, content.value)
+	ast.content = map(ast.content, function(content) {
+		return resolve(context, content)
 	})
 	return ast
 }
@@ -192,7 +195,8 @@ var resolveReturn = function(context, ast) {
  * For loops *
  *************/
 var resolveForLoop = function(context, ast) {
-	ast.iterator.operand = ast.iterable
+	// ast.iterator.operand = ast.iterable
+	ast.iterable = resolve(context, ast.iterable)
 	ast.context = addScope(context)
 	declare(ast.context, ast, ast.iterator.name, ast.iterator)
 	ast.block = filter(resolve(ast.context, ast.block))

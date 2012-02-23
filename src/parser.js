@@ -57,7 +57,10 @@ var _parseImportStatement = astGenerator(function() {
  ***********************/
 var parseEmitStatement = function() {
 	if (peek('symbol', '<')) { return parseXML() }
-	if (peek('keyword')) { return parseControlStatement(parseEmitStatement) }
+	if (peek('keyword')) {
+		if (peek('keyword', 'null')) { return parseNullLiteral() }
+		else { return parseControlStatement(parseEmitStatement) }
+	}
 	return parseExpression()
 }
 
@@ -69,7 +72,6 @@ var parseControlStatement = function(blockParseFunction) {
 	assert(peek(), peek('keyword'), 'parseControlStatement expected to see a keyword')
 	switch(peek().value) {
 		// case 'let':      return parseAliasDeclaration()
-		case 'null':     return parseNullLiteral()
 		case 'var':      return parseVariableDeclaration()
 		case 'for':      return parseForLoopStatement(blockParseFunction)
 		case 'if':       return parseIfStatement(blockParseFunction)
@@ -162,8 +164,8 @@ var _peekOperator = function(operatorSymbols, operatorKeywords) {
 
 var parseLiteralExpression = function(collectionExpressionParser) {
 	switch (peek().type) {
-		case 'string':
-		case 'number': return _parseValueLiteral()
+		case 'string': return _parseTextLiteral()
+		case 'number': return _parseNumberLiteral()
 		case 'name':   return _parseReferenceOrInvocation()
 		case 'symbol':
 			switch(peek().value) {
@@ -177,8 +179,8 @@ var parseLiteralExpression = function(collectionExpressionParser) {
 				case 'handler':  return parseHandlerLiteral()
 				case 'function': return parseFunctionLiteral()
 				case 'null':     return parseNullLiteral()
-				case 'true':     return parseTrueLiteral()
-				case 'false':    return parseFalseLiteral()
+				case 'true':     return _parseTrueLiteral()
+				case 'false':    return _parseFalseLiteral()
 				default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while looking for a value')
 			}
 		default:       halt(peek(), 'Unexpected token type "'+peek().type+'" while looking for a value')
@@ -187,22 +189,27 @@ var parseLiteralExpression = function(collectionExpressionParser) {
 
 var parseNullLiteral = astGenerator(function() {
 	advance('keyword', 'null')
-	return { type:'VALUE_LITERAL', value:null }
+	return { type:'NULL_LITERAL', value:null }
 })
 
-var parseTrueLiteral = astGenerator(function() {
+var _parseTrueLiteral = astGenerator(function() {
 	advance('keyword', 'true')
-	return { type:'VALUE_LITERAL', value:true }
+	return { type:'LOGIC_LITERAL', value:true }
 })
 
-var parseFalseLiteral = astGenerator(function() {
+var _parseFalseLiteral = astGenerator(function() {
 	advance('keyword', 'false')
-	return { type:'VALUE_LITERAL', value:false }
+	return { type:'LOGIC_LITERAL', value:false }
 })
 
-var _parseValueLiteral = astGenerator(function() {
-	advance(['string','number'])
-	return { type:'VALUE_LITERAL', value:gToken.value }
+var _parseTextLiteral = astGenerator(function() {
+	advance('string')
+	return { type:'TEXT_LITERAL', value:gToken.value }
+})
+
+var _parseNumberLiteral = astGenerator(function() {
+	advance('number')
+	return { type:'NUMBER_LITERAL', value:gToken.value }
 })
 
 var _parseReferenceOrInvocation = astGenerator(function() {
@@ -237,7 +244,7 @@ var parseObjectLiteral = astGenerator(function(contentExpressionParseFn) {
 		advance('symbol',',')
 	}
 	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
-	return { type:'OBJECT_LITERAL', content:content }
+	return { type:'DICTIONARY_LITERAL', content:content }
 })
 
 /****************
@@ -396,7 +403,7 @@ var parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	
 	var iteratorName = advance('name', null, 'for_loop\'s iterator reference').value,
-		iterator = createAST({ type:'ITERATOR', name:iteratorName })
+		iterator = createAST({ type:'REFERENCE', name:iteratorName, chain:null })
 	
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	var iterable = parseExpression()

@@ -1,8 +1,8 @@
-var std = require('std'),
-	parser = require('../../src/parser'),
+var parser = require('../../src/parser'),
 	tokenizer = require('../../src/tokenizer'),
 	a = require('../parser-mocks'),
-	util = require("../../src/util")
+	util = require("../../src/util"),
+	slice = require('std/slice')
 
 test('text literal')
 	.code('"hello world"')
@@ -68,9 +68,13 @@ test('triple nested operators')
 	.code('1 + 2 + 3 + 4')
 	.expect(a.composite(a.literal(1), '+', a.composite(a.literal(2), '+', a.composite(a.literal(3), '+', a.literal(4)))))
 
+test('list literal')
+	.code('["foo", 1, null]')
+	.expect(a.literal(['foo', 1, null]))
+
 test('empty for loop over list literal')
 	.code('for (iterator in [1,2,3]) {}')
-	.expect(a.forLoop(a.list(a.literal(1), a.literal(2), a.literal(3)), 'iterator', []))
+	.expect(a.forLoop('iterator', a.literal([1,2,3]), []))
 
 test('self-closing xml')
 	.code('<div />')
@@ -97,17 +101,17 @@ test('nested declaration')
 		'foo bar foo.nested'
 	)
 	.expect(
-		a.variable('foo', a.object({ nested:a.object({ cat:a.literal('yay') }) })),
+		a.variable('foo', a.literal({ nested:{ cat:'yay' } })),
 		a.reference('foo'), a.reference('bar'), a.reference('foo.nested')
 	)
 
 test('deep nested declaration')
-	.code('var asd = { a:{b:{c:{d:{e:{f:{}}}}}}}')
-	.expect(a.variable('asd', a.object({ a:a.object({ b:a.object({ c:a.object({ d:a.object({ e:a.object({ f:a.object({}) }) }) }) }) }) })))
+	.code('var asd = {a:{b:{c:{d:{e:{f:{}}}}}}}')
+	.expect(a.variable('asd', a.literal({a:{b:{c:{d:{e:{f:{}}}}}}})))
 
 test('just a declaration')
 	.code('var foo = { bar:1 }')
-	.expect(a.variable('foo', a.object({ bar:a.literal(1) })))
+	.expect(a.variable('foo', a.literal({ bar:1 })))
 
 test('a handler')
 	.code(
@@ -207,6 +211,11 @@ test('script tag in function parses')
 		]))
 	)
 
+test('for loop over object literal')
+	.code('for (foo in { bar:"bar", cat:"cat" }) {}')
+	.expect(
+		a.forLoop('foo', a.literal({ bar:'bar', cat:'cat' }), [])
+	)
 
 /* Util
  ******/
@@ -216,11 +225,11 @@ function test(name) {
 	return {
 		code: function() {
 			util.resetUniqueID()
-			input = std.slice(arguments).join('\n')
+			input = slice(arguments).join('\n')
 			return this
 		},
 		expect: function() {
-			var expected = std.slice(arguments),
+			var expected = slice(arguments),
 				tokens = tokenizer.tokenize(input)
 			module.exports['parse\t\t"'+name+'"'] = function(assert) {
 				util.resetUniqueID()

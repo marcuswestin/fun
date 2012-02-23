@@ -7,38 +7,109 @@ var proto = require('std/proto'),
 
 var base = {}
 
+/* Atomic expressions
+ ********************/
 var atomicBase = extend(create(base), {
 	atomic:true,
 	asString:function() {
 		return this.content.toString()
 	},
 	inspect:function() {
-		return '<'+this.type+' ' + this.content + '>'
+		return '<'+this.type+' ' + this.asLiteral() + '>'
 	},
 	evaluate:function(chain, defaultToUndefined) {
 		if (chain && chain.length) { // tried to dereference a non-collection
-			return defaultToUndefined ? undefined : nullValue
+			return defaultToUndefined ? undefined : NullValue
 		}
 		return this
 	},
 	equals:function(that) {
-		return logic(this.type == that.type && this.content == that.content)
+		return Logic(this.type == that.type && this.content == that.content)
 	},
 	observe:function(namespace, callback) {
 		callback()
 	}
 })
 
+// Number values
+var Number = module.exports.Number = proto(atomicBase,
+	function(content) {
+		if (typeof content != 'number') { TypeMismatch }
+		this.content = content
+	}, {
+		type:'Number',
+		asLiteral:function() {
+			return this.content
+		}
+	}
+)
+
+// Text values
+var Text = module.exports.Text = proto(atomicBase,
+	function(content) {
+		if (typeof content != 'string') { TypeMismatch }
+		this.content = content
+	}, {
+		type:'Text',
+		asLiteral:function() {
+			return '"'+this.content+'"'
+		}
+	}
+)
+
+// Logic values
+var Logic = module.exports.Logic = function(content) {
+	if (typeof content != 'boolean') { TypeMismatch }
+	return content ? YesValue : NoValue
+}
+
+var LogicProto = proto(atomicBase,
+	function(content) {
+		this.content = content
+	}, {
+		type:'Logic',
+		asString:function() {
+			return this.content ? 'yes' : 'no'
+		}
+	}
+)
+
+var YesValue = LogicProto(true),
+	NoValue = LogicProto(false)
+
+// Null values
+module.exports.Null = function() {
+	return NullValue
+}
+
+var NullProto = proto(atomicBase,
+	function() {
+		if (arguments.length) { TypeMismatch }
+	}, {
+		type:'Null',
+		atomic:true,
+		inspect:function() { return '<Null>' },
+		asString:function() { return '' },
+		evaluate:function() { return this },
+		equals:function(that) { return falseValue },
+		observe:function(namespace, callback) { return callback() }
+	}
+)
+
+var NullValue = NullProto()
+
+// don't like these...
+// module.exports.string = module.exports.Text
+// module.exports.boolean = module.exports.Logic
+
+/* Collection expressions
+ ************************/
 var collectionBase = extend(create(base), {
 	atomic:false,
-	// asString is implemented seperately in each collection
-	inspect:function() {
-		return '<'+this.type+' '+map(this.content, function(value, name) { return name })
-	},
 	evaluate:function(chain, defaultToUndefined) {
 		if (!chain || !chain.length) { return this }
 		var value = this.content[chain[0]]
-		if (!value) { return defaultToUndefined ? undefined : nullValue }
+		if (!value) { return defaultToUndefined ? undefined : NullValue }
 		return value.evaluate(chain.slice(1))
 	},
 	equals:function(that) {
@@ -50,77 +121,48 @@ var collectionBase = extend(create(base), {
 	}
 })
 
-/* Atomic expressions
- ********************/
-var number = module.exports.number = proto(atomicBase,
-	function(content) {
-		if (typeof content != 'number') { TypeMismatch }
-		this.content = content
-	}, {
-		type:'Number'
-	}
-)
-
-var text = module.exports.text = proto(atomicBase,
-	function(content) {
-		if (typeof content != 'string') { TypeMismatch }
-		this.content = content
-	}, {
-		type:'Text'
-	}
-)
-
-var logic = module.exports.logic = function(content) {
-	if (typeof content != 'boolean') { TypeMismatch }
-	return content ? yesValue : noValue
-}
-
-var logicProto = proto(atomicBase,
-	function(content) {
-		this.content = content
-	}, {
-		type:'Logic',
-		asString:function() {
-			return this.content ? 'yes' : 'no'
-		}
-	}
-)
-
-var yesValue = logicProto(true),
-	noValue = logicProto(false)
-
-module.exports.null = function() {
-	return nullValue
-}
-
-var nullValue = {
-	type:'Null',
-	atomic:true,
-	asString:function() { return '' },
-	evaluate:function() { return this },
-	equals:function(that) { return falseValue },
-	observe:function(namespace, callback) { return callback() }
-}
-
-
-// don't like these...
-module.exports.string = module.exports.text
-module.exports.boolean = module.exports.logic
-
-/* Collection expressions
- ************************/
-var dictionary = module.exports.dictionary = proto(collectionBase,
+var Dictionary = module.exports.Dictionary = proto(collectionBase,
 	function(content) {
 		// TODO content type check
+		if (typeof content != 'object' || isArray(content) || content == null) { TypeMismatch }
 		this.content = content
 	}, {
-		type:'Dictionary'
+		type:'Dictionary',
+		asString:_dictionaryAsLiteral,
+		asLiteral:_dictionaryAsLiteral,
+		iterate:_iterateFunction
 	}
 )
+function _dictionaryAsLiteral() {
+	return '{ '+map(this.content, function(value, name) {
+		return name+':'+value.asLiteral()
+	}).join(', ')+' }'
+}
+
+var List = module.exports.List = proto(collectionBase,
+	function(content) {
+		if (!isArray(content)) { TypeMismatch }
+		this.content = content
+	}, {
+		type:'List',
+		asString:_listAsLiteral,
+		asLiteral:_listAsLiteral,
+		iterate:_iterateFunction
+	}
+)
+function _listAsLiteral() {
+	return '['+map(this.content, function(value) {
+		return value.asLiteral()
+	}).join(', ')+']'
+}
+
+function _iterateFunction(yieldFn) {
+	each(this.content, yieldFn)
+}
 
 /* Function, handler & template expressions
  ******************************************/
-var func = module.exports.function = proto(atomicBase,
+var func = module.exports.Function = proto(atomicBase,
 	function(content) {
 		if (typeof content != 'function') { TypeMismatch }
 		this.content = content
@@ -138,6 +180,9 @@ var composite = module.exports.composite = proto(atomicBase,
 	function(left, operator, right) {
 		if (typeof operator != 'string') { TypeMismatch }
 		// TODO typecheck left and right
+		this.left = left
+		this.right = right
+		this.operator = operator
 	}, {
 		type:'Composite',
 		evaluate:function(chain, defaultToUndefined) {
@@ -162,10 +207,10 @@ var operators = {
 }
 
 function add(left, right) {
-	if (left.type == 'number' && right.type == 'number') {
-		return number(left.content + right.content)
+	if (left.type == 'Number' && right.type == 'Number') {
+		return Number(left.content + right.content)
 	}
-	return text(left.asString() + right.asString())
+	return Text(left.asString() + right.asString())
 }
 
 function equals(left, right) {
@@ -175,12 +220,12 @@ function equals(left, right) {
 
 function greaterThanOrEquals(left, right) {
 	// TODO Typecheck?
-	return logic(left.content >= right.content)
+	return Logic(left.content >= right.content)
 }
 
 function lessThanOrEquals(left, right) {
 	// TODO Typecheck?
-	return logic(left.content <= left.content)
+	return Logic(left.content <= left.content)
 }
 
 /* Variable expressions
@@ -197,6 +242,9 @@ var variable = module.exports.variable = proto(atomicBase,
 		},
 		asString:function() {
 			return this.content.asString()
+		},
+		asLiteral:function() {
+			return this.content.asLiteral()
 		},
 		equals:function(that) {
 			return this.content.equals(that)
@@ -223,7 +271,7 @@ var variable = module.exports.variable = proto(atomicBase,
 				var lastName = chain.pop(),
 					container = this.evaluate(chain, false)
 				if (container === undefined) { return 'Null dereference in fun.set:evaluate' }
-				if (container.type != 'dictionary') { return 'Attempted setting property of non-dictionary value' }
+				if (container.type != 'Dictionary') { return 'Attempted setting property of non-dictionary value' }
 				oldValue = container.content[lastName]
 				container.content[lastName] = toValue
 
@@ -244,7 +292,7 @@ var variable = module.exports.variable = proto(atomicBase,
 )
 
 var notifyProperties = function(variable, chain, value) {
-	if (!value || value.type != 'dictionary') { return }
+	if (!value || value.type != 'Dictionary') { return }
 	for (var property in value.content) {
 		var chainWithProperty = (chain || []).concat(property)
 		notify(variable, chainWithProperty.join('.'))
@@ -276,6 +324,9 @@ var reference = module.exports.reference = proto(atomicBase,
 		asString:function() {
 			return this.evaluate().asString()
 		},
+		asLiteral:function() {
+			return this.evaluate().asLiteral()
+		},
 		set:function(chain, toValue) {
 			return this.content.set(chain ? this.chain.concat(chain) : this.chain, toValue)
 		}
@@ -287,17 +338,22 @@ var reference = module.exports.reference = proto(atomicBase,
  ******/
 var fromJsValue = module.exports.fromJsValue = function(val) {
 	switch (typeof val) {
-		case 'string': return text(val)
-		case 'number': return number(val)
-		case 'boolean': return logic(val)
+		case 'string': return Text(val)
+		case 'number': return Number(val)
+		case 'boolean': return Logic(val)
 		case 'object':
 			if (base.isPrototypeOf(val)) { return val }
-			if (isArray(val)) { throw new Error("TODO: implement lists") }
-			if (val == null) { return nullValue }
+			if (val == null) {
+				return NullValue
+			}
+			if (isArray(val)) {
+				var content = map(val, fromJsValue)
+				return List(content)
+			}
 			var content = {}
-			each(val, function(contentVal, contentKey) {
-				content[contentKey] = fromJsValue(contentVal)
+			each(val, function(contentVal, contentName) {
+				content[contentName] = fromJsValue(contentVal)
 			})
-			return dictionary(content)
+			return Dictionary(content)
 	}
 }
