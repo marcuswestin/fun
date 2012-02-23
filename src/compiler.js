@@ -18,6 +18,7 @@ var fs = require('fs'),
 	strip = require('std/strip'),
 	each = require('std/each'),
 	arrayToObject = require('std/arrayToObject'),
+	isArray = require('std/isArray'),
 	
 	requireCompiler = require('require/compiler'),
 	
@@ -79,7 +80,7 @@ exports.compileRaw = function(ast, rootHook) {
  * Emit (template), function and handler statements *
  ****************************************************/
 var compileEmitStatement = function(context, ast) {
-	if (ast instanceof Array) { return map(ast, curry(compileEmitStatement, context)).join('\n') + '\n' }
+	if (isArray(ast)) { return map(ast, curry(compileEmitStatement, context)).join('\n') + '\n' }
 	if (controlStatements[ast.type]) { return compileControlStatement(compileEmitStatement, context, ast) }
 	switch(ast.type) {
 		case 'VALUE_LITERAL':     return emitValue(context, ast)
