@@ -51,11 +51,12 @@ console.log("fun running in development mode on", host+':'+port)
 
 
 function welcome(res) {
-	var examples = map(fs.readdirSync('./examples'), function(example) {
+	var base = __dirname+'/..'
+	var examples = map(fs.readdirSync(base+'/examples'), function(example) {
 		if (!example.match(/^[^\.].*\.fun$/)) { return '' }
 		return '<li><a href="/examples/'+example+'">'+example+'</a></li>'
 	}).join('\n')
-	var apps = map(fs.readdirSync('./apps'), function(app) {
+	var apps = map(fs.readdirSync(base+'/apps'), function(app) {
 		if (app[0] == '.') { return '' }
 		return '<li><a href="/apps/'+app+'/'+app+'.fun">'+app+'</a></li>'
 	})
