@@ -101,10 +101,6 @@ var NullProto = proto(atomicBase,
 
 var NullValue = NullProto()
 
-// don't like these...
-// module.exports.string = module.exports.Text
-// module.exports.boolean = module.exports.Logic
-
 /* Collection expressions
  ************************/
 var collectionBase = create(base, {
@@ -302,31 +298,6 @@ var variable = module.exports.variable = proto(variableValueBase,
 			} else {
 				this._notifyObservers()
 			}
-			
-			// if (!chain || !chain.length) {
-			// 	oldValue = container.content
-			// 	container.content = toValue
-			// } else {
-			// 	chain = chain.join('.').split('.') // this is silly - make a copy of the array or don't modify it instead
-			// 	var lastName = chain.pop(),
-			// 		container = this.evaluate(chain, false)
-			// 	if (container === undefined) { return 'Null dereference in fun.set:evaluate' }
-			// 	if (container.type != 'Dictionary') { return 'Attempted setting property of non-dictionary value' }
-			// 	oldValue = container.content[lastName]
-			// 	container.content[lastName] = toValue
-			// 
-			// 	chain.push(lastName)
-			// 
-			// 	notify(this, chain.join('.'))
-			// }
-			// 
-			// // If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
-			// notifyProperties(this, chain, oldValue)
-			// 
-			// // If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
-			// notifyProperties(this, chain, toValue)
-			// 
-			// notify(this, '')
 		},
 		_notifyObservers:function() {
 			each(this.observers, function(observer, id) {
@@ -335,19 +306,6 @@ var variable = module.exports.variable = proto(variableValueBase,
 		}
 	}
 )
-
-// var notifyProperties = function(variable, chain, value) {
-// 	if (!value || value.type != 'Dictionary') { return }
-// 	for (var property in value.content) {
-// 		var chainWithProperty = (chain || []).concat(property)
-// 		notify(variable, chainWithProperty.join('.'))
-// 		notifyProperties(variable, chainWithProperty, value.content[property])
-// 	}
-// }
-// var notify = function(variable, namespace) {
-// 	var observers = variable.observers[namespace]
-// 	for (var id in observers) { observers[id]() }
-// }
 
 /* Reference expressions
  ***********************/
