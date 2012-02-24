@@ -91,7 +91,7 @@ var observeExpect = function(variable, nameString, assert, values) {
 	assert.blocks.add(values.length)
 	values = map(values, a.value)
 	nameString = nameString || ''
-	fun.observe(variable, nameString.split('.'), function() {
+	fun.observe(variable, function() {
 		if (!deepEqual(evaluate(variable, nameString), values[0])) { return }
 		values.shift()
 		assert.blocks.subtract()

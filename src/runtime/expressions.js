@@ -1,33 +1,39 @@
 var proto = require('std/proto'),
 	create = require('std/create'),
-	extend = require('std/extend'),
 	map = require('std/map'),
 	isArray = require('std/isArray'),
-	each = require('std/each')
+	each = require('std/each'),
+	bind = require('std/bind')
 
-var base = {}
+var base = {
+	getType:function() {
+		return this.getType()
+	},
+	inspect:function() {
+		return '<'+this.getType()+' ' + this.asLiteral() + '>'
+	},
+	observe:function(callback) {
+		callback()
+	},
+	evaluate:function() {
+		return this
+	},
+	hasVariableContent:function() {
+		return false
+	}
+}
 
 /* Atomic expressions
  ********************/
-var atomicBase = extend(create(base), {
-	atomic:true,
+var atomicBase = create(base, {
+	isAtomic:function() {
+		return true
+	},
 	asString:function() {
 		return this.content.toString()
 	},
-	inspect:function() {
-		return '<'+this.type+' ' + this.asLiteral() + '>'
-	},
-	evaluate:function(chain, defaultToUndefined) {
-		if (chain && chain.length) { // tried to dereference a non-collection
-			return defaultToUndefined ? undefined : NullValue
-		}
-		return this
-	},
 	equals:function(that) {
-		return Logic(this.type == that.type && this.content == that.content)
-	},
-	observe:function(namespace, callback) {
-		callback()
+		return Logic(this.getType() == that.getType() && this.content == that.content)
 	}
 })
 
@@ -87,12 +93,9 @@ var NullProto = proto(atomicBase,
 		if (arguments.length) { TypeMismatch }
 	}, {
 		type:'Null',
-		atomic:true,
 		inspect:function() { return '<Null>' },
 		asString:function() { return '' },
-		evaluate:function() { return this },
-		equals:function(that) { return falseValue },
-		observe:function(namespace, callback) { return callback() }
+		equals:function(that) { return falseValue }
 	}
 )
 
@@ -104,19 +107,16 @@ var NullValue = NullProto()
 
 /* Collection expressions
  ************************/
-var collectionBase = extend(create(base), {
-	atomic:false,
-	evaluate:function(chain, defaultToUndefined) {
-		if (!chain || !chain.length) { return this }
-		var value = this.content[chain[0]]
-		if (!value) { return defaultToUndefined ? undefined : NullValue }
-		return value.evaluate(chain.slice(1))
+var collectionBase = create(base, {
+	isAtomic:function() {
+		return false
 	},
 	equals:function(that) {
 		console.log("TODO implement collection equality")
 		return falseValue
 	},
-	observe:function(namespace, callback) {
+	observe:function(callback) {
+		// TODO notify observers when items are added or removed
 		return callback()
 	}
 })
@@ -174,9 +174,30 @@ var func = module.exports.Function = proto(atomicBase,
 	}
 )
 
-/* Composite expressions
- ***********************************************/
-var composite = module.exports.composite = proto(atomicBase,
+/* Variable-value expressions: composites, variables, references
+ ***************************************************************/
+var variableValueBase = create(base, {
+	isAtomic:function() {
+		return this.evaluate().isAtomic()
+	},
+	hasVariableContent:function() {
+		return true
+	},
+	getType:function() {
+		return this.evaluate().getType()
+	},
+	asString:function() {
+		return this.evaluate().asString()
+	},
+	asLiteral:function() {
+		return this.evaluate().asLiteral()
+	},
+	equals:function(that) {
+		return this.evaluate().equals(that)
+	}
+})
+
+var composite = module.exports.composite = proto(variableValueBase,
 	function(left, operator, right) {
 		if (typeof operator != 'string') { TypeMismatch }
 		// TODO typecheck left and right
@@ -185,16 +206,13 @@ var composite = module.exports.composite = proto(atomicBase,
 		this.operator = operator
 	}, {
 		type:'Composite',
-		evaluate:function(chain, defaultToUndefined) {
-			return operators[this.operator](this.left.evaluate(), this.right.evaluate()).evaluate(chain, defaultToUndefined)
+		evaluate:function() {
+			return operators[this.operator](this.left.evaluate(), this.right.evaluate())
 		},
-		equals:function(that) {
-			return this.evaluate().equals(that)
-		},
-		observe:function(namespace, callback) {
+		observe:function(callback) {
 			// TODO store observation IDs
-			this.left.observe(null, callback)
-			this.right.observe(null, callback)
+			this.left.observe(callback)
+			this.right.observe(callback)
 		}
 	}
 )
@@ -231,14 +249,14 @@ function lessThanOrEquals(left, right) {
 /* Variable expressions
  **********************/
 var _unique = 1
-var variable = module.exports.variable = proto(atomicBase,
+var variable = module.exports.variable = proto(variableValueBase,
 	function(content) {
-		this.content = content
+		this.set(null, content)
 		this.observers = {}
 	}, {
 		type:'Variable',
-		evaluate:function(chain, defaultToUndefined) {
-			return this.content.evaluate(chain, defaultToUndefined)
+		evaluate:function() {
+			return this.content.evaluate()
 		},
 		asString:function() {
 			return this.content.asString()
@@ -249,86 +267,112 @@ var variable = module.exports.variable = proto(atomicBase,
 		equals:function(that) {
 			return this.content.equals(that)
 		},
-		observe:function(chain, callback) {
-			var namespace = chain ? chain.join('.') : ''
-			if (!this.observers[namespace]) { this.observers[namespace] = {} }
+		observe:function(callback) {
 			var uniqueID = 'u'+_unique++
-			this.observers[namespace][uniqueID] = callback
+			this.observers[uniqueID] = callback
 			callback()
 			return uniqueID
 		},
 		unobserve:function() {
-			delete this.observers[namespace.join('.')][observationID]
+			delete this.observers[observationID]
 		},
 		set:function(chain, toValue) {
-			var container = this,
-				oldValue
-			if (!chain || !chain.length) {
-				oldValue = container.content
-				container.content = toValue
+			if (!chain) {
+				this.content = toValue
 			} else {
-				chain = chain.join('.').split('.') // this is silly - make a copy of the array or don't modify it instead
-				var lastName = chain.pop(),
-					container = this.evaluate(chain, false)
-				if (container === undefined) { return 'Null dereference in fun.set:evaluate' }
-				if (container.type != 'Dictionary') { return 'Attempted setting property of non-dictionary value' }
-				oldValue = container.content[lastName]
-				container.content[lastName] = toValue
-
-				chain.push(lastName)
-			
-				notify(this, chain.join('.'))
+				var value = this.evaluate()
+				for (var i=0; i<chain.length-1; i++) {
+					if (value.hasVariableContent()) {
+						value.set(chain.slice(i), toValue)
+						return
+					}
+					if (value.isAtomic()) {
+						throw new Error('Attempted setting property of an atomic value')
+					}
+					value = value.content[chain[i]]
+					if (!value) {
+						throw new Error('Null dereference in set')
+					}
+				}
+				// TODO unobserve old content. Unobserving a dictionary should probably go through all its values and unobserve them
+				value.content[chain[chain.length-1]] = toValue
 			}
-
-			// If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
-			notifyProperties(this, chain, oldValue)
-
-			// If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
-			notifyProperties(this, chain, toValue)
-
-			notify(this, '')
+			if (toValue.hasVariableContent()) {
+				toValue.observe(bind(this, this._notifyObservers))
+			} else {
+				this._notifyObservers()
+			}
+			
+			// if (!chain || !chain.length) {
+			// 	oldValue = container.content
+			// 	container.content = toValue
+			// } else {
+			// 	chain = chain.join('.').split('.') // this is silly - make a copy of the array or don't modify it instead
+			// 	var lastName = chain.pop(),
+			// 		container = this.evaluate(chain, false)
+			// 	if (container === undefined) { return 'Null dereference in fun.set:evaluate' }
+			// 	if (container.type != 'Dictionary') { return 'Attempted setting property of non-dictionary value' }
+			// 	oldValue = container.content[lastName]
+			// 	container.content[lastName] = toValue
+			// 
+			// 	chain.push(lastName)
+			// 
+			// 	notify(this, chain.join('.'))
+			// }
+			// 
+			// // If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
+			// notifyProperties(this, chain, oldValue)
+			// 
+			// // If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
+			// notifyProperties(this, chain, toValue)
+			// 
+			// notify(this, '')
+		},
+		_notifyObservers:function() {
+			each(this.observers, function(observer, id) {
+				observer()
+			})
 		}
 	}
 )
 
-var notifyProperties = function(variable, chain, value) {
-	if (!value || value.type != 'Dictionary') { return }
-	for (var property in value.content) {
-		var chainWithProperty = (chain || []).concat(property)
-		notify(variable, chainWithProperty.join('.'))
-		notifyProperties(variable, chainWithProperty, value.content[property])
-	}
-}
-var notify = function(variable, namespace) {
-	var observers = variable.observers[namespace]
-	for (var id in observers) { observers[id]() }
-}
+// var notifyProperties = function(variable, chain, value) {
+// 	if (!value || value.type != 'Dictionary') { return }
+// 	for (var property in value.content) {
+// 		var chainWithProperty = (chain || []).concat(property)
+// 		notify(variable, chainWithProperty.join('.'))
+// 		notifyProperties(variable, chainWithProperty, value.content[property])
+// 	}
+// }
+// var notify = function(variable, namespace) {
+// 	var observers = variable.observers[namespace]
+// 	for (var id in observers) { observers[id]() }
+// }
 
 /* Reference expressions
  ***********************/
-var reference = module.exports.reference = proto(atomicBase,
+var reference = module.exports.reference = proto(variableValueBase,
 	function(content, chain) {
 		this.content = content
 		this.chain = chain
 	}, {
 		type:'Reference',
-		evaluate:function(chain, defaultToUndefined) {
-			return this.content.evaluate(chain ? this.chain.concat(chain) : this.chain, defaultToUndefined)
+		getType:function() {
+			return this.evaluate().getType()
 		},
-		equals:function(that) {
-			return this.content.evaluate(this.chain).equals(that)
+		evaluate:function() {
+			var value = this.content
+			for (var i=0; i<this.chain.length; i++) {
+				value = value.evaluate().content[this.chain[i]]
+			}
+			return value
 		},
-		observe:function(chain, callback) {
-			return this.content.observe(chain ? this.chain.concat(chain) : this.chain, callback)
-		},
-		asString:function() {
-			return this.evaluate().asString()
-		},
-		asLiteral:function() {
-			return this.evaluate().asLiteral()
+		observe:function(callback) {
+			return this.content.observe(callback)
 		},
 		set:function(chain, toValue) {
-			return this.content.set(chain ? this.chain.concat(chain) : this.chain, toValue)
+			chain = (this.chain && chain) ? (this.chain.concat(chain)) : (this.chain || chain)
+			return this.content.set(chain, toValue)
 		}
 	}
 )

@@ -233,7 +233,7 @@ var compileControlStatement = function(blockCompileFn, context, ast) {
 var compileVariableDeclaration = function(context, ast) {
 	return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
 		name:variableName(ast.name),
-		initialContent:runtimeValue(ast.initialValue, true)
+		initialContent:runtimeValue(ast.initialValue)
 	})
 }
 
@@ -304,7 +304,7 @@ var compileForLoop = function(blockCompileFn, context, ast) {
 	return code(
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
-		'{{ iterableValue }}.observe(null, function() {',
+		'{{ iterableValue }}.observe(function() {',
 		'	fun.destroyHook({{ loopHookName }})',
 		'	{{ iterableValue }}.evaluate().iterate(function({{ iteratorName }}) {',
 		'		var {{ emitHookName }} = fun.name()',
@@ -381,7 +381,7 @@ var compileMutationItemCreation = function(ast) {
 var compileFunctionDefinition = function(ast) {
 	return code(
 		'fun.expressions.Function(function({{ arguments }}) {',
-		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.Null),',
+		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.Null()),',
 		'		yieldValue = function(val) { __functionReturnValue__.set(null, fun.expressions.fromJsValue(val)) }',
 		// TODO observe the arguments and re-evaluate when one mutates
 		'	void function block() {',
@@ -482,16 +482,14 @@ var indent = function(fn /*, arg1, ... argN */) {
 	return result
 }
 
-var runtimeValue = function(ast, isVariable) {
+var runtimeValue = function(ast) {
 	assert(ast, typeof ast == 'object', 'ASTs should always be objects')
 	switch(ast.type) {
 		case 'TEXT_LITERAL':
 		case 'NUMBER_LITERAL':
 		case 'NULL_LITERAL':
 		case 'LOGIC_LITERAL':
-			return isVariable
-				? inlineCode('fun.expressions.variable({{ content }})', { content:runtimeValue(ast, false) })
-				: inlineCode('fun.expressions.{{ valueType }}({{ value }})', { valueType:_getType(ast), value:q(ast.value) })
+			return inlineCode('fun.expressions.{{ valueType }}({{ value }})', { valueType:_getType(ast), value:q(ast.value) })
 		case 'REFERENCE':
 			return ast.chain.length
 				? inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
@@ -501,7 +499,7 @@ var runtimeValue = function(ast, isVariable) {
 		case 'DICTIONARY_LITERAL':
 			return inlineCode('fun.expressions.Dictionary({ {{ content }} })', { 
 				content:map(ast.content, function(value, name) {
-					return name+':'+runtimeValue(value, isVariable)
+					return name+':'+runtimeValue(value)
 				}).join(', ')
 			})
 		case 'LIST_LITERAL':
@@ -554,7 +552,7 @@ var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 	injectValues['STATEMENT_VALUE'] = name('STATEMENT_VALUE')
 	
 	return code(
-		'{{ __statementValue }}.observe(null, function() {',
+		'{{ __statementValue }}.observe(function() {',
 		'	var {{ STATEMENT_VALUE }} = {{ __statementValue }}.evaluate()',
 		'	' + code.apply(this, statementLines.concat(injectValues)),
 		'})',

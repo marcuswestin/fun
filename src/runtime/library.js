@@ -29,18 +29,18 @@ var expressions = require('./expressions'),
  ********/
 	fun.emit = function(parentHookName, value) {
 		var hookName = fun.hook(fun.name(), parentHookName)
-		_deepObserve(value, throttle(function() {
+		value.observe(function() {
 			_hooks[hookName].innerHTML = ''
 			_hooks[hookName].appendChild(document.createTextNode(value.asString()))
-		}))
+		})
 	}
 	
 	var _deepObserve = function(value, callback) {
-		value.observe(null, function() {
+		value.observe(function() {
 			callback()
 			var evaluated = value.evaluate()
-			if (evaluated.atomic) { return }
-			evaluated.observe(null, function() {
+			if (evaluated.isAtomic()) { return }
+			evaluated.observe(function() {
 				each(evaluated.content, function(subValue) {
 					_deepObserve(subValue, callback)
 				})
@@ -128,8 +128,8 @@ var expressions = require('./expressions'),
 		for (var id in observers) { observers[id]() }
 	}
 	
-	fun.observe = function(variable, chain, callback) { return variable.observe(chain, callback) }
-	fun.unobserve = function(chain, observationID) { return variable.unobserve(chain, observationID) }
+	fun.observe = function(variable, callback) { return variable.observe(callback) }
+	fun.unobserve = function(observationID) { return variable.unobserve(observationID) }
 /* DOM
  *****/
 	fun.attr = function(name, key, value) {
@@ -150,7 +150,7 @@ var expressions = require('./expressions'),
 		if (values.type != 'reference')
 		// TODO detect when the dictionary mutates (values added and removed)
 		each(values.content, function(val, key) {
-			val.observe(null, function() {
+			val.observe(function() {
 				fun.setStyle(hookName, key, val)
 			})
 		})
@@ -170,7 +170,7 @@ var expressions = require('./expressions'),
 	
 	fun.reflectInput = function(hookName, property, dataType) {
 		var input = _hooks[hookName]
-		property.observe(null, function() {
+		property.observe(function() {
 			input.value = property.evaluate().asString()
 		})
 		fun.on(input, 'keypress', function(e) {
