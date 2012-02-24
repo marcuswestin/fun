@@ -195,49 +195,6 @@ var expressions = require('./expressions'),
 		})
 	}
 
-/* DOM events
- ************/
-	fun.cancel = function(e) {
-		e.cancelBubble = true;
-		if(e.stopPropagation) e.stopPropagation();
-		if(e.preventDefault) e.preventDefault();
-	}
-	
-	fun.isNumberKeyPress = function(e) {
-		return 48 <= e.charCode && e.charCode <= 57
-	}
-	
-/* Utility functions
- *******************/
-	// wait until each item in items has received a mutation before calling callback;
-	//  then call callback each time there is a mutation
-	fun.dependOn = function(items, callback) {
-		if (items.length == 0) { return callback() }
-		var seen = {},
-			waitingOn = 0
-		
-		var onMutation = function(mutation) {
-			if (waitingOn && !seen[mutation.id+':'+mutation.property]) {
-				seen[mutation.id+':'+mutation.property] = true
-				waitingOn--
-			}
-			if (!waitingOn) { callback() }
-		}
-		
-		for (var i=0, item; item = items[i]; i++) {
-			// If the same item property is passed in twice, only mark it as being waited on once
-			if (typeof seen[item.id+':'+item.property] != 'undefined') { continue }
-			seen[item.id+':'+item.property] = false
-			waitingOn++
-			fun.observe('BYTES', item.id, item.property, onMutation)
-		}
-	}
-	
-	fun.displayText = function(namespace) {
-		var val = fun.get(namespace, true)
-		return (typeof val == 'object' ? q(val) : val)
-	}
-	
 /* init & export
  ***************/
 	fun.reset()

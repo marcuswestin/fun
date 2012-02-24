@@ -562,26 +562,6 @@ var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 		})
 }
 
-var _collectDynamicASTs = function(ast) {
-	if (!ast) { return [] }
-	switch(ast.type) {
-		case 'COMPOSITE':
-			return _collectDynamicASTs(ast.left).concat(_collectDynamicASTs(ast.right))
-		case 'ITERATOR':
-		case 'VALUE':
-			return [ast]
-		case 'VALUE_LITERAL':
-			return []
-		case 'ARGUMENT':
-			// need to know the type of the argument - in the meantime, assume that no type means its a literal value
-			return ast.property.length ? [ast] : []
-		case 'OBJECT_LITERAL':
-			return filter(flatten(map(ast.content, _collectDynamicASTs)))
-		default:
-			halt(ast, 'Unknown dynamic AST type');
-	}
-}
-
 function _hookCode(hookName, parentHookName) {
 	return code(
 		'var {{ hookName }} = fun.name()',
