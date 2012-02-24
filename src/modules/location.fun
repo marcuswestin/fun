@@ -1,13 +1,13 @@
 import Local
 
-let Location = {
-	navigate: javascriptHandler("LocationModule.navigate"),
+let location = {
+	navigate: javascriptHandler("locationModule.navigate"),
 	state: '',
 }
 
 <script>
 void(function() {
-	window.LocationModule = {
+	window.locationModule = {
 		navigate: _navigate
 	}
 	
@@ -17,7 +17,7 @@ void(function() {
 	function _navigate(state) {
 		_lastState = state
 		location.hash = '#'+state
-		fun.set('Location.state', state)
+		fun.set('location.state', state)
 	}
 	
 	function _pollHash() {

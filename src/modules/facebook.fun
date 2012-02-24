@@ -1,8 +1,8 @@
 import Local
 
-let Facebook = {
+let facebook = {
 	connected: false,
-	connect: javascriptHandler("FacebookModule.connect"),
+	connect: javascriptHandler("facebookModule.connect"),
 	user: {
 		name: '',
 		id: 0
@@ -11,7 +11,7 @@ let Facebook = {
 
 <script>
 void(function() {
-	window.FacebookModule = {
+	window.facebookModule = {
 		connect: connect
 	}
 	
@@ -25,10 +25,10 @@ void(function() {
 	
 	function _handleLoginResponse(response) {
 		if (response.status == 'connected') {
-			fun.set('Facebook.connected', true)
-			fun.set('Facebook.user.id', response.session.uid)
+			fun.set('facebook.connected', true)
+			fun.set('facebook.user.id', response.session.uid)
 			FB.api('/me', function(response) {
-				fun.set('Facebook.user.name', response.name)
+				fun.set('facebook.user.name', response.name)
 			})
 		}
 	}

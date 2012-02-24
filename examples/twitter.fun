@@ -1,4 +1,4 @@
-var Twitter = {
+var twitter = {
 	query: function(path, params) {
 		var result = { loading:true, error:null, response:null }
 		<script path=path params=params result=result>
@@ -42,7 +42,7 @@ let renderTweet = template(tweet) {
 			<div class="login">
 				<input data=user.username placeholder="username" />
 				<button>"Sign in"</button onclick=handler() {
-					Twitter.query('/timeline', { username:user.username }, handler(error, response) {
+					twitter.query('/timeline', { username:user.username }, handler(error, response) {
 						if (error) { return alert(error) }
 						user.online.set(true)
 						user.timeline = set(response)

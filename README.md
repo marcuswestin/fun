@@ -10,7 +10,7 @@ Getting started
 ----------------------
 	sudo npm install -g fun
 	echo '"Hello world!"' > hello.fun
-	fun hello.fun
+	fun --file hello.fun
 	# Open your browser to localhost:8080
 
 Examples
@@ -19,32 +19,32 @@ Hello World
 
 	"Hello world!"
 
-Facebook Connect
+facebook Connect
 
-	import Facebook
+	import facebook
 	
-	let name = Facebook.user.name,
+	let name = facebook.user.name,
 		fbAppID = '177253448965438'
-	if (Facebook.connected) {
+	if (facebook.connected) {
 		if (name) { <div>"Welcome " name</div> }
-		<div>"Your ID is " Facebook.user.id</div>
+		<div>"Your ID is " facebook.user.id</div>
 	} else {
 		<button>"Connect"</button onclick=handler() {
-			Facebook.connect(fbAppID)
+			facebook.connect(fbAppID)
 		}>
 	}
 
 Drag and Drop
 
-	import Mouse
+	import mouse
 	
 	let dragStyle = {
 		width:      100,
 		height:     100,
 		background: red,
 		position:   'absolute',
-		top:        Mouse.y + 50,
-		left:       Mouse.x + 50
+		top:        mouse.y + 50,
+		left:       mouse.x + 50
 	}
 	<div style=dragStyle />
 

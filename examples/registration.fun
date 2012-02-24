@@ -1,5 +1,5 @@
 #import XHR
-#import Location
+#import location
 
 let Account = {
 	state: @required { 'initial', 'created', 'verified' },
@@ -35,10 +35,10 @@ let renderCreate = template() {
 }
 
 let renderVerifyNumber = template() {
-	#import Location
-	Location.on('change', handler() {
-		if (!Location.hash.get('t')) { return }
-		let params = { phoneNumber:account.phoneNumber, token:Location.hash.get('t') }
+	#import location
+	location.on('change', handler() {
+		if (!location.hash.get('t')) { return }
+		let params = { phoneNumber:account.phoneNumber, token:location.hash.get('t') }
 		let RegistrationResponse response = XHR.post('/verify_number', params)
 		if (response.account) { account.set(response.account) }
 		else { errorMessage.set(response.error || oops)

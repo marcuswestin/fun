@@ -1,13 +1,13 @@
-import Facebook
+import facebook
 
-if (Facebook.connected) {
-	if (Facebook.user.name) {
-		<div>"Welcome " Facebook.user.name "!"</div>
+if (facebook.connected) {
+	if (facebook.user.name) {
+		<div>"Welcome " facebook.user.name "!"</div>
 	}
-	<div>"Your ID is: " Facebook.user.id</div>
+	<div>"Your ID is: " facebook.user.id</div>
 } else {
-	<button>"Connect to Facebook"</button onclick=handler() {
-		Facebook.connect('177253448965438')
+	<button>"Connect to facebook"</button onclick=handler() {
+		facebook.connect('177253448965438')
 	}>
 }
 

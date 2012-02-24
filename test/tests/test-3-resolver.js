@@ -95,6 +95,10 @@ test('missing script tag attribute value is caught')
 		'}')
 	.expectError(/^Couldn't find a variable called "missing"/)
 
+test('variable names must start with a lowercase letter')
+	.code('var Foo = "qwe"')
+	.expectError(/^Variable names must start with/)
+
 // Boolean values
 // Null values
 // Handlers, Functions and Templates as expressions and being emitted
@@ -150,7 +154,6 @@ function test(name) {
 		}
 	}
 	function runTest(expectedErrorRe, expectedAST) {
-		var inputAST = parser.parse(tokenizer.tokenize(inputCode))
 		util.resetUniqueID() // TODO the unique IDs function should probably be on the resolver
 		var count = 1,
 			testName = '"'+name+'" ' + (count++ == 1 ? '' : count)
@@ -159,7 +162,8 @@ function test(name) {
 		}
 		module.exports[testName] = function(assert) {
 			try {
-				var output = resolver.resolve(inputAST).expressions
+				var inputAST = parser.parse(tokenizer.tokenize(inputCode)),
+					output = resolver.resolve(inputAST).expressions
 				assert.deepEqual(expectedAST, output)
 				assert.done()
 			} catch(e) {

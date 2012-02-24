@@ -95,6 +95,7 @@ var parseAliasDeclaration = astGenerator(function() {
 var parseVariableDeclaration = astGenerator(function() {
 	advance('keyword', 'var')
 	var name = advance('name').value
+	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
 	if (peek('symbol', '=')) {
 		advance('symbol', '=')
 		var initialValue = parseLiteralExpression(parseLiteralExpression)
