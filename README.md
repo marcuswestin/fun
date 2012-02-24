@@ -38,31 +38,23 @@ Drag and Drop
 
 	import mouse
 	
-	let dragStyle = {
-		width:      100,
-		height:     100,
-		background: red,
+	<div style={
 		position:   'absolute',
 		top:        mouse.y + 50,
-		left:       mouse.x + 50
-	}
-	<div style=dragStyle />
+		left:       mouse.x + 50,
+		width:      100,
+		height:     100,
+		background: 'red'
+	}/>
 
 Getting involved
 ----------------
 The best way to get involved is to start writing fun apps and using them. There are bugs and inefficiencies waiting to be discovered!
 
+If you want to hack on the source:
+
 	git clone https://marcuswestin@github.com/marcuswestin/fun.git
 	cd fun
+	sudo npm install
 	sudo npm link
-	make test
-
-See roadmap.md for plans that are anywhere from near to distant future.
-
-If you want to dig into the internals of fun, here are some good places to start:
-- language/parser.js takes a stream of tokens and convert them into an abstract syntax tree
-- language/compiler.js takes an abstract syntax tree and converts it into javascript that gets served to the client
-- lib/fin/js/client/api.js is the API the clients use for realtime state synchronization
-- lib/fin/js/server/Client.js is the code that represents a client on the server
-- lib/fin/js/server/Server.js is the code that persists data and publishes state changes
-- lib/fin/engines/*.js - these are the persistence and pubsub engines that drive the realtime data synchronization
+	make
