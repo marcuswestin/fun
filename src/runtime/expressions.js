@@ -23,8 +23,6 @@ var base = {
 	}
 }
 
-/* Atomic expressions
- ********************/
 var atomicBase = create(base, {
 	isAtomic:function() {
 		return true
@@ -37,6 +35,44 @@ var atomicBase = create(base, {
 	}
 })
 
+var variableValueBase = create(base, {
+	isAtomic:function() {
+		return this.evaluate().isAtomic()
+	},
+	hasVariableContent:function() {
+		return true
+	},
+	getType:function() {
+		return this.evaluate().getType()
+	},
+	asString:function() {
+		return this.evaluate().asString()
+	},
+	asLiteral:function() {
+		return this.evaluate().asLiteral()
+	},
+	equals:function(that) {
+		return this.evaluate().equals(that)
+	}
+})
+
+var mutableBase = create(variableValueBase, {
+	_onNewValue:function(newValue) {
+		if (newValue.hasVariableContent()) {
+			newValue.observe(bind(this, this._notifyObservers))
+		} else {
+			this._notifyObservers()
+		}
+	},
+	_notifyObservers:function() {
+		each(this.observers, function(observer) {
+			observer()
+		})
+	}
+})
+
+/* Atomic expressions
+ ********************/
 // Number values
 var Number = module.exports.Number = proto(atomicBase,
 	function(content) {
@@ -103,7 +139,7 @@ var NullValue = NullProto()
 
 /* Collection expressions
  ************************/
-var collectionBase = create(base, {
+var collectionBase = create(mutableBase, {
 	isAtomic:function() {
 		return false
 	},
@@ -114,6 +150,16 @@ var collectionBase = create(base, {
 	observe:function(callback) {
 		// TODO notify observers when items are added or removed
 		return callback()
+	},
+	set:function(chain, value) {
+		if (!chain || !chain.length) { throw new Error("Attempted setting collection property without a chain") }
+		if (chain.length == 0) {
+			// TODO unobserve old value.
+			this.content[chain[0]] = value
+		} else {
+			this.content[chain[0]].set(chain.slice(1), value)
+		}
+		this._onNewValue(value)
 	}
 })
 
@@ -172,26 +218,6 @@ var func = module.exports.Function = proto(atomicBase,
 
 /* Variable-value expressions: composites, variables, references
  ***************************************************************/
-var variableValueBase = create(base, {
-	isAtomic:function() {
-		return this.evaluate().isAtomic()
-	},
-	hasVariableContent:function() {
-		return true
-	},
-	getType:function() {
-		return this.evaluate().getType()
-	},
-	asString:function() {
-		return this.evaluate().asString()
-	},
-	asLiteral:function() {
-		return this.evaluate().asLiteral()
-	},
-	equals:function(that) {
-		return this.evaluate().equals(that)
-	}
-})
 
 var composite = module.exports.composite = proto(variableValueBase,
 	function(left, operator, right) {
@@ -245,7 +271,7 @@ function lessThanOrEquals(left, right) {
 /* Variable expressions
  **********************/
 var _unique = 1
-var variable = module.exports.variable = proto(variableValueBase,
+var variable = module.exports.variable = proto(mutableBase,
 	function(content) {
 		this.set(null, content)
 		this.observers = {}
@@ -272,32 +298,13 @@ var variable = module.exports.variable = proto(variableValueBase,
 		unobserve:function() {
 			delete this.observers[observationID]
 		},
-		set:function(chain, toValue) {
-			if (!chain) {
-				this.content = toValue
+		set:function(chain, value) {
+			if (!chain || !chain.length) {
+				this.content = value
 			} else {
-				var value = this.evaluate()
-				for (var i=0; i<chain.length-1; i++) {
-					if (value.hasVariableContent()) {
-						value.set(chain.slice(i), toValue)
-						return
-					}
-					if (value.isAtomic()) {
-						throw new Error('Attempted setting property of an atomic value')
-					}
-					value = value.content[chain[i]]
-					if (!value) {
-						throw new Error('Null dereference in set')
-					}
-				}
-				// TODO unobserve old content. Unobserving a dictionary should probably go through all its values and unobserve them
-				value.content[chain[chain.length-1]] = toValue
+				this.content.set(chain, value)
 			}
-			if (toValue.hasVariableContent()) {
-				toValue.observe(bind(this, this._notifyObservers))
-			} else {
-				this._notifyObservers()
-			}
+			this._onNewValue(value)
 		},
 		_notifyObservers:function() {
 			each(this.observers, function(observer, id) {
