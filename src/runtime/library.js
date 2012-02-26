@@ -86,50 +86,6 @@ var expressions = require('./expressions'),
 		else { _hookCallbacks[hookName] = [callback] }
 	}
 
-/* Values
- ********/
-	fun.set = function(variable, chain, toValue) {
-		var container = variable,
-			oldValue
-		if (!chain) {
-			oldValue = container.content
-			container.content = toValue
-		} else {
-			chain = chain.split('.')
-			var lastName = chain.pop(),
-				container = variable.evaluate(chain, false)
-			if (container === undefined) { return 'Null dereference in fun.set:evaluate' }
-			if (container.type != 'Dictionary') { return 'Attempted setting property of non-dictionary value' }
-			oldValue = container.content[lastName]
-			container.content[lastName] = toValue
-			
-			chain.push(lastName)
-		}
-		
-		// If a == { b:{ c:1, d:2 } } and we're setting a = 1, then we need to notify a, a.b, a.b.c and a.b.d that those values changed
-		notifyProperties(variable, chain, oldValue)
-
-		// If a == 1 and we're setting a = { b:{ c:1, d:2 } }, then we need to notify a, a.b, a.b.c, a.b.d that those values changed
-		notifyProperties(variable, chain, toValue)
-		
-		if (chain) { notify(variable, chain.join('.')) }
-		notify(variable, '')
-	}
-	var notifyProperties = function(variable, chain, value) {
-		if (!value || value.type != 'Dictionary') { return }
-		for (var property in value.content) {
-			var chainWithProperty = (chain || []).concat(property)
-			notify(variable, chainWithProperty.join('.'))
-			notifyProperties(variable, chainWithProperty, value.content[property])
-		}
-	}
-	var notify = function(variable, namespace) {
-		var observers = variable.observers[namespace]
-		for (var id in observers) { observers[id]() }
-	}
-	
-	fun.observe = function(variable, callback) { return variable.observe(callback) }
-	fun.unobserve = function(observationID) { return variable.unobserve(observationID) }
 /* DOM
  *****/
 	fun.attr = function(name, key, value) {
