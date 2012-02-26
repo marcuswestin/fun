@@ -33,7 +33,7 @@ test('sets and gets', function(assert) {
 	assert.equals(a.value(null), a.reference(bar, 'qweqweqwe'))
 	assert.equals(a.value(null), a.reference(bar, 'qweqweqwe.asdasd'))
 	
-	assert.equals(a.reference(bar, 'qweqweqwe.asdasd').evaluate(true).type, 'Null')
+	assert.equals(a.reference(bar, 'qweqweqwe.asdasd').evaluate(true).getType(), 'Null')
 })
 
 test('observe value', function(assert) {
@@ -93,7 +93,7 @@ var observeExpect = function(variable, chain, assert, values) {
 	variable.observe(function() {
 		if (!values[0]) { return }
 		var logic = variable.equals(values[0])
-		if (!logic.content) { return }
+		if (!logic.getContent()) { return }
 		values.shift()
 		assert.blocks.subtract()
 	})
@@ -118,7 +118,7 @@ function test(name, fn) {
 		}
 		assert.equals = function(val1, val2) {
 			if (fun.expressions.base.isPrototypeOf(val1) || fun.expressions.base.isPrototypeOf(val2)) {
-				return this.ok(val1.equals(val2).content)
+				return this.ok(val1.equals(val2).getContent())
 			} else {
 				return this.deepEqual(val1, val2)
 			}

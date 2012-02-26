@@ -5,8 +5,8 @@ var twitter = {
 			var script = document.createElement('script'),
 				callbackID = 'callback_'+new Date().getTime(),
 				query = []
-			for (var key in params.content) {
-				query.push(encodeURIComponent(key)+"="+encodeURIComponent(params.content[key].evaluate()))
+			for (var key in params.getContent()) {
+				query.push(encodeURIComponent(key)+"="+encodeURIComponent(params.getContent()[key].evaluate()))
 			}
 			query.push('callback='+callbackID)
 			window[callbackID] = function(response) {

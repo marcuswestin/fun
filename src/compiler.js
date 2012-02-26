@@ -249,7 +249,7 @@ var compileIfStatement = function(blockCompileFn, context, ast) {
 		'	if ({{ lastOutcome }} && !{{ STATEMENT_VALUE }}.equals({{ lastOutcome }})) { return }',
 		'	{{ lastOutcome }} = {{ STATEMENT_VALUE }}',
 		'	fun.destroyHook({{ hookName }})',
-		'	if({{ lastOutcome }}.evaluate().content) { ifBranch() } else { elseBranch() }',
+		'	if({{ lastOutcome }}.getContent()) { ifBranch() } else { elseBranch() }',
 		'})(',
 		'	function ifBranch(){',
 		'		{{ ifCode }}',

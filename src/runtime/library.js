@@ -79,7 +79,7 @@ var expressions = require('./expressions'),
 	// fun.style(hook, 'color', '#fff')
 	fun.setStyle = function(hookName, key, value) {
 		var rawValue = value.evaluate().asString()
-		if (value.type == 'Number' || rawValue.match(/^\d+$/)) { rawValue = rawValue + 'px' }
+		if (value.getType() == 'Number' || rawValue.match(/^\d+$/)) { rawValue = rawValue + 'px' }
 		if (key == 'float') { key = 'cssFloat' }
 		_hooks[hookName].style[key] = rawValue
 	}
@@ -87,7 +87,7 @@ var expressions = require('./expressions'),
 	fun.reflectStyles = function(hookName, values) {
 		if (values.type != 'reference')
 		// TODO detect when the dictionary mutates (values added and removed)
-		each(values.content, function(val, key) {
+		each(values.getContent(), function(val, key) {
 			val.observe(function() {
 				fun.setStyle(hookName, key, val)
 			})
