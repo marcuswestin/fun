@@ -44,3 +44,17 @@ A reference is an expression and a chain
 Value types
 -----------
 Text, Number, Logic, Color, Dictionary, List, Template, Handler, Function (Enum, Interface?)
+
+Expression observations
+-----------------------
+In Fun, expressions (like `"Hello " user.name` or `a+b`) can change value. Fun "observes" its expressions in order to react when their values change.
+
+An observed expression notifies its observer once immediately upon observation, and then again whenever its value changes.
+
+Which expressions can change their value? Those that have "variable content". Atomic expressions (Text, Number, Null) are immutable and never have variable content. Collection values (Dictionary, List) and variables are mutable - therefore expressions involving collections or variables have variable content, such as collection literals, references and composite expressions (like `{ foo:"bar" }`, `foo.bar.cat` and `foo + 2` respectively).
+
+Observing an expression that does not have variable content simply notifies its observer exactly once.
+
+When an expression is no longer needed it needs to be "dismissed". For example, when an if/else statement's conditional expression changes from the if branch to the else branch the expressions in the if branch are no longer needed and need to be dismissed. Dismissing an expression simply removes the observer from the expression's list of observers.
+
+For template, handler and function statements dismissals are done automatically. If you use inline <script> you need to dismiss any expression observations manually.
