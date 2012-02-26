@@ -359,23 +359,6 @@ var _commaPrefixJoin = function(arr, fn) {
 	return ', ' + map(arr, runtimeValue).join(', ')
 }
 
-var compileMutationItemCreation = function(ast) {
-	var value = ast.value
-	// get the item creation property values -> fun.create({ prop1:val1, prop2:val2, ... })
-	//  TODO: do we need to wait for promises for the values that are itemProperties?
-	var propertiesCode = pick(value.properties.content, function(prop) {
-		return prop.key + ':' + runtimeValue(prop.value)
-	}).join(',')
-	
-	value.promiseName = name('ITEM_CREATION_PROMISE')
-	return code(
-		'var {{ promiseName }} = fun.create({ {{ propertiesCode }} })',
-		{
-			promiseName: value.promiseName,
-			propertiesCode: propertiesCode
-		})
-}
-
 /* Functions
  ***********/
 var compileFunctionDefinition = function(ast) {

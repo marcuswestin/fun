@@ -35,24 +35,6 @@ var expressions = require('./expressions'),
 		})
 	}
 	
-	var _deepObserve = function(value, callback) {
-		value.observe(function() {
-			callback()
-			var evaluated = value.evaluate()
-			if (evaluated.isAtomic()) { return }
-			evaluated.observe(function() {
-				each(evaluated.content, function(subValue) {
-					_deepObserve(subValue, callback)
-				})
-			})
-		})
-	}
-	
-	var namespace = function(reference) {
-		if (reference.value) { return [reference.value.name].concat(reference.chain).join('.') }
-		else { return reference.chain.join('.') }
-	}
-
 /* Hooks
  *******/
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
