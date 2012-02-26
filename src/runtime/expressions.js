@@ -67,6 +67,12 @@ var mutableBase = create(variableValueBase, {
 	isMutable:function() {
 		return true
 	},
+	observe:function(callback) {
+		var uniqueID = 'u'+_unique++
+		this.observers[uniqueID] = callback
+		callback()
+		return uniqueID
+	},
 	_onNewValue:function(newValue) {
 		if (newValue.hasVariableContent()) {
 			newValue.observe(bind(this, this._notifyObservers))
@@ -99,6 +105,7 @@ var collectionBase = create(mutableBase, {
 		if (chain.length == 1) {
 			// TODO unobserve old value.
 			this.content[prop] = value
+			this._onNewValue(value)
 		} else if (!this.content[prop]) {
 			throw new Error('Attempted to set the value of a null property')
 		} else if (!this.content[prop].isMutable()) {
@@ -106,7 +113,6 @@ var collectionBase = create(mutableBase, {
 		} else {
 			this.content[prop].set(chain.slice(1), value)
 		}
-		this._onNewValue(value)
 	}
 })
 
@@ -273,12 +279,6 @@ var variable = module.exports.variable = proto(mutableBase,
 			}
 			this._onNewValue(value)
 		},
-		observe:function(callback) {
-			var uniqueID = 'u'+_unique++
-			this.observers[uniqueID] = callback
-			callback()
-			return uniqueID
-		},
 		_notifyObservers:function() {
 			each(this.observers, function(observer, id) {
 				observer()
@@ -328,9 +328,12 @@ var reference = module.exports.reference = proto(variableValueBase,
 
 var Dictionary = module.exports.Dictionary = proto(collectionBase,
 	function(content) {
-		// TODO content type check
 		if (typeof content != 'object' || isArray(content) || content == null) { TypeMismatch }
-		this.content = content
+		this.observers = {}
+		this.content = {}
+		each(content, bind(this, function(val, key) {
+			 this.set([key], val)
+		}))
 	}, {
 		type:'Dictionary',
 		asLiteral:function() {
@@ -364,7 +367,11 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 var List = module.exports.List = proto(collectionBase,
 	function(content) {
 		if (!isArray(content)) { TypeMismatch }
-		this.content = content
+		this.observers = {}
+		this.content = []
+		each(content, bind(this, function(val, key) {
+			 this.set([key], val)
+		}))
 	}, {
 		type:'List',
 		asLiteral:function() {
