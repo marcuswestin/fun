@@ -5,34 +5,41 @@ var proto = require('std/proto'),
 	each = require('std/each'),
 	bind = require('std/bind')
 
-var base = {
-	getType:function() {
-		return this.getType()
-	},
-	inspect:function() {
-		return '<'+this.getType()+' ' + this.asLiteral() + '>'
-	},
+/* Value bases
+ *************/
+var base = module.exports.base = {
 	observe:function(callback) {
 		callback()
+	}
+}
+
+var constantAtomicBase = create(base, {
+	inspect:function() {
+		return '<'+this.type+' ' + this.asLiteral() + '>'
+	},
+	getType:function() {
+		return this.type
 	},
 	evaluate:function() {
 		return this
 	},
-	hasVariableContent:function() {
-		return false
-	}
-}
-
-var atomicBase = create(base, {
 	isAtomic:function() {
 		return true
+	},
+	isMutable:function() {
+		return false
 	},
 	asString:function() {
 		return this.content.toString()
 	},
 	equals:function(that) {
-		return Logic(this.getType() == that.getType() && this.content == that.content)
-	}
+		that = that.evaluate()
+		return this.getType() == that.getType() && this.content == that.content ? Yes : No
+	},
+	hasVariableContent:function() {
+		return false
+	},
+	
 })
 
 var variableValueBase = create(base, {
@@ -57,6 +64,9 @@ var variableValueBase = create(base, {
 })
 
 var mutableBase = create(variableValueBase, {
+	isMutable:function() {
+		return true
+	},
 	_onNewValue:function(newValue) {
 		if (newValue.hasVariableContent()) {
 			newValue.observe(bind(this, this._notifyObservers))
@@ -71,10 +81,38 @@ var mutableBase = create(variableValueBase, {
 	}
 })
 
-/* Atomic expressions
- ********************/
-// Number values
-var Number = module.exports.Number = proto(atomicBase,
+var collectionBase = create(mutableBase, {
+	isAtomic:function() {
+		return false
+	},
+	getType:function() {
+		return this.type
+	},
+	evaluate:function() {
+		return this
+	},
+	set:function(chain, value) {
+		if (!chain || !chain.length) {
+			throw new Error("Attempted setting collection property without a chain")
+		}
+		var prop = chain[0]
+		if (chain.length == 1) {
+			// TODO unobserve old value.
+			this.content[prop] = value
+		} else if (!this.content[prop]) {
+			throw new Error('Attempted to set the value of a null property')
+		} else if (!this.content[prop].isMutable()) {
+			throw new Error("Attempted to set the value of a non-mutable property")
+		} else {
+			this.content[prop].set(chain.slice(1), value)
+		}
+		this._onNewValue(value)
+	}
+})
+
+/* Atomic, immutable expressions
+ *******************************/
+var Number = module.exports.Number = proto(constantAtomicBase,
 	function(content) {
 		if (typeof content != 'number') { TypeMismatch }
 		this.content = content
@@ -86,8 +124,7 @@ var Number = module.exports.Number = proto(atomicBase,
 	}
 )
 
-// Text values
-var Text = module.exports.Text = proto(atomicBase,
+var Text = module.exports.Text = proto(constantAtomicBase,
 	function(content) {
 		if (typeof content != 'string') { TypeMismatch }
 		this.content = content
@@ -99,13 +136,12 @@ var Text = module.exports.Text = proto(atomicBase,
 	}
 )
 
-// Logic values
 var Logic = module.exports.Logic = function(content) {
 	if (typeof content != 'boolean') { TypeMismatch }
-	return content ? YesValue : NoValue
+	return content ? Yes : No
 }
 
-var LogicProto = proto(atomicBase,
+var LogicProto = proto(constantAtomicBase,
 	function(content) {
 		this.content = content
 	}, {
@@ -116,95 +152,28 @@ var LogicProto = proto(atomicBase,
 	}
 )
 
-var YesValue = LogicProto(true),
-	NoValue = LogicProto(false)
+var Yes = module.exports.Yes = LogicProto(true),
+	No = module.exports.No = LogicProto(false)
 
-// Null values
 module.exports.Null = function() {
 	return NullValue
 }
 
-var NullProto = proto(atomicBase,
+var NullProto = proto(constantAtomicBase,
 	function() {
 		if (arguments.length) { TypeMismatch }
 	}, {
 		type:'Null',
 		inspect:function() { return '<Null>' },
 		asString:function() { return '' },
-		equals:function(that) { return falseValue }
+		equals:function(that) { return that.getType() == 'Null' ? Yes : No },
+		asLiteral:function() { return 'null' }
 	}
 )
 
 var NullValue = NullProto()
 
-/* Collection expressions
- ************************/
-var collectionBase = create(mutableBase, {
-	isAtomic:function() {
-		return false
-	},
-	equals:function(that) {
-		console.log("TODO implement collection equality")
-		return falseValue
-	},
-	observe:function(callback) {
-		// TODO notify observers when items are added or removed
-		return callback()
-	},
-	set:function(chain, value) {
-		if (!chain || !chain.length) { throw new Error("Attempted setting collection property without a chain") }
-		if (chain.length == 0) {
-			// TODO unobserve old value.
-			this.content[chain[0]] = value
-		} else {
-			this.content[chain[0]].set(chain.slice(1), value)
-		}
-		this._onNewValue(value)
-	}
-})
-
-var Dictionary = module.exports.Dictionary = proto(collectionBase,
-	function(content) {
-		// TODO content type check
-		if (typeof content != 'object' || isArray(content) || content == null) { TypeMismatch }
-		this.content = content
-	}, {
-		type:'Dictionary',
-		asString:_dictionaryAsLiteral,
-		asLiteral:_dictionaryAsLiteral,
-		iterate:_iterateFunction
-	}
-)
-function _dictionaryAsLiteral() {
-	return '{ '+map(this.content, function(value, name) {
-		return name+':'+value.asLiteral()
-	}).join(', ')+' }'
-}
-
-var List = module.exports.List = proto(collectionBase,
-	function(content) {
-		if (!isArray(content)) { TypeMismatch }
-		this.content = content
-	}, {
-		type:'List',
-		asString:_listAsLiteral,
-		asLiteral:_listAsLiteral,
-		iterate:_iterateFunction
-	}
-)
-function _listAsLiteral() {
-	return '['+map(this.content, function(value) {
-		return value.asLiteral()
-	}).join(', ')+']'
-}
-
-function _iterateFunction(yieldFn) {
-	each(this.content, yieldFn)
-}
-
-/* Function, handler & template expressions
- ******************************************/
-var func = module.exports.Function = proto(atomicBase,
+var func = module.exports.Function = proto(constantAtomicBase,
 	function(content) {
 		if (typeof content != 'function') { TypeMismatch }
 		this.content = content
@@ -216,9 +185,9 @@ var func = module.exports.Function = proto(atomicBase,
 	}
 )
 
-/* Variable-value expressions: composites, variables, references
- ***************************************************************/
 
+/* Variable value expressions
+ ****************************/
 var composite = module.exports.composite = proto(variableValueBase,
 	function(left, operator, right) {
 		if (typeof operator != 'string') { TypeMismatch }
@@ -254,7 +223,6 @@ function add(left, right) {
 }
 
 function equals(left, right) {
-	// TODO Typecheck?
 	return left.equals(right)
 }
 
@@ -268,17 +236,20 @@ function lessThanOrEquals(left, right) {
 	return Logic(left.content <= left.content)
 }
 
-/* Variable expressions
- **********************/
+/* Variable and mutable value expressions
+ ****************************************/
 var _unique = 1
 var variable = module.exports.variable = proto(mutableBase,
 	function(content) {
-		this.set(null, content)
 		this.observers = {}
+		this.set(null, content)
 	}, {
-		type:'Variable',
+		type:'variable',
 		evaluate:function() {
 			return this.content.evaluate()
+		},
+		inspect:function() {
+			return '<Variable '+this.content.inspect()+'>'
 		},
 		asString:function() {
 			return this.content.asString()
@@ -289,22 +260,24 @@ var variable = module.exports.variable = proto(mutableBase,
 		equals:function(that) {
 			return this.content.equals(that)
 		},
-		observe:function(callback) {
-			var uniqueID = 'u'+_unique++
-			this.observers[uniqueID] = callback
-			callback()
-			return uniqueID
-		},
 		unobserve:function() {
 			delete this.observers[observationID]
 		},
 		set:function(chain, value) {
 			if (!chain || !chain.length) {
 				this.content = value
+			} else if (!this.content.isMutable()) {
+				throw new Error("Attempted to set the value of a non-mutable property")
 			} else {
 				this.content.set(chain, value)
 			}
 			this._onNewValue(value)
+		},
+		observe:function(callback) {
+			var uniqueID = 'u'+_unique++
+			this.observers[uniqueID] = callback
+			callback()
+			return uniqueID
 		},
 		_notifyObservers:function() {
 			each(this.observers, function(observer, id) {
@@ -314,21 +287,29 @@ var variable = module.exports.variable = proto(mutableBase,
 	}
 )
 
-/* Reference expressions
- ***********************/
 var reference = module.exports.reference = proto(variableValueBase,
 	function(content, chain) {
 		this.content = content
 		this.chain = chain
 	}, {
-		type:'Reference',
+		type:'reference',
 		getType:function() {
 			return this.evaluate().getType()
 		},
+		inspect:function() {
+			return '<Reference '+this.chain.join('.')+' '+this.content.inspect()+'>'
+		},
 		evaluate:function() {
-			var value = this.content
+			var value = this.content.evaluate()
 			for (var i=0; i<this.chain.length; i++) {
-				value = value.evaluate().content[this.chain[i]]
+				var prop = this.chain[i]
+				if (value.isAtomic()) {
+					return NullValue
+				}
+				if (!value.content[prop]) {
+					return NullValue
+				}
+				value = value.content[prop].evaluate()
 			}
 			return value
 		},
@@ -338,10 +319,85 @@ var reference = module.exports.reference = proto(variableValueBase,
 		set:function(chain, toValue) {
 			chain = (this.chain && chain) ? (this.chain.concat(chain)) : (this.chain || chain)
 			return this.content.set(chain, toValue)
+		},
+		equals:function(that) {
+			return this.evaluate().equals(that)
 		}
 	}
 )
 
+var Dictionary = module.exports.Dictionary = proto(collectionBase,
+	function(content) {
+		// TODO content type check
+		if (typeof content != 'object' || isArray(content) || content == null) { TypeMismatch }
+		this.content = content
+	}, {
+		type:'Dictionary',
+		asLiteral:function() {
+			return '{ '+map(this.content, function(val, key) { return key+':'+val.asLiteral() }).join(', ')+' }'
+		},
+		asString:function() {
+			return this.asLiteral()
+		},
+		inspect:function() {
+			return '<Dictionary { '+map(this.content, function(val, key) { return key+':'+val.inspect() }).join(', ')+' }>'
+		},
+		equals:function(that) {
+			that = that.evaluate()
+			if (that.type != this.type) {
+				return No
+			}
+			for (var key in this.content) {
+				if (that.content[key] && that.content[key].equals(this.content[key])) { continue }
+				return No
+			}
+			for (var key in that.content) {
+				if (this.content[key] && this.content[key].equals(that.content[key])) { continue }
+				return No
+			}
+			return Yes
+		},
+		iterate:__interimIterationFunction
+	}
+)
+
+var List = module.exports.List = proto(collectionBase,
+	function(content) {
+		if (!isArray(content)) { TypeMismatch }
+		this.content = content
+	}, {
+		type:'List',
+		asLiteral:function() {
+			return '[ '+map(this.content, function(val) { return val.asLiteral() }).join(' ')+' ]'
+		},
+		asString:function() {
+			return this.asLiteral()
+		},
+		inspect:function() {
+			return '<List [ '+map(this.content, function(val) { return val.inspect() }).join(' ')+' ]>'
+		},
+		equals:function(that) {
+			that = that.evaluate()
+			if (that.type != this.type) {
+				return No
+			}
+			if (that.content.length != this.content.length) {
+				return No
+			}
+			for (var i=0; i<this.content.length; i++) {
+				if (that.content[i].equals(this.content[key])) { continue }
+				return No
+			}
+			return Yes
+		},
+		iterate:__interimIterationFunction
+	}
+)
+
+function __interimIterationFunction(yieldFn) {
+	console.log("Figure out how to do iteration properly")
+	each(this.content, yieldFn)
+}
 
 /* Util
  ******/

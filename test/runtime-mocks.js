@@ -1,12 +1,16 @@
-var mocks = require('./ast-mocks'),
-	expressions = require('../src/runtime/expressions')
+var expressions = require('../src/runtime/expressions'),
+	proto = require('std/proto')
 
-var a = module.exports = Object.create(mocks)
-
-a.variable = function variable(initialContent) {
-	return expressions.variable(a.value(initialContent))
+module.exports = {
+	variable:function variable(initialContent) {
+		return expressions.variable(expressions.fromJsValue(initialContent))
+	},
+	value:expressions.fromJsValue,
+	composite:function(left, operator, right) {
+		return expressions.composite(expressions.fromJsValue(left), operator, expressions.fromJsValue(right))
+	},
+	reference:function(value, chainStr) {
+		return expressions.reference(value, chainStr.split('.'))
+	},
+	null:expressions.Null
 }
-
-a.value = expressions.fromJsValue
-
-a.composite = expressions.composite

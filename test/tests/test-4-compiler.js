@@ -40,9 +40,9 @@ test('object literals').code(
 	.textIs('#output', '{ nested:{ bar:1 } }{ bar:1 }1')
 
 test('divs follow mouse').code(
-	'import Mouse',
-	'<div id="output1" style={ position:"absolute", top:Mouse.y, left:Mouse.x }/>',
-	'<div id="output2" style={ position:"absolute", top:Mouse.y + 50, left:Mouse.x + 50 }/>'
+	'import mouse',
+	'<div id="output1" style={ position:"absolute", top:mouse.y, left:mouse.x }/>',
+	'<div id="output2" style={ position:"absolute", top:mouse.y + 50, left:mouse.x + 50 }/>'
 	)
 	.moveMouse(100, 100)
 	.positionIs('#output1', 100, 100)
@@ -63,7 +63,7 @@ test('variable declaration inside div').code(
 	'</div>')
 	.textIs('#output', 'cat')
 	
-test('changing object literals').code(
+test('changing object literals - TODO FIX THIS').code(
 	'var foo = { a:1 }',
 	'<div id="output">',
 	'	{ foo: { a:foo.a } }',
@@ -133,6 +133,16 @@ test('function returns closure value')
 		"var fun = function() { return bar }",
 		"<div id='output'>fun()</div>")
 	.textIs('#output', "qwe")
+
+test('mutation of variable returned from closure propegates')
+	.code(
+		'var foo = "ASD"',
+		'var fun = function() { return foo }',
+		'<div id="output">fun()</div onclick=handler() { foo.set("QWE") }>'
+	)
+	.textIs('#output', 'ASD')
+	.click('#output')
+	.textIs('#output', 'QWE')
 
 /* Util
  ******/
