@@ -74,6 +74,27 @@ test('evaluate composite expressions', function(assert) {
 	assert.equals(a.value(false), v3.equals(a.composite(v1, '+', v1)))
 })
 
+test('observing and dismissing', function(assert) {
+	var v1 = a.variable(1)
+	var observationID = observeExpect(v1, null, assert, [1,2], true)
+	v1.set(null, a.value(2))
+	assert.throws(function() {
+		// We expected exactly 2 observation callbacks
+		v1.set(null, a.value(3))
+	})
+	v1.dismiss(observationID)
+	// Should no longer throw, since the observation was dismissed
+	v1.set(null, a.value(4))
+	
+	var v2 = a.variable('a')
+	var d2 = a.value({ v2:v2 })
+	var expectedCalls = 3
+	d2.observe(function() { if (!(expectedCalls--)) { throw new Error("Expected only three calls") } }) // Call 1
+	v2.set(null, a.value('b')) // Call 2
+	d2.set(['v2'], a.value('new value that should automatically dismiss v2 observation')) // Call 3
+	v2.set(null, a.value('c')) // Should not result in call 4
+})
+
 var q = function(val) { return JSON.stringify(val) }
 
 var evaluate = function(value, nameString) {
@@ -85,13 +106,16 @@ var evaluate = function(value, nameString) {
 }
 
 var waitingFor = []
-var observeExpect = function(variable, chain, assert, values) {
+var observeExpect = function(variable, chain, assert, values, throwOnExtraMutations) {
 	assert.blocks.add(values.length)
 	values = map(values, a.value)
 	waitingFor.push({ original:map(values, a.value), now:values })
 	if (chain) { variable = a.reference(variable, chain) }
-	variable.observe(function() {
-		if (!values[0]) { return }
+	return variable.observe(function() {
+		if (!values[0]) {
+			if (throwOnExtraMutations) { throw new Error("Received unexpected mutation") }
+			return
+		}
 		var logic = variable.equals(values[0])
 		if (!logic.getContent()) { return }
 		values.shift()

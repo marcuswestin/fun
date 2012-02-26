@@ -41,6 +41,9 @@ var constantAtomicBase = create(base, {
 	},
 	getContent:function() {
 		return this._content
+	},
+	dismiss:function(id) {
+		// Empty
 	}
 })
 
@@ -78,9 +81,18 @@ var mutableBase = create(variableValueBase, {
 		callback()
 		return uniqueID
 	},
-	_onNewValue:function(newValue) {
+	dismiss:function(uniqueID) {
+		if (!this._observers[uniqueID]) {
+			throw new Error("Tried to dismiss an observer by incorrect ID")
+		}
+		delete this._observers[uniqueID]
+	},
+	_onNewValue:function(oldValue, observationId, newValue) {
+		if (oldValue && oldValue.hasVariableContent()) {
+			oldValue.dismiss(observationId)
+		}
 		if (newValue.hasVariableContent()) {
-			newValue.observe(bind(this, this._notifyObservers))
+			return newValue.observe(bind(this, this._notifyObservers))
 		} else {
 			this._notifyObservers()
 		}
@@ -108,9 +120,9 @@ var collectionBase = create(mutableBase, {
 		}
 		var prop = chain[0]
 		if (chain.length == 1) {
-			// TODO unobserve old value.
+			var oldValue = this._content[prop]
 			this._content[prop] = value
-			this._onNewValue(value)
+			this._observationIDs[prop] = this._onNewValue(oldValue, this._observationIDs[prop], value)
 		} else if (!this._content[prop]) {
 			throw new Error('Attempted to set the value of a null property')
 		} else if (!this._content[prop].isMutable()) {
@@ -209,7 +221,7 @@ var composite = module.exports.composite = proto(variableValueBase,
 	}, {
 		_type:'Composite',
 		evaluate:function() {
-			return operators[this.operator](this.left.evaluate(), this.right.evaluate())
+			return operators[this.operator](this.left, this.right)
 		},
 		observe:function(callback) {
 			// TODO store observation IDs
@@ -271,18 +283,16 @@ var variable = module.exports.variable = proto(mutableBase,
 		equals:function(that) {
 			return this._content.equals(that)
 		},
-		unobserve:function() {
-			delete this._observers[observationID]
-		},
 		set:function(chain, value) {
 			if (!chain || !chain.length) {
+				var oldValue = this._content
 				this._content = value
+				this._observationID = this._onNewValue(oldValue, this._observationID, value)
 			} else if (!this._content.isMutable()) {
 				throw new Error("Attempted to set the value of a non-mutable property")
 			} else {
 				this._content.set(chain, value)
 			}
-			this._onNewValue(value)
 		},
 		_notifyObservers:function() {
 			each(this._observers, function(observer, id) {
@@ -335,6 +345,7 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 	function(content) {
 		if (typeof content != 'object' || isArray(content) || content == null) { TypeMismatch }
 		this._observers = {}
+		this._observationIDs = {}
 		this._content = {}
 		each(content, bind(this, function(val, key) {
 			 this.set([key], val)
@@ -373,6 +384,7 @@ var List = module.exports.List = proto(collectionBase,
 	function(content) {
 		if (!isArray(content)) { TypeMismatch }
 		this._observers = {}
+		this._observationIDs = {}
 		this._content = []
 		each(content, bind(this, function(val, key) {
 			 this.set([key], val)
