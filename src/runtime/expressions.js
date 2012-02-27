@@ -10,6 +10,9 @@ var proto = require('std/proto'),
 var base = module.exports.base = {
 	observe:function(callback) {
 		callback()
+	},
+	asJSON:function() {
+		return this.asLiteral() // Right now all expressions 
 	}
 }
 
@@ -353,13 +356,13 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 	}, {
 		_type:'Dictionary',
 		asLiteral:function() {
-			return '{ '+map(this._content, function(val, key) { return key+':'+val.asLiteral() }).join(', ')+' }'
+			return '{ '+map(this._content, function(val, key) { return '"'+key+'":'+val.asLiteral() }).join(', ')+' }'
 		},
 		asString:function() {
 			return this.asLiteral()
 		},
 		inspect:function() {
-			return '<Dictionary { '+map(this._content, function(val, key) { return key+':'+val.inspect() }).join(', ')+' }>'
+			return '<Dictionary { '+map(this._content, function(val, key) { return '"'+key+'":'+val.inspect() }).join(', ')+' }>'
 		},
 		equals:function(that) {
 			that = that.evaluate()
@@ -425,7 +428,7 @@ function __interimIterationFunction(yieldFn) {
 
 /* Util
  ******/
-var fromJsValue = module.exports.fromJsValue = function(val) {
+var fromJsValue = module.exports.fromJsValue = module.exports.value = function(val) {
 	switch (typeof val) {
 		case 'string': return Text(val)
 		case 'number': return Number(val)
@@ -445,4 +448,10 @@ var fromJsValue = module.exports.fromJsValue = function(val) {
 			})
 			return Dictionary(content)
 	}
+}
+
+module.exports.fromJSON = function(json) {
+	try { var jsValue = JSON.parse(json) }
+	catch(e) { return NullValue }
+	return fromJsValue(jsValue)
 }
