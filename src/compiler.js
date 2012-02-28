@@ -427,6 +427,14 @@ var compileMutationStatement = function(ast) {
 	})
 }
 
+var compileInvocation = function(context, ast) {
+	return inlineCode('fun.invoke({{ operand }}, {{ arguments }}, {{ hookName }})', {
+		operand:runtimeValue(ast.operand),
+		arguments:'['+map(ast.arguments, function(arg) { return runtimeValue(arg) }).join(',')+']',
+		hookName:q(context && context.hookName ? context.hookName : '')
+	})
+}
+
 var namespace = function(reference) {
 	return q([reference.value.name].concat(reference.chain).join('.'))
 }
@@ -495,12 +503,7 @@ var runtimeValue = function(ast) {
 				operator:ast.operator,
 				right:runtimeValue(ast.right)
 			})
-		case 'INVOCATION':
-			return inlineCode('{{ function }}.evaluate().invoke({{ hookName }}, {{ arguments }})', {
-				function:runtimeValue(ast.operand),
-				arguments:'['+map(ast.arguments, function(arg) { return runtimeValue(arg) }).join(',')+']',
-				hookName:null // TODO Need to pass in context for hookName 
-			})
+		case 'INVOCATION':    return compileInvocation(null, ast)
 		case 'FUNCTION':      return compileFunctionDefinition(ast)
 		
 		default:
