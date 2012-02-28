@@ -238,7 +238,9 @@ var operators = {
 	'+': add,
 	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
 	'>=': greaterThanOrEquals,
-	'<=': lessThanOrEquals
+	'<=': lessThanOrEquals,
+	'<': lessThan,
+	'>': greaterThan
 }
 
 function add(left, right) {
@@ -259,7 +261,17 @@ function greaterThanOrEquals(left, right) {
 
 function lessThanOrEquals(left, right) {
 	// TODO Typecheck?
-	return Logic(left.getContent() <= left.getContent())
+	return Logic(left.getContent() <= right.getContent())
+}
+
+function lessThan(left, right) {
+	// TODO Typecheck?
+	return Logic(left.getContent() < right.getContent())
+}
+
+function greaterThan(left, right) {
+	// TODO Typecheck?
+	return Logic(left.getContent() > right.getContent())
 }
 
 /* Variable and mutable value expressions
