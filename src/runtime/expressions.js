@@ -428,13 +428,13 @@ var List = module.exports.List = proto(collectionBase,
 	}, {
 		_type:'List',
 		asLiteral:function() {
-			return '[ '+map(this._content, function(val) { return val.asLiteral() }).join(' ')+' ]'
+			return '[ '+map(this._content, function(val) { return val.asLiteral() }).join(', ')+' ]'
 		},
 		asString:function() {
 			return this.asLiteral()
 		},
 		inspect:function() {
-			return '<List [ '+map(this._content, function(val) { return val.inspect() }).join(' ')+' ]>'
+			return '<List [ '+map(this._content, function(val) { return val.inspect() }).join(', ')+' ]>'
 		},
 		equals:function(that) {
 			that = that.evaluate()
