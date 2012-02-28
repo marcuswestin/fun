@@ -4,8 +4,7 @@ var localstorage = {
 			var key = name.getContent(),
 				persistedJSON = localStorage.getItem(key)
 			
-			if (persistedJSON) {
-				// Ghetto
+			if (persistedJSON && persistedJSON != 'null') {
 				variable.set(null, fun.expressions.fromJSON(persistedJSON))
 			}
 			
