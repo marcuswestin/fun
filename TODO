@@ -1,18 +1,43 @@
-TODO app
-	List of tasks
-	Loop that emits
-	Mutate list (push)
-	Store task list locally
-twitter app
+Make method invocations generic.
+foo.bar.cat() should translate into invocation(reference(foo, 'bar'), 'cat'). Invocation() needs to check that cat is a function that exists on reference(foo, 'bar').evaluate() - if not it should break execution for handlers and show a warning for emitting statements. This lets us define methods on values such as List#push.
 
-Observe collection add and remove mutation
-Remove observations
-Handler arguments
 
-WANTS
-	function that interpolates values
-	function that persists variable locally
-	color type
-	for loop over static list ['one', 'two', 'three']
-	for loop over twitter stream with jsonp
-	function that persists variable remotely
+Enable variable declarations without assignments
+# var foo
+# var bar
+
+
+
+Enable copying the current value of a variable. This expressions essentially evaluates to the variable expressions content value.
+# var foo = "foo"
+# var bar = "bar"
+# <button>"clickety"</button onclick=handler() {
+# 	foo.set(bar.copy())
+# }>
+
+
+
+# var things = []
+# for (thing in things) {
+# 	thing
+# }
+# <button>"clickety"</button onclick=handler() {
+# 	things.push({ foo:'bar' })
+# }>
+
+
+
+Better syntax for assigning a value to a variable
+# var foo = "foo"
+# var bar = "bar"
+# <button>"clickety"</button onclick=handler() {
+#	foo = bar.copy()
+#	bar.set('qwe')
+# }>
+
+
+
+# var foo = { bar:'cat' }
+<button>"clickety"</button onclick=handler() {
+	foo.qwe = 'rty'
+}>
