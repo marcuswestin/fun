@@ -37,7 +37,7 @@ test('object literals').code(
 	'var foo = { nested: { bar:1 } }',
 	'<div id="output">foo foo.nested foo.nested.bar</div>'
 	)
-	.textIs('#output', '{ nested:{ bar:1 } }{ bar:1 }1')
+	.textIs('#output', '{ "nested":{ "bar":1 } }{ "bar":1 }1')
 
 test('divs follow mouse').code(
 	'import mouse',
@@ -71,9 +71,9 @@ test('changing object literals - TODO FIX THIS').code(
 	'	foo',
 	'</div onclick=handler(){ foo.a.set(2) }>'
 	)
-	.textIs('#output', '{ foo:{ a:1 } }{ a:1 }{ a:1 }')
+	.textIs('#output', '{ "foo":{ "a":1 } }{ "a":1 }{ "a":1 }')
 	.click('#output')
-	.textIs('#output', '{ foo:{ a:2 } }{ a:2 }{ a:2 }')
+	.textIs('#output', '{ "foo":{ "a":2 } }{ "a":2 }{ "a":2 }')
 
 test('null values').code(
 	'var foo=null',
