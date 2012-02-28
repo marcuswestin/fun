@@ -77,7 +77,11 @@ var resolve = function(context, ast) {
  ****************/
 var resolveVariableDeclaration = function(context, ast) {
 	declare(context, ast, ast.name, ast)
-	ast.initialValue = resolve(context, ast.initialValue)
+	if (ast.initialValue) {
+		ast.initialValue = resolve(context, ast.initialValue)
+	} else {
+		ast.initialValue = { type:'NULL_LITERAL', value:null }
+	}
 	return ast
 }
 
