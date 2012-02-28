@@ -327,6 +327,9 @@ var variable = module.exports.variable = proto(mutableBase,
 				this._content.set(chain, value)
 			}
 		},
+		push:function(chain, value) {
+			this._content.push(chain, value)
+		},
 		_notifyObservers:function() {
 			each(this._observers, function(observer, id) {
 				observer()
@@ -446,6 +449,9 @@ var List = module.exports.List = proto(collectionBase,
 				return No
 			}
 			return Yes
+		},
+		push:function(chain, value) {
+			this.set([this._content.length], value)
 		},
 		iterate:__interimIterationFunction
 	}
