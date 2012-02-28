@@ -246,10 +246,10 @@ var compileIfStatement = function(blockCompileFn, context, ast) {
 		+ code('var {{ lastOutcomeName }}', { lastOutcomeName:lastOutcomeName })
 		+ _statementCode(ast.condition,
 		';(function(ifBranch, elseBranch) {',
-		'	if ({{ lastOutcome }} && !{{ STATEMENT_VALUE }}.equals({{ lastOutcome }})) { return }',
+		'	if ({{ lastOutcome }} && {{ STATEMENT_VALUE }}.equals({{ lastOutcome }}).getContent()) { return }',
 		'	{{ lastOutcome }} = {{ STATEMENT_VALUE }}',
 		'	fun.destroyHook({{ hookName }})',
-		'	if({{ lastOutcome }}.getContent()) { ifBranch() } else { elseBranch() }',
+		'	if ({{ lastOutcome }}.getContent()) { ifBranch() } else { elseBranch() }',
 		'})(',
 		'	function ifBranch(){',
 		'		{{ ifCode }}',

@@ -102,12 +102,33 @@ test('statements after return do not evaluate').code(
 	)
 	.textIs('#output', '1')
 
-test('if/else in a div')
+test('if/else in a div -> if branch')
 	.code(
 		'var foo = 120',
-		'<div id="output"> if (foo >= 100) { "mouse.x >= 100" }',
+		'<div id="output"> if (foo >= 100) { "foo >= 100" }',
 		'else { "foo < 100" }</div>')
-	.textIs('#output', 'mouse.x >= 100')
+	.textIs('#output', 'foo >= 100')
+
+test('if/else in a div -> else branch')
+	.code(
+		'var foo = 120',
+		'<div id="output">',
+		'	if (foo < 100) { "foo < 100" }',
+		'	else { "foo >= 100" }',
+		'</div>')
+	.textIs('#output', 'foo >= 100')
+
+test('if/else in a div -> first if branch, then else branch')
+	.code(
+		'var foo = 120',
+		'<div id="output">',
+		'	if (foo < 100) { "foo < 100" }',
+		'	else { "foo >= 100" }',
+		'</div onclick=handler(){ foo.set(80) }>')
+	.textIs('#output', 'foo >= 100')
+	.click('#output')
+	.textIs('#output', 'foo < 100')
+
 
 test('returning an argument reference from a function')
 	.code(
