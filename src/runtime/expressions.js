@@ -186,6 +186,9 @@ var LogicProto = proto(constantAtomicBase,
 		_type:'Logic',
 		asString:function() {
 			return this._content ? 'yes' : 'no'
+		},
+		asLiteral:function() {
+			return this._content ? 'true' : 'false'
 		}
 	}
 )
