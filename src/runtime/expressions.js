@@ -42,11 +42,23 @@ var constantAtomicBase = create(base, {
 	hasVariableContent:function() {
 		return false
 	},
+	isInvocable:function() {
+		return false
+	},
 	getContent:function() {
 		return this._content
 	},
 	dismiss:function(id) {
 		// Empty
+	}
+})
+
+var invocableBase = create(constantAtomicBase, {
+	asLiteral:function() {
+		return '<block>'
+	},
+	isInvocable: function() {
+		return true
 	}
 })
 
@@ -199,7 +211,7 @@ var NullProto = proto(constantAtomicBase,
 
 var NullValue = NullProto()
 
-var func = module.exports.Function = proto(constantAtomicBase,
+var func = module.exports.Function = proto(invocableBase,
 	function(content) {
 		if (typeof content != 'function') { TypeMismatch }
 		this._content = content
@@ -207,6 +219,9 @@ var func = module.exports.Function = proto(constantAtomicBase,
 		_type:'Function',
 		invoke:function(hookName, args) {
 			return this._content.apply(this, args)
+		},
+		asLiteral:function() {
+			return ''
 		}
 	}
 )
