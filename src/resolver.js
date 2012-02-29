@@ -63,6 +63,7 @@ var resolve = function(context, ast) {
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 		case 'REFERENCE':            return lookup(context, ast)
 		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
+		case 'TERNARY':              return resolveTernaryExpression(context, ast)
 		
 		case 'MUTATION':             return resolveMutation(context, ast)
 		case 'RETURN':               return resolveReturn(context, ast)
@@ -123,6 +124,13 @@ function resolveList(context, ast) {
 var resolveCompositeExpression = function(context, ast) {
 	ast.left = resolve(context, ast.left)
 	ast.right = resolve(context, ast.right)
+	return ast
+}
+
+var resolveTernaryExpression = function(context, ast) {
+	ast.condition = resolve(context, ast.condition)
+	ast.ifValue = resolve(context, ast.ifValue)
+	ast.elseValue = resolve(context, ast.elseValue)
 	return ast
 }
 

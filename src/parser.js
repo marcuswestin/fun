@@ -106,7 +106,7 @@ var parseVariableDeclaration = astGenerator(function() {
 /***************************************************
  * Expressions (literals, references, invocations) *
  ***************************************************/
-var _expressionOperatorSymbols = ['+','-','*','/','%'], _expressionOperatorKeywords = []
+var _expressionOperatorSymbols = ['+','-','*','/','%','?'], _expressionOperatorKeywords = []
 var parseExpression = function() {
 	return _doParseExpression(_expressionOperatorSymbols, _expressionOperatorKeywords, 0)
 }
@@ -130,7 +130,7 @@ var _doParseExpression = astGenerator(function(operatorSymbols, operatorKeywords
 
 	var parseMore = curry(_doParseExpression, operatorSymbols, operatorKeywords),
 		peekOperator = curry(_peekOperator, operatorSymbols, operatorKeywords)
-
+	
 	if (peek('symbol', _prefixOperators)) {
 		var prefix = advance('symbol').value,
 			value = parseMore(leftOperatorBinding)
@@ -146,13 +146,22 @@ var _doParseExpression = astGenerator(function(operatorSymbols, operatorKeywords
 
 	var expression = parseLiteralExpression(curry(_doParseExpression, operatorSymbols, operatorKeywords, leftOperatorBinding))
 
+	if (peek('symbol', '?')) {
+		advance()
+		var ifValue = parseExpression(operatorSymbols, operatorKeywords, 0)
+		advance('symbol',':')
+		var elseValue = parseExpression(operatorSymbols, operatorKeywords, 0)
+		return { type:'TERNARY', condition:expression, ifValue:ifValue, elseValue:elseValue }
+	}
+
 	while (true) {
 		var rightOperator = peekOperator(),
 			rightOperatorBinding = _operatorBinding[rightOperator]
-
+		
 		if (!rightOperator || leftOperatorBinding > rightOperatorBinding) { return expression }
 
 		advance() // the operator
+
 		expression = { type:'COMPOSITE', operator:rightOperator, left:expression, right:parseMore(rightOperatorBinding) }
 	}
 })
@@ -290,9 +299,7 @@ var _parseXMLAttributes = function() {
 var _parseXMLAttribute = astGenerator(function() {
 	var name = advance('name').value
 	advance('symbol', '=')
-	var value =
-		name == 'style' ? parseObjectLiteral(parseExpression) :
-		parseExpression()
+	var value = parseExpression()
 	return { name:name, value:value }
 })
 

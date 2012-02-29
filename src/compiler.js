@@ -91,6 +91,7 @@ var compileEmitStatement = function(context, ast) {
 		case 'DICTIONARY_LITERAL':return emitValue(context, ast)
 		case 'LIST_LITERAL':      return emitValue(context, ast)
 		case 'COMPOSITE':         return emitValue(context, ast)
+		case 'TERNARY':           return emitValue(context, ast)
 		case 'INVOCATION':        return emitValue(context, ast)
 		
 		case 'XML':               return emitXML(context, ast)
@@ -131,89 +132,52 @@ var emitXML = function(context, ast) {
 	var nodeHookName = name('XML_HOOK'),
 		newContext = copyContext(context, { hookName:nodeHookName })
 	
-	var attributes = _handleXMLAttributes(nodeHookName, ast)
+	var attrs = {},
+		backCompatHandlerCode = []
+	each(ast.attributes, function(attr) {
+		var match
+		if (match = attr.name.match(/^on(\w+)$/)) {
+			// TODO remove this backcompat code and replace with a proper runtime handler expression
+			backCompatHandlerCode.push(_backCompatHandlerCode(attr.value, nodeHookName, match[1].toLowerCase()))
+		} else {
+			attrs[attr.name] = attr.value
+		}
+	})
+	
 	return code(
 		'var {{ hookName }} = fun.name()',
-		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ staticAttributes }} })',
-		'{{ dynamicAttributesCode }}',
+		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ attrsObj }} })',
+		'{{ backCompatHandlerCode }}',
 		'{{ block }}',
 		{
 			parentHook: context.hookName,
 			hookName: nodeHookName,
 			tagName: q(ast.tagName),
-			staticAttributes: q(attributes.staticAttrs),
-			dynamicAttributesCode: attributes.dynamicCode,
-			block: ast.block ? indent(compileEmitStatement, newContext, ast.block) : ''
+			attrsObj: objectRuntimeValue(attrs),
+			block: ast.block ? indent(compileEmitStatement, newContext, ast.block) : '',
+			backCompatHandlerCode: backCompatHandlerCode.join('\n')
 		})
 }
 
-var _handleXMLAttributes = function(nodeHookName, ast) {
-	var staticAttrs = {}, dynamicCode = []
-	for (var i=0, attribute; attribute = ast.attributes[i]; i++) {
-		_handleXMLAttribute(nodeHookName, ast, staticAttrs, dynamicCode, attribute)
-	}
-	return { staticAttrs: staticAttrs, dynamicCode: dynamicCode.join('\n') }
-}
-
-// modifies staticAttrs and, dynamicCode
-var _handleXMLAttribute = function(nodeHookName, ast, staticAttrs, dynamicCode, attribute) {
-	var name = attribute.name,
-		value = attribute.value,
-		match
-	
-	if (name == 'style') {
-		assert(ast, value.type == 'DICTIONARY_LITERAL' || value.type == 'REFERENCE', 'The style attribute should be an object, e.g. style={ color:"red" }')
-		dynamicCode.push('fun.reflectStyles('+nodeHookName+', '+runtimeValue(value, true)+')')
-	} else if (name == 'data') {
-		_handleDataAttribute(nodeHookName, ast, dynamicCode, value, attribute.dataType)
-	} else if (match = name.match(/^on(\w+)$/)) {
-		_handleHandlerAttribute(nodeHookName, ast, dynamicCode, match[1], value)
-	} else if (_isAtomic(value)) {
-		staticAttrs[name] = value.value
-	} else {
-		assert(ast, value.type != 'DICTIONARY_LITERAL', 'Does not make sense to assign a JSON object literal to other attribtues than "style" (tried to assign to "'+name+'")')
-		_handleDynamicAttribute(nodeHookName, ast, dynamicCode, name, value)
-	}
-}
-
-// modifies dynamicCode
-var _handleDataAttribute = function(nodeHookName, ast, dynamicCode, value, dataType) {
-	dynamicCode.push(code(
-		'fun.reflectInput({{ hookName }}, {{ value }})',
-		{
-			hookName: nodeHookName,
-			value: runtimeValue(value)
-		}))
-}
-
-// modifies dynamicCode
-var _handleDynamicAttribute = function(nodeHookName, ast, dynamicCode, attrName, value) {
-	dynamicCode.push(_statementCode(value,
-		'fun.attr({{ hookName }}, {{ attr }}, {{ STATEMENT_VALUE }})',
-		{
-			attr: q(attrName),
-			hookName: nodeHookName
-		}))
-}
-
-// modifies dynamicCode
-var _handleHandlerAttribute = function(nodeHookName, ast, dynamicCode, handlerName, handlerAST) {
+var _backCompatHandlerCode = function(ast, nodeHookName, eventName) {
+	// TODO Remove this
 	var handlerFunctionCode
-	if (handlerAST.compiledFunctionName) {
-		handlerFunctionCode = handlerAST.compiledFunctionName
+	if (ast.compiledFunctionName) {
+		handlerFunctionCode = ast.compiledFunctionName
 	} else {
-		handlerFunctionCode = compileHandlerDeclaration(handlerAST)
+		handlerFunctionCode = compileHandlerDeclaration(ast)
 	}
-	dynamicCode.push(code(
+	return code(
 		'fun.withHook({{ hookName }}, function(hook) {',
-		'	fun.on(hook, "{{ handlerName }}", {{ handlerFunctionCode }})',
+		'	fun.on(hook, "{{ eventName }}", {{ handlerFunctionCode }})',
 		'})',
 		{
 			hookName: nodeHookName,
-			handlerName: handlerName.toLowerCase(),
+			eventName: eventName,
 			handlerFunctionCode: handlerFunctionCode
-		}))
+		})
 }
+
 /************************************************************************
  * Control statements - if/else, switch, for loop, script tag, debugger *
  ************************************************************************/
@@ -488,10 +452,8 @@ var runtimeValue = function(ast) {
 		case 'ARGUMENT':
 			return ast.runtimeName
 		case 'DICTIONARY_LITERAL':
-			return inlineCode('fun.expressions.Dictionary({ {{ content }} })', { 
-				content:map(ast.content, function(value, name) {
-					return name+':'+runtimeValue(value)
-				}).join(', ')
+			return inlineCode('fun.expressions.Dictionary({{ contentObj }})', {
+				contentObj:objectRuntimeValue(ast.content)
 			})
 		case 'LIST_LITERAL':
 			return inlineCode('fun.expressions.List([ {{ content }} ])', {
@@ -503,12 +465,24 @@ var runtimeValue = function(ast) {
 				operator:ast.operator,
 				right:runtimeValue(ast.right)
 			})
+		case 'TERNARY':
+			return inlineCode('fun.expressions.ternary({{ condition }}, {{ ifValue }}, {{ elseValue }})', {
+				condition:runtimeValue(ast.condition),
+				ifValue:runtimeValue(ast.ifValue),
+				elseValue:runtimeValue(ast.elseValue)
+			})
 		case 'INVOCATION':    return compileInvocation(null, ast)
 		case 'FUNCTION':      return compileFunctionDefinition(ast)
 		
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
 	}
+}
+
+var objectRuntimeValue = function(obj) {
+	return '{ '+map(obj, function(value, name) {
+		return '"'+name+'":'+runtimeValue(value)
+	}).join(', ')+' }'
 }
 
 var variableName = function(name) { return '__variableName__'+name }

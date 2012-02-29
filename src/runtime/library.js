@@ -78,10 +78,22 @@ var expressions = require('./expressions'),
 
 /* DOM
  *****/
-	fun.attr = function(name, key, value) {
-		var match
-		if (match = key.match(/^style\.(\w+)$/)) { fun.setStyle(name, match[1], value) }
-		else { _hooks[name].setAttribute(key, value) }
+	fun.attr = function(hookName, key, value) {
+		if (key == 'data') {
+			fun.reflectInput(hookName, value)
+			return
+		}
+		value.observe(function() {
+			if (match = key.match(/^style\.(\w+)$/)) {
+				fun.setStyle(hookName, match[1], value)
+			} else if (key == 'style') {
+				each(value.getContent(), function(val, key) {
+					fun.setStyle(hookName, key, val)
+				})
+			} else {
+				_hooks[hookName].setAttribute(key, value.getContent())
+			}
+		})
 	}
 	
 	// fun.style(hook, 'color', '#fff')
@@ -90,16 +102,6 @@ var expressions = require('./expressions'),
 		if (value.getType() == 'Number' || rawValue.match(/^\d+$/)) { rawValue = rawValue + 'px' }
 		if (key == 'float') { key = 'cssFloat' }
 		_hooks[hookName].style[key] = rawValue
-	}
-	
-	fun.reflectStyles = function(hookName, values) {
-		if (values.type != 'reference')
-		// TODO detect when the dictionary mutates (values added and removed)
-		each(values.getContent(), function(val, key) {
-			val.observe(function() {
-				fun.setStyle(hookName, key, val)
-			})
-		})
 	}
 	
 	fun.on = function(element, eventName, handler) {
@@ -114,31 +116,30 @@ var expressions = require('./expressions'),
 		_hooks[name].appendChild(document.createTextNode(text))
 	}
 	
-	fun.reflectInput = function(hookName, property, dataType) {
+	fun.reflectInput = function(hookName, property) {
 		var input = _hooks[hookName]
-		property.observe(function() {
-			input.value = property.evaluate().asString()
-		})
-		fun.on(input, 'keypress', function(e) {
-			var oldValue = input.value
-			setTimeout(function() {
-				var value = input.value
-				if (dataType == 'number') {
-					if (!value) {
-						value = input.value = 0
-					} else if (value.match(/\d+/)) {
-						value = parseInt(value, 10)
-					} else {
-						input.value = oldValue
-						return
-					}
-					property.set(null, fun.expressions.Number(value))
-				} else {
-					property.set(null, fun.expressions.Text(value))
-				}
-				input.value = value
-			}, 0)
-		})
+		if (input.type == 'checkbox') {
+			property.observe(function() {
+				input.checked = property.getContent() ? true : false
+			})
+			fun.on(input, 'change', function() {
+				setTimeout(function() {
+					property.set(null, input.checked ? fun.expressions.Yes : fun.expressions.No)
+				})
+			})
+		} else {
+			property.observe(function() {
+				input.value = property.evaluate().asString()
+			})
+			fun.on(input, 'keypress', function(e) {
+				var oldValue = input.value
+				setTimeout(function() {
+					var value = input.value
+					property.set(null, fun.expressions.Text(input.value))
+					input.value = value
+				}, 0)
+			})
+		}
 	}
 
 /* init & export

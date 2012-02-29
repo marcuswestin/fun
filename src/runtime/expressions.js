@@ -240,7 +240,7 @@ var composite = module.exports.composite = proto(variableValueBase,
 		this.right = right
 		this.operator = operator
 	}, {
-		_type:'Composite',
+		_type:'composite',
 		evaluate:function() {
 			return operators[this.operator](this.left, this.right)
 		},
@@ -251,6 +251,25 @@ var composite = module.exports.composite = proto(variableValueBase,
 		}
 	}
 )
+
+module.exports.ternary = proto(variableValueBase,
+	function(condition, ifValue, elseValue) {
+		this.condition = condition
+		this.ifValue = ifValue
+		this.elseValue = elseValue
+	}, {
+		_type:'ternary',
+		evaluate:function() {
+			console.log("HERE", !!this.condition.getContent())
+			return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate()
+		},
+		observe:function(callback) {
+			// TODO store observation IDs
+			this.condition.observe(callback)
+			this.ifValue.observe(callback)
+			this.elseValue.observe(callback)
+		}
+	})
 
 var operators = {
 	'+': add,
