@@ -13,6 +13,9 @@ var base = module.exports.base = {
 	},
 	asJSON:function() {
 		return this.asLiteral() // Right now all expressions 
+	},
+	isTruthy:function() {
+		return true
 	}
 }
 
@@ -83,6 +86,9 @@ var variableValueBase = create(base, {
 	},
 	getContent:function() {
 		return this.evaluate()._content
+	},
+	isTruthy:function() {
+		return this.evaluate().isTruthy()
 	}
 })
 
@@ -145,6 +151,9 @@ var collectionBase = create(mutableBase, {
 		} else {
 			this._content[prop].set(chain.slice(1), value)
 		}
+	},
+	isTruthy:function() {
+		return true
 	}
 })
 
@@ -189,6 +198,9 @@ var LogicProto = proto(constantAtomicBase,
 		},
 		asLiteral:function() {
 			return this._content ? 'true' : 'false'
+		},
+		isTruthy:function() {
+			return this._content
 		}
 	}
 )
@@ -208,20 +220,36 @@ var NullProto = proto(constantAtomicBase,
 		inspect:function() { return '<Null>' },
 		asString:function() { return '' },
 		equals:function(that) { return that.getType() == 'Null' ? Yes : No },
-		asLiteral:function() { return 'null' }
+		asLiteral:function() { return 'null' },
+		isTruthy:function() { return false }
 	}
 )
 
 var NullValue = NullProto()
 
 var func = module.exports.Function = proto(invocableBase,
-	function(content) {
-		if (typeof content != 'function') { TypeMismatch }
-		this._content = content
+	function(block) {
+		if (typeof block != 'function') { TypeMismatch }
+		this._content = block
 	}, {
 		_type:'Function',
 		invoke:function(hookName, args) {
-			return this._content.apply(this, args)
+			var invocationValue = variable(NullValue)
+			var yieldValue = function(value) { invocationValue.set(null, fromJsValue(value)) }
+			var __hackFirstExecution = true
+			var executeBlock = bind(this, function() {
+				var isFirstExecution = __hackFirstExecution
+				__hackFirstExecution = false
+				this._content.apply(this, [yieldValue, isFirstExecution].concat(args))
+			})
+			if (args.length) {
+				each(args, function(arg) {
+					arg.observe(executeBlock)
+				})
+			} else {
+				executeBlock()
+			}
+			return invocationValue
 		},
 		asLiteral:function() {
 			return ''
@@ -260,7 +288,6 @@ module.exports.ternary = proto(variableValueBase,
 	}, {
 		_type:'ternary',
 		evaluate:function() {
-			console.log("HERE", !!this.condition.getContent())
 			return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate()
 		},
 		observe:function(callback) {
@@ -268,6 +295,9 @@ module.exports.ternary = proto(variableValueBase,
 			this.condition.observe(callback)
 			this.ifValue.observe(callback)
 			this.elseValue.observe(callback)
+		},
+		dismiss:function() {
+			console.log("TODO implement ternary dismiss")
 		}
 	})
 

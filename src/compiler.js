@@ -327,17 +327,13 @@ var _commaPrefixJoin = function(arr, fn) {
  ***********/
 var compileFunctionDefinition = function(ast) {
 	return code(
-		'fun.expressions.Function(function({{ arguments }}) {',
-		'	var __functionReturnValue__ = fun.expressions.variable(fun.expressions.Null()),',
-		'		yieldValue = function(val) { __functionReturnValue__.set(null, fun.expressions.fromJsValue(val)) }',
-		// TODO observe the arguments and re-evaluate when one mutates
-		'	void function block() {',
-		'		{{ block }}',
-		'	}()',
-		'	return __functionReturnValue__',
+		'fun.expressions.Function(function block({{ arguments }}) {',
+		'	{{ block }}',
 		'})',
 		{
-			arguments:map(ast.signature, function(argument, i) { return variableName(argument.name) }).join(', '),
+			arguments:['yieldValue', '__hackFirstExecution'].concat(map(ast.signature, function(argument, i) {
+				return variableName(argument.name)
+			})).join(', '),
 			block:indent(map, ast.block, curry(compileFunctionStatement, ast.closure)).join('\n')
 		})
 }
@@ -352,7 +348,7 @@ var compileFunctionStatement = function(context, ast) {
 
 var compileFunctionReturn = function(ast) {
 	return code(
-		'__functionReturnValue__.set(null, {{ value }}); return', { value:runtimeValue(ast.value) }
+		'yieldValue({{ value }}); return', { value:runtimeValue(ast.value) }
 	)
 }
 

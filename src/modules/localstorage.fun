@@ -1,6 +1,8 @@
 var localstorage = {
+	// TODO Make this a template so that it doesn't execute multiple times
 	persist:function(variable, name) {
 		<script variable=variable name=name>
+			if (!__hackFirstExecution) { return }
 			var key = name.getContent(),
 				persistedJSON = localStorage.getItem(key)
 			
