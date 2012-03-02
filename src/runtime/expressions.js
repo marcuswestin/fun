@@ -210,11 +210,15 @@ module.exports.ternary = proto(variableValueBase,
 	}, {
 		_type:'ternary',
 		evaluate:function() { return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate() },
-		dismiss:function() {},
 		observe:function(callback) {
 			this._conditionId = this.condition.observe(callback)
 			this._ifValueId = this.ifValue.observe(callback)
 			this._elseValueId = this.elseValue.observe(callback)
+		},
+		dismiss:function() {
+			this.condition.dismiss(this._conditionID)
+			this.ifValue.dismiss(this._ifValueId)
+			this.elseValue.dismiss(this._elseValueId)
 		}
 	})
 
