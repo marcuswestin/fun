@@ -171,6 +171,9 @@ var Number = module.exports.Number = proto(constantAtomicBase,
 		_type:'Number',
 		asLiteral:function() {
 			return this._content
+		},
+		isTruthy: function() {
+			return this._content != 0
 		}
 	}
 )
