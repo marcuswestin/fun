@@ -1,4 +1,5 @@
 import localstorage
+import filter
 
 // TODO implement value.copy()
 var currentValue = function(variable) {
