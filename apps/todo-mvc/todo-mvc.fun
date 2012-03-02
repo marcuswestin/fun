@@ -57,7 +57,7 @@ localstorage.persist(tasks, 'todo-fun')
 	<div id="todo-stats">
 		if (tasks.length > 0) {
 			var doneTasks = filter(tasks, function(task) { return task.done })
-			<span class="todo-count">(tasks.length - doneTasks.length)" tasks left."</span>
+			<span class="todo-count">tasks.length - doneTasks.length " tasks left."</span>
 		}
 	</div>
 </div>
