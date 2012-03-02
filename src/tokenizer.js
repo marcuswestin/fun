@@ -133,7 +133,7 @@ function _doTokenize (inputString, inputFile) {
                     break;
                 }
             }
-            result.push(make(keywords.hasOwnProperty(str) ? 'keyword' : types.hasOwnProperty(str) ? 'type' : 'name', str));
+            result.push(make(keywords.indexOf(str) != -1 ? 'keyword' : types.indexOf(str) != -1 ? 'type' : 'name', str));
 
 // number.
 

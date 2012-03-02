@@ -16,7 +16,8 @@ var base = module.exports.base = {
 	},
 	isTruthy:function() {
 		return true
-	}
+	},
+	getters:{}
 }
 
 var constantAtomicBase = create(base, {
@@ -403,13 +404,15 @@ var reference = module.exports.reference = proto(variableValueBase,
 			var value = this._content.evaluate()
 			for (var i=0; i<this._chain.length; i++) {
 				var prop = this._chain[i]
-				if (value.isAtomic()) {
+				if (value.getters[prop]) {
+					value = value.getters[prop].call(value)
+				} else if (value.isAtomic()) {
 					return NullValue
-				}
-				if (!value._content[prop]) {
+				} else if (!value._content[prop]) {
 					return NullValue
+				} else {
+					value = value._content[prop].evaluate()
 				}
-				value = value._content[prop].evaluate()
 			}
 			return value
 		},
@@ -501,6 +504,15 @@ var List = module.exports.List = proto(collectionBase,
 		},
 		push:function(chain, value) {
 			this.set([this._content.length], value)
+		},
+		getters:{
+			length:function() {
+				var variableLength = variable(NullValue)
+				this.observe(bind(this, function() {
+					variableLength.set(null, Number(this._content.length))
+				}))
+				return variableLength
+			}
 		},
 		iterate:__interimIterationFunction
 	}
