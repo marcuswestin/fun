@@ -86,7 +86,7 @@ var variableValueBase = create(base, {
 		return this.evaluate().equals(that)
 	},
 	getContent:function() {
-		return this.evaluate()._content
+		return this.evaluate().getContent()
 	},
 	isTruthy:function() {
 		return this.evaluate().isTruthy()
@@ -135,6 +135,9 @@ var collectionBase = create(mutableBase, {
 	},
 	evaluate:function() {
 		return this
+	},
+	getContent:function() {
+		return this._content
 	},
 	set:function(chain, value) {
 		if (!chain || !chain.length) {
