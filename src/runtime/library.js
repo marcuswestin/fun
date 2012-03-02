@@ -5,20 +5,12 @@ var expressions = require('./expressions'),
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }
-	var _unique,
-		_hooks, _hookCallbacks, _observers
-	
-	var q = function(val) { return JSON.stringify(val) }
+	var _unique, _hooks, _hookCallbacks
 	
 	fun.reset = function() {
 		_unique = 0
 		_hooks = {}
 		_hookCallbacks = {}
-		_observers = {}
-	}
-	
-	fun.debugDump = function() {
-		console.log({ _unique: 0, _hooks: {}, _hookCallbacks: {}, _observers: {} })
 	}
 	
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
@@ -32,7 +24,6 @@ var expressions = require('./expressions'),
 		}
 		return evaluatedOperand.evaluate().invoke(hookName, args)
 	}
-	
 /* Values
  ********/
 	fun.emit = function(parentHookName, value) {
@@ -46,12 +37,11 @@ var expressions = require('./expressions'),
 /* Hooks
  *******/
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
-	fun.getHook = function(name) { return _hooks[name] }
 	fun.hook = function(name, parentName, opts) {
 		if (_hooks[name]) { return name }
 		opts = opts || {}
 		var parent = _hooks[parentName],
-			hook = _hooks[name] = document.createElement(opts.tagName || 'fun')
+			hook = _hooks[name] = document.createElement(opts.tagName || 'hook')
 		
 		for (var key in opts.attrs) { fun.attr(name, key, opts.attrs[key]) }
 		
@@ -76,8 +66,6 @@ var expressions = require('./expressions'),
 		else { _hookCallbacks[hookName] = [callback] }
 	}
 
-/* DOM
- *****/
 	fun.attr = function(hookName, key, value) {
 		if (key == 'data') {
 			fun.reflectInput(hookName, value)
@@ -95,8 +83,7 @@ var expressions = require('./expressions'),
 			}
 		})
 	}
-	
-	// fun.style(hook, 'color', '#fff')
+
 	fun.setStyle = function(hookName, key, value) {
 		var rawValue = value.evaluate().asString()
 		if (value.getType() == 'Number' || rawValue.match(/^\d+$/)) { rawValue = rawValue + 'px' }
@@ -110,10 +97,6 @@ var expressions = require('./expressions'),
 		} else if (element.attachEvent){
 			element.attachEvent("on"+eventName, handler)
 		}
-	}
-	
-	fun.text = function(name, text) {
-		_hooks[name].appendChild(document.createTextNode(text))
 	}
 	
 	fun.reflectInput = function(hookName, property) {
