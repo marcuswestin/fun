@@ -224,6 +224,7 @@ module.exports.ternary = proto(variableValueBase,
 
 var operators = {
 	'+': add,
+	'-': subtract,
 	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
 	'>=': greaterThanOrEquals,
 	'<=': lessThanOrEquals,
@@ -237,6 +238,15 @@ function add(left, right) {
 	}
 	return Text(left.asString() + right.asString())
 }
+
+function subtract(left, right) {
+	if (left.getType() == 'Number' && right.getType() == 'Number') {
+		return Number(left.getContent() - right.getContent())
+	} else {
+		return NullValue
+	}
+}
+
 
 function equals(left, right) {
 	return left.equals(right)
