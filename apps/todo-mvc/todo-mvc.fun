@@ -48,10 +48,10 @@ localstorage.persist(tasks, 'todo-fun')
 	<div id="todos">
 		<ul id="todo-list">
 			for (task in tasks) {
-				<li><div class="todo"+(task.done ? " done" : "")>
+				<li class="todo"+(task.done ? " done" : "")>
 					<input class="check" type="checkbox" data=task.done />
 					<div class="todo-content">task.name</div>
-				</div></li>
+				</li>
 			}
 		</ul>
 	</div>
