@@ -36,3 +36,28 @@ Getting the type of a value is simple. This emits "Number":
 	var a = 1
 	a.Type
 
+Old example of possible example typed chat app:
+
+	#import WebSocket
+	
+	let Message = { body:Text }
+	
+	var [Message] messages = []
+	
+	WebSocket.on('message', handler(Message message) { messages.push(message) })
+	
+	<div class="chat">
+		var input = ""
+		<input data=input />
+		<button>"Send"</button onClick=handler() {
+			var message = { body:input.copy() }
+			input.set('')
+			WebSocket.send('message', message)
+			messages.push(message)
+		}>
+		<div class="messages">
+			for (message in messages) {
+				<div class="message"> message.body </div>
+			}
+		</div>
+	</div>
