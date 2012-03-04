@@ -13,7 +13,8 @@ Try this:
 
 Also try
 
-	fun --file apps/todo-mvc/todo-mvc.fun
+	curl https://raw.github.com/marcuswestin/fun/master/apps/todo-mvc/todo-mvc.fun > todo-mvc.fun
+	fun --file todo-mvc.fun
 
 Examples
 --------
