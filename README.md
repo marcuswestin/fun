@@ -2,37 +2,24 @@ fun
 ===
 A declarative programming language for realtime web applications
 
-A work in progress
-==================
-I recently resumed work on Fun. It's a work in progress
-
 Getting started
 ----------------------
+Try this:
+
 	sudo npm install -g fun
 	echo '"Hello world!"' > hello.fun
 	fun --file hello.fun
 	# Open your browser to localhost:8080
+
+Also try
+
+	fun --file apps/todo-mvc/todo-mvc.fun
 
 Examples
 --------
 Hello World
 
 	"Hello world!"
-
-facebook Connect
-
-	import facebook
-	
-	let name = facebook.user.name,
-		fbAppID = '177253448965438'
-	if (facebook.connected) {
-		if (name) { <div>"Welcome " name</div> }
-		<div>"Your ID is " facebook.user.id</div>
-	} else {
-		<button>"Connect"</button onclick=handler() {
-			facebook.connect(fbAppID)
-		}>
-	}
 
 Drag and Drop
 
