@@ -1,11 +1,13 @@
-import Local
+// This example is currently broken. Need to make it work :)
 
-"Local.state: " <input data=Local.state /> "(try foo, bar, and others)"
+var state = 'foo'
+
+"Local.state: " <input data=state /> "(try foo, bar, and others)"
 
 <div>
-	switch(Local.state) {
-		case 'foo', 'bar': "Local.state is foo/bar! " Local.state
-		case 'marcus', 'westin': "Local.state is my name! " Local.state
-		default: "default, Local.state is " Local.state
+	switch(state) {
+		case 'foo', 'bar': "Local.state is foo/bar! " state
+		case 'marcus', 'westin': "Local.state is my name! " state
+		default: "default, Local.state is " state
 	}
 </div>
