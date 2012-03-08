@@ -467,6 +467,11 @@ var runtimeValue = function(ast) {
 				ifValue:runtimeValue(ast.ifValue),
 				elseValue:runtimeValue(ast.elseValue)
 			})
+		case 'UNARY':
+			return inlineCode('fun.expressions.unary({{ operator }}, {{ value }})', {
+				operator:q(ast.operator),
+				value:runtimeValue(ast.value)
+			})
 		case 'INVOCATION':    return compileInvocation(null, ast)
 		case 'FUNCTION':      return compileFunctionDefinition(ast)
 		

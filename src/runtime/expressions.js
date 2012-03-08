@@ -229,6 +229,21 @@ module.exports.ternary = proto(variableValueBase,
 		}
 	})
 
+module.exports.unary = proto(variableValueBase,
+	function(operator, value) {
+		this.operator = operator
+		this.value = value
+	}, {
+		_type:'unary',
+		evaluate:function() { return unaryOperators[this.operator](this.value.evaluate()) },
+		observe:function(callback) { this._valueId = this.value.observe(callback) },
+		dismiss:function() { this.value.dismiss(this._valueId) }
+	})
+
+var unaryOperators = {
+	'!': function not(value) { return Logic(!value.isTruthy()) }
+}
+
 var operators = {
 	'+': add,
 	'-': subtract,

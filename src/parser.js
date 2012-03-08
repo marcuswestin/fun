@@ -132,9 +132,9 @@ var _doParseExpression = astGenerator(function(operatorSymbols, operatorKeywords
 		peekOperator = curry(_peekOperator, operatorSymbols, operatorKeywords)
 	
 	if (peek('symbol', _prefixOperators)) {
-		var prefix = advance('symbol').value,
+		var prefixOperator = advance('symbol').value,
 			value = parseMore(leftOperatorBinding)
-		return { type:'COMPOSITE', prefix:prefix, left:value }
+		return { type:'UNARY', operator:prefixOperator, value:value }
 	}
 	
 	if (peek('symbol', L_PAREN)) {
