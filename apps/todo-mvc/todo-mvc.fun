@@ -1,14 +1,6 @@
 import localstorage
 import filter
 
-// TODO implement value.copy()
-var currentValue = function(variable) {
-	<script variable=variable>
-		if (!__hackFirstExecution) { return }
-		yieldValue(variable.evaluate())
-	</script>
-}
-
 var tasks = []
 
 localstorage.persist(tasks, 'todo-fun')
@@ -25,7 +17,7 @@ localstorage.persist(tasks, 'todo-fun')
 			var newTaskName
 			<input id="new-todo" data=newTaskName placeholder="What needs to be done?"/>
 			<button>"Create"</button onclick=handler() {
-				tasks.push({ name:currentValue(newTaskName), done:false })
+				tasks.push({ name:newTaskName.copy(), done:false })
 				newTaskName.set('')
 			}>
 		</div>

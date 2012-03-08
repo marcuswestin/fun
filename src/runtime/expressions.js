@@ -11,7 +11,14 @@ var base = module.exports.base = {
 	observe:function(callback) { callback() },
 	asJSON:function() { return this.asLiteral() },
 	isTruthy:function() { return true },
-	getters:{}
+	getters:{
+		copy:function() {
+			var self = this
+			return module.exports.Function(function(yieldValue) {
+				yieldValue(self.getContent())
+			})
+		}
+	}
 }
 
 var constantAtomicBase = create(base, {
