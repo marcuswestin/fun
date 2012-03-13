@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var fs = require('fs'),
-	sys = require('sys'),
+	util = require('util'),
 	http = require('http'),
 	path = require('path'),
 	optimist = require('optimist'),
@@ -9,61 +9,53 @@ var fs = require('fs'),
 
 /* Commandline options
  *********************/
-var argv = optimist.usage('Usage: $0 app.fun [--help --host=127.0.0.1 --port=8080 --file]').argv
+var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=127.0.0.1 --port=8080]'),
+	argv = commandline.argv,
+	file = path.join(process.cwd(), argv._[0])
+
+if (argv.compile) {
+	var htmlFile = loadCompiler().compileFile(file)
+	util.puts(htmlFile)
+	return process.exit(0)
+}
+
+if (!argv._[0]) {
+	console.error(commandline.help())
+	return process.exit(-1)
+}
 
 // Variables
 var port = argv.port || 8080,
 	host = argv.host || '127.0.0.1'
 
-if (argv.h || argv.help) {
-	sys.puts(fs.readFileSync('./help.txt'))
-	process.exit(0)
+try {
+	var stat = fs.statSync(file)
+} catch(e) {
+	console.error('Error:', e.message ? e.message : e.toString())
+	return process.exit(-1)
+}
+
+if (!stat.isFile()) {
+	console.error('Error:', file, 'is not a file.')
+	return process.exit(-1)
 }
 
 http.createServer(function(req, res) {
-	if (!argv.file) {
-		if (req.url == '/') { return welcome(res) }
-		if (req.url == '/favicon.ico') { return res.end(); }
-		if (req.url == '/develop') { return develop(res) }
-		if (req.url == '/compile') { return compile(req, res) }
-	}
-	
-	var filePath = argv.file ? path.join(process.cwd(), argv.file) : __dirname + '/..' + req.url
+	if (req.url == '/favicon.ico') { return send404(res) }
+	if (req.url == '/develop') { return develop(res) }
+	if (req.url == '/compile') { return compile(req, res) }
 	
 	try {
-		var stat = fs.statSync(filePath)
-	} catch(e) {
-		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
-		return
-	}
-	
-	if (!stat.isFile()) {
-		res.end('Not found. Try /simple.fun')
-		return
-	}
-	try {
-		res.end(loadCompiler().compileFile(filePath))
+		res.end(loadCompiler().compileFile(file))
 	} catch(e) {
 		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
 	}
 }).listen(port, host)
-console.log("fun running in development mode on", host+':'+port)
+console.log('Serving', argv._[0], 'on', host+':'+port,'\n')
 
-
-function welcome(res) {
-	var base = __dirname+'/..'
-	var examples = map(fs.readdirSync(base+'/examples'), function(example) {
-		if (!example.match(/^[^\.].*\.fun$/)) { return '' }
-		return '<li><a href="/examples/'+example+'">'+example+'</a></li>'
-	}).join('\n')
-	var apps = map(fs.readdirSync(base+'/apps'), function(app) {
-		if (app[0] == '.') { return '' }
-		return '<li><a href="/apps/'+app+'/'+app+'.fun">'+app+'</a></li>'
-	})
-
-	var html = 'Examples<br/><ul>' + examples + '</ul>Apps<br/><ul>'+apps
-	res.writeHead(200, { 'Content-Type':'text/html', 'Content-Length':html.length })
-	res.end(html)
+function send404(res) {
+	res.writeHead(404)
+	res.end()
 }
 
 function develop(res) {
