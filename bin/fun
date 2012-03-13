@@ -11,7 +11,7 @@ var fs = require('fs'),
  *********************/
 var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=127.0.0.1 --port=8080]'),
 	argv = commandline.argv,
-	file = path.join(process.cwd(), argv._[0])
+	file = path.join(process.cwd(), argv.compile || argv._[0])
 
 if (argv.compile) {
 	var htmlFile = loadCompiler().compileFile(file)
