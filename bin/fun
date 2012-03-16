@@ -26,7 +26,7 @@ if (!argv._[0]) {
 
 // Variables
 var port = argv.port || 8080,
-	host = argv.host || '127.0.0.1'
+	host = argv.host
 
 try {
 	var stat = fs.statSync(file)
@@ -51,7 +51,7 @@ http.createServer(function(req, res) {
 		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
 	}
 }).listen(port, host)
-console.log('Serving', argv._[0], 'on', host+':'+port,'\n')
+console.log('Serving', argv._[0], 'on', (host||'localhost')+':'+port,'\n')
 
 function send404(res) {
 	res.writeHead(404)
