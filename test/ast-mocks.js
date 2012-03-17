@@ -5,7 +5,6 @@ var util = require('../src/util'),
 
 module.exports = {
 	literal: literal,
-	alias: alias,
 	variable: variable,
 	reference: reference,
 	composite: composite,
@@ -53,10 +52,6 @@ function argument(name) {
 
 function mutation(operand, operator, args) {
 	return { type:'MUTATION', operand:operand, operator:operator, arguments:args }
-}
-
-function alias(name, value) {
-	return { type:'ALIAS_DECLARATION', name:name, value:value }
 }
 
 function variable(name, initialValue) {

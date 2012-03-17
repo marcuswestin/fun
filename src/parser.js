@@ -75,7 +75,6 @@ var tryParseControlStatement = function(blockParseFunction) {
 	}
 	
 	switch(peek().value) {
-		// case 'let':      return parseAliasDeclaration()
 		case 'var':      return parseVariableDeclaration()
 		case 'for':      return parseForLoopStatement(blockParseFunction)
 		case 'if':       return parseIfStatement(blockParseFunction)
@@ -109,14 +108,6 @@ var _parseScript = astGenerator(function() {
 /****************
  * Declarations *
  ****************/
-var parseAliasDeclaration = astGenerator(function() {
-	advance('keyword', 'let')
-	var name = advance('name').value
-	advance('symbol', '=')
-	var value = parseExpression()
-	return { type:'ALIAS_DECLARATION', name:name, value:value }
-})
-
 var parseVariableDeclaration = astGenerator(function() {
 	advance('keyword', 'var')
 	var name = advance('name').value
@@ -383,7 +374,6 @@ var parseHandlerBlock = function() {
 			switch(token.value) {
 				case 'if':        return parseIfStatement(parseHandlerBlock)
 				case 'debugger':  return parseDebuggerLiteral()
-				// case 'let':       return parseAliasDeclaration()
 				default:          log(token); UNKNOWN_MUTATION_KEYWORD
 			}
 		default:
