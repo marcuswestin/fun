@@ -2,7 +2,6 @@ var util = require('./util'),
 	curry = require('std/curry'),
 	isArray = require('std/isArray'),
 	q = util.q,
-	log = util.log,
 	halt = util.halt,
 	assert = util.assert
 
@@ -11,13 +10,6 @@ var L_PAREN = '(', R_PAREN = ')',
 	L_ARRAY = '[', R_ARRAY = ']'
 	
 var gToken, gIndex, gTokens, gState
-
-var ParseError = function(file, msg) {
-	var token = peek()
-	this.name = 'ParseError'
-	this.message = ['on line', token.line + ',', 'column', token.column, 'of', '"'+file+'":', msg].join(' ')
-}
-ParseError.prototype = Error.protoype
 
 exports.parse = function(tokens) {
 	gTokens = tokens
@@ -374,7 +366,7 @@ var parseHandlerBlock = function() {
 			switch(token.value) {
 				case 'if':        return parseIfStatement(parseHandlerBlock)
 				case 'debugger':  return parseDebuggerLiteral()
-				default:          log(token); UNKNOWN_MUTATION_KEYWORD
+				default:          console.log(token); UNKNOWN_MUTATION_KEYWORD
 			}
 		default:
 			return _parseMutationInvocation()

@@ -6,7 +6,6 @@ var fs = require('fs'),
 	name = util.name,
 	boxComment = util.boxComment,
 	q = util.q,
-	log = util.log,
 	
 	flatten = require('std/flatten'),
 	map = require('std/map'),

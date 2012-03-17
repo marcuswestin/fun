@@ -13,7 +13,6 @@ var tokenizer = require('./tokenizer'),
 
 var util = require('./util'),
 	each = util.each,
-	log = util.log,
 	assert = util.assert,
 	halt = util.halt
 
