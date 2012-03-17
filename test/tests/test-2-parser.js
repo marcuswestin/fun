@@ -41,7 +41,7 @@ test('parenthesized subtraction')
 	.expect(a.composite(a.literal(1), '-', a.literal(1)))
 
 test('simple if statement')
-	.code('if (1 < 2) { 1 }')
+	.code('if (1 is < 2) { 1 }')
 	.expect(a.ifElse(a.composite(a.literal(1), '<', a.literal(2)), a.literal(1)))
 
 test('has no null statements or expressions')
@@ -137,7 +137,7 @@ test('handler with logic')
 	.code(
 		'var cat = "hi"',
 		'var foo = handler() {',
-		'	if (cat == "hi") { cat.set("bye") }',
+		'	if (cat is == "hi") { cat.set("bye") }',
 		'	else { cat.set(foo) }',
 		'}'
 	)
@@ -185,14 +185,14 @@ test('function arguments')
 
 test('if/else in a div')
 	.code(
-		'<div> if (Mouse.x >= 100) { "mouse.x >= 100" }',
-		'else { "mouse.x < 100" }</div>')
+		'<div> if (Mouse.x is >= 100) { "mouse.x is >= 100" }',
+		'else { "mouse.x is < 100" }</div>')
 	.expect(
 		a.xml('div', null, [
 			a.ifElse(a.composite(a.reference('Mouse.x'), '>=', a.literal(100)), [
-				a.literal('mouse.x >= 100')
+				a.literal('mouse.x is >= 100')
 			], [
-				a.literal('mouse.x < 100')
+				a.literal('mouse.x is < 100')
 			])
 		])
 	)

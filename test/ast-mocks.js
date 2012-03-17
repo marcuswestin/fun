@@ -64,7 +64,7 @@ function variable(name, initialValue) {
 }
 
 function composite(left, operator, right) {
-	return { type:'COMPOSITE', operator:operator, left:left, right:right }
+	return { type:'COMPOSITE', left:left, operator:operator, right:right }
 }
 
 function xml(tag, attrs, block) {

@@ -37,7 +37,8 @@ var TokenizeError = function(file, line, column, msg) {
 TokenizeError.prototype = Error.prototype
 
 var types = 'Bool,Text,Number,Color,Enum,Event,Interface,Anything,Nothing'.split(',') // Template,Handler,Function ?
-var keywords = 'let,for,in,if,else,template,handler,function,new,debugger,switch,case,default,and,or,return,null,import,var,false,true'.split(',')
+var keywords = 'let,for,in,if,is,else,template,handler,function,new,debugger,switch,case,default,and,or,return,null,import,var,false,true'.split(',')
+
 function _doTokenize (inputString, inputFile) {
     var c;                      // The current character.
     var from;                   // The index of the start of the token.

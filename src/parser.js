@@ -58,8 +58,8 @@ var _parseImportStatement = astGenerator(function() {
 var parseEmitStatement = function() {
 	if (peek('symbol', '<')) { return parseXML() }
 	if (peek('keyword')) {
-		if (peek('keyword', 'null')) { return parseNullLiteral() }
-		else { return parseControlStatement(parseEmitStatement) }
+		var controlStatement = tryParseControlStatement(parseEmitStatement)
+		if (controlStatement) { return controlStatement }
 	}
 	return parseExpression()
 }
@@ -68,8 +68,7 @@ var parseEmitStatement = function() {
 /***************************
  * Control flow statements *
  ***************************/
-var parseControlStatement = function(blockParseFunction) {
-	assert(peek(), peek('keyword'), 'parseControlStatement expected to see a keyword')
+var tryParseControlStatement = function(blockParseFunction) {
 	switch(peek().value) {
 		// case 'let':      return parseAliasDeclaration()
 		case 'var':      return parseVariableDeclaration()
@@ -77,7 +76,6 @@ var parseControlStatement = function(blockParseFunction) {
 		case 'if':       return parseIfStatement(blockParseFunction)
 		case 'switch':   return parseSwitchStatement(blockParseFunction)
 		case 'debugger': return parseDebuggerLiteral()
-		default:         halt(peek(), 'Unexpected keyword "'+peek().value+'" while trying to parse an emit statement')
 	}
 }
 
@@ -98,7 +96,7 @@ var parseVariableDeclaration = astGenerator(function() {
 	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
 	if (peek('symbol', '=')) {
 		advance('symbol', '=')
-		var initialValue = parseLiteralExpression(parseLiteralExpression)
+		var initialValue = parseExpression(parseExpression)
 	}
 	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
 })
@@ -106,88 +104,95 @@ var parseVariableDeclaration = astGenerator(function() {
 /***************************************************
  * Expressions (literals, references, invocations) *
  ***************************************************/
-var _expressionOperatorSymbols = ['+','-','*','/','%','?'], _expressionOperatorKeywords = []
-var parseExpression = function() {
-	return _doParseExpression(_expressionOperatorSymbols, _expressionOperatorKeywords, 0)
-}
+var prefixOperators = ['-', '!'],
+	compositeOperators = ['+','-','*','/','%','?'],
+	conditionalOperators = ['<', '>', '<=', '>=', '=='],
+	conditionalJoiners = ['and', 'or']
 
-var _conditionOperatorSymbols = ['<','>','<=','>=','=='], _conditionOperatorKeywords = ['and','or']
-var parseConditionExpression = function() {
-	return _doParseExpression(_conditionOperatorSymbols, _conditionOperatorSymbols, 0)
-}
-
-var _prefixOperators = '-!~'.split('')
-var _prefixBinding = 70
-
-var _operatorBinding = {
+var bindingPowers = {
+	'?':10,
 	'and': 20, 'or': 20,
 	'<':   30, '>':  30, '<=': 30, '>=': 30, '==': 30,
 	'+':   40, '-':  40,
-	'*':   50, '/':  50, '%':  50 }
+	'*':   50, '/':  50, '%':  50		
+}
 
-var _doParseExpression = astGenerator(function(operatorSymbols, operatorKeywords, leftOperatorBinding) {
-	if (!leftOperatorBinding) { leftOperatorBinding = 0 }
+var parseExpression = function() {
+	return _parseMore(0)
+}
 
-	var parseMore = curry(_doParseExpression, operatorSymbols, operatorKeywords),
-		peekOperator = curry(_peekOperator, operatorSymbols, operatorKeywords)
+var _parseMore = astGenerator(function(leftOperatorBinding) {
+	if (leftOperatorBinding == null) {
+		// leftOperatorBinding = 0
+		throw new Error("leftOperatorBinding should be defined: ")
+	}
 	
-	if (peek('symbol', _prefixOperators)) {
+	if (peek('symbol', prefixOperators)) {
+		// Prefix operators simply apply to the next expression
+		// and does not modify the left operator binding
 		var prefixOperator = advance('symbol').value,
-			value = parseMore(leftOperatorBinding)
+			value = _parseMore(leftOperatorBinding)
 		return { type:'UNARY', operator:prefixOperator, value:value }
 	}
 	
 	if (peek('symbol', L_PAREN)) {
 		advance('symbol', L_PAREN)
-		var expression = parseMore(0)
+		var expression = _parseMore(0)
 		advance('symbol', R_PAREN)
 		return expression
 	}
-
-	var expression = parseLiteralExpression(curry(_doParseExpression, operatorSymbols, operatorKeywords, leftOperatorBinding))
-
-	if (peek('symbol', '?')) {
-		advance()
-		var ifValue = parseExpression(operatorSymbols, operatorKeywords, 0)
-		advance('symbol',':')
-		var elseValue = parseExpression(operatorSymbols, operatorKeywords, 0)
-		return { type:'TERNARY', condition:expression, ifValue:ifValue, elseValue:elseValue }
-	}
-
+	
+	var expression = _parseAtomicValue()
+	
+	var rightOperatorToken, rightOperator
 	while (true) {
-		var rightOperator = peekOperator(),
-			rightOperatorBinding = _operatorBinding[rightOperator]
+		if (peek('keyword', 'is')) {
+			rightOperatorToken = peek('symbol', conditionalOperators, 2)
+			assert(peek(null, null, 2), rightOperatorToken, 'expected a conditional operator')
+		} else {
+			rightOperatorToken = peek('symbol', compositeOperators)
+		}
 		
-		if (!rightOperator || leftOperatorBinding > rightOperatorBinding) { return expression }
-
+		var rightOperator = rightOperatorToken && rightOperatorToken.value,
+			rightOperatorBinding = (bindingPowers[rightOperator] || 0)
+		
+		if (!rightOperator || leftOperatorBinding > rightOperatorBinding) {
+			return expression
+		}
+		
+		if (peek('symbol', '?')) {
+			advance()
+			var ifValue = _parseMore(0)
+			advance('symbol',':')
+			var elseValue = _parseMore(0)
+			return { type:'TERNARY', condition:expression, ifValue:ifValue, elseValue:elseValue }
+		}
+		
+		if (peek('keyword', 'is')) {
+			advance() // the "is" keyword
+		}
 		advance() // the operator
-
-		expression = { type:'COMPOSITE', operator:rightOperator, left:expression, right:parseMore(rightOperatorBinding) }
+		
+		expression = { type:'COMPOSITE', left:expression, operator:rightOperator, right:_parseMore(rightOperatorBinding) }
 	}
 })
 
-var _peekOperator = function(operatorSymbols, operatorKeywords) {
-	if (peek('symbol', operatorSymbols)) { return peek().value }
-	if (peek('keyword', operatorKeywords)) { return peek().value }
-	return ''
-}
-
-var parseLiteralExpression = function(collectionExpressionParser) {
+var _parseAtomicValue = function() {
 	switch (peek().type) {
 		case 'string': return _parseTextLiteral()
 		case 'number': return _parseNumberLiteral()
 		case 'name':   return _parseReferenceOrInvocation()
 		case 'symbol':
 			switch(peek().value) {
-				case L_ARRAY: return parseListLiteral(curry(collectionExpressionParser, collectionExpressionParser))
-				case L_CURLY: return parseObjectLiteral(curry(collectionExpressionParser, collectionExpressionParser))
+				case L_ARRAY: return _parseListLiteral(curry(_parseMore, 0))
+				case L_CURLY: return _parseObjectLiteral(curry(_parseMore, 0))
 				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'" while looking for a value')
 			}
 		case 'keyword':
 			switch(peek().value) {
-				case 'template': return parseTemplateLiteral()
-				case 'handler':  return parseHandlerLiteral()
-				case 'function': return parseFunctionLiteral()
+				case 'template': return _parseTemplateLiteral()
+				case 'handler':  return _parseHandlerLiteral()
+				case 'function': return _parseFunctionLiteral()
 				case 'null':     return parseNullLiteral()
 				case 'true':     return _parseTrueLiteral()
 				case 'false':    return _parseFalseLiteral()
@@ -231,17 +236,14 @@ var _parseReferenceOrInvocation = astGenerator(function() {
 	return { type:'INVOCATION', operand:reference, arguments:args }
 })
 
-/************************************
- * JSON - list and object listerals *
- ************************************/
-var parseListLiteral = astGenerator(function(contentExpressionParseFn) {
+var _parseListLiteral = astGenerator(function(contentExpressionParseFn) {
 	advance('symbol', L_ARRAY)
 	var content = parseList(contentExpressionParseFn, R_ARRAY)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
 	return { type:'LIST_LITERAL', content:content }
 })
 
-var parseObjectLiteral = astGenerator(function(contentExpressionParseFn) {
+var _parseObjectLiteral = astGenerator(function(contentExpressionParseFn) {
 	advance('symbol', L_CURLY)
 	var content = []
 	while (true) {
@@ -328,17 +330,17 @@ var _parseScript = astGenerator(function() {
 /***********************************************
  * Callables - Templates, Handlers & Functions *
  ***********************************************/
-var parseTemplateLiteral = astGenerator(function() {
+var _parseTemplateLiteral = astGenerator(function() {
 	var callable = _parseCallable(parseEmitStatement, 'template')
 	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 
-var parseHandlerLiteral = astGenerator(function() {
+var _parseHandlerLiteral = astGenerator(function() {
 	var callable = _parseCallable(parseHandlerStatement, 'handler')
 	return { type:'HANDLER', signature:callable[0], block:callable[1] }
 })
 
-var parseFunctionLiteral = astGenerator(function() {
+var _parseFunctionLiteral = astGenerator(function() {
 	var callable = _parseCallable(parseFunctionStatement, 'function')
 	return { type:'FUNCTION', signature:callable[0], block:callable[1] }
 })
@@ -362,7 +364,9 @@ var parseFunctionStatement = astGenerator(function() {
 			var value = parseExpression()
 			return { type:'RETURN', value:value }
 		} else {
-			return parseControlStatement(parseFunctionStatement)
+			var controlStatement = tryParseControlStatement(parseFunctionStatement)
+			if (controlStatement) { return controlStatement }
+			throw new Error("Expected a control statement")
 		}
 	}
 	
@@ -428,7 +432,7 @@ var parseForLoopStatement = astGenerator(function(statementParseFunction) {
 var parseIfStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'if')
 	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
-	var condition = parseConditionExpression()
+	var condition = parseExpression()
 	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
 	
 	var ifBlock = parseBlock(statementParseFunction, 'if statement')
@@ -448,7 +452,7 @@ var parseIfStatement = astGenerator(function(statementParseFunction) {
 var parseSwitchStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'switch')
 	advance('symbol', L_PAREN, 'beginning of the switch statement\'s value')
-	var controlValue = parseConditionExpression()
+	var controlValue = parseExpression()
 	advance('symbol', R_PAREN, 'end of the switch statement\'s value')
 	var cases = parseBlock(curry(_parseCase, statementParseFunction), 'switch case statement')
 	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
