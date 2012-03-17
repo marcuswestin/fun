@@ -27,19 +27,18 @@ exports.parse = function(tokens) {
 	var ast = []
 	
 	var setupAST
-	while (setupAST = parseSetupStatement()) { ast.push(setupAST) }
+	while (setupAST = parseImports()) { ast.push(setupAST) }
 	
-	while (peek()) { ast.push(parseEmitStatement()) }
+	while (peek()) { ast.push(parseTemplateBlock()) }
 	
 	return util.cleanup(ast)
 }
 
-/************************************************************
- * Setup statements - comes before any of the emitting code *
- ************************************************************/
-function parseSetupStatement() {
+/**************************************************
+ * Imports - come before any of the emitting code *
+ **************************************************/
+function parseImports() {
 	if (peek('keyword', 'import')) { return _parseImportStatement() }
-	// if (peek('keyword', 'let')) { return parseAliasDeclaration() }
 }
 
 var _parseImportStatement = astGenerator(function() {
@@ -52,15 +51,15 @@ var _parseImportStatement = astGenerator(function() {
 	}
 })
 
-/***********************
- * Emitting statements *
- ***********************/
-var parseEmitStatement = function() {
+/*************
+ * Templates *
+ *************/
+var parseTemplateBlock = function() {
+	var controlStatement = tryParseControlStatement(parseTemplateBlock)
+	if (controlStatement) { return controlStatement }
+	
 	if (peek('symbol', '<')) { return parseXML() }
-	if (peek('keyword')) {
-		var controlStatement = tryParseControlStatement(parseEmitStatement)
-		if (controlStatement) { return controlStatement }
-	}
+	
 	return parseExpression()
 }
 
@@ -69,6 +68,12 @@ var parseEmitStatement = function() {
  * Control flow statements *
  ***************************/
 var tryParseControlStatement = function(blockParseFunction) {
+	if (peek('symbol', '<') && peek('name', 'script', 2)) {
+		advance('symbol', '<', 'Script tag open')
+		advance('name', 'script', 'Script tag name')
+		return _parseScript()
+	}
+	
 	switch(peek().value) {
 		// case 'let':      return parseAliasDeclaration()
 		case 'var':      return parseVariableDeclaration()
@@ -78,6 +83,28 @@ var tryParseControlStatement = function(blockParseFunction) {
 		case 'debugger': return parseDebuggerLiteral()
 	}
 }
+
+var _parseScript = astGenerator(function() {
+	var attributes = _parseXMLAttributes(),
+		js = []
+	advance('symbol', '>', 'end of the script tag')
+	while (!(peek('symbol', '</', 1) && peek('name', 'script', 2) && peek('symbol', '>', 3))) {
+		advance()
+		if (gToken.hadNewline) { js.push('\n') }
+		if (gToken.hadSpace) { js.push(' ') }
+		
+		if (gToken.type == 'string') {
+			js.push(gToken.annotations.single ? "'"+gToken.value+"'" : '"'+gToken.value+'"')
+		} else {
+			js.push(gToken.value)
+		}
+	}
+	advance('symbol', '</')
+	advance('name', 'script')
+	advance('symbol', '>')
+	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js.join('') }
+})
+
 
 /****************
  * Declarations *
@@ -101,9 +128,9 @@ var parseVariableDeclaration = astGenerator(function() {
 	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
 })
 
-/***************************************************
- * Expressions (literals, references, invocations) *
- ***************************************************/
+/*******************************************************************************
+ * Expressions (literals, references, invocations, composites, ternaries, ...) *
+ *******************************************************************************/
 var prefixOperators = ['-', '!'],
 	compositeOperators = ['+','-','*','/','%','?'],
 	conditionalOperators = ['<', '>', '<=', '>=', '=='],
@@ -231,14 +258,14 @@ var _parseReferenceOrInvocation = astGenerator(function() {
 	var reference = parseReference()
 	if (!peek('symbol', L_PAREN)) { return reference }
 	advance('symbol', L_PAREN)
-	var args = parseList(parseExpression, R_PAREN)
+	var args = parseList(R_PAREN, parseExpression)
 	advance('symbol', R_PAREN, 'end of invocation')
 	return { type:'INVOCATION', operand:reference, arguments:args }
 })
 
 var _parseListLiteral = astGenerator(function(contentExpressionParseFn) {
 	advance('symbol', L_ARRAY)
-	var content = parseList(contentExpressionParseFn, R_ARRAY)
+	var content = parseList(R_ARRAY, contentExpressionParseFn)
 	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
 	return { type:'LIST_LITERAL', content:content }
 })
@@ -259,6 +286,32 @@ var _parseObjectLiteral = astGenerator(function(contentExpressionParseFn) {
 	return { type:'DICTIONARY_LITERAL', content:content }
 })
 
+var _parseTemplateLiteral = astGenerator(function() {
+	var callable = _parseCallable(parseTemplateStatement, 'template')
+	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
+})
+
+var _parseHandlerLiteral = astGenerator(function() {
+	var callable = _parseCallable(parseHandlerBlock, 'handler')
+	return { type:'HANDLER', signature:callable[0], block:callable[1] }
+})
+
+var _parseFunctionLiteral = astGenerator(function() {
+	var callable = _parseCallable(parseFunctionBlock, 'function')
+	return { type:'FUNCTION', signature:callable[0], block:callable[1] }
+})
+
+var _parseCallable = function(statementParseFn, keyword) {
+	advance('keyword', keyword)
+	advance('symbol', L_PAREN)
+	var signature = parseList(R_PAREN, function() {
+		return createAST({ type:'ARGUMENT', name:advance('name').value })
+	})
+	advance('symbol', R_PAREN)
+	var block = parseBlock(statementParseFn, keyword)
+	return [signature, block]
+}
+
 /****************
  * XML literals *
  ****************/
@@ -266,10 +319,6 @@ var parseXML= astGenerator(function() {
 	advance('symbol', '<', 'XML tag opening')
 	advance('name', null, 'XML tag name')
 	var tagName = gToken.value
-	
-	if (gToken.value == 'script') {
-		return _parseScript()
-	}
 	
 	var attributes = _parseXMLAttributes()
 	
@@ -280,7 +329,7 @@ var parseXML= astGenerator(function() {
 		var statements = []
 		while(true) {
 			if (peek('symbol', '</')) { break }
-			statements.push(parseEmitStatement())
+			statements.push(parseTemplateBlock())
 		}
 		advance('symbol', '</')
 		advance('name', tagName, 'matching XML tags')
@@ -306,88 +355,33 @@ var _parseXMLAttribute = astGenerator(function() {
 })
 
 
-var _parseScript = astGenerator(function() {
-	var attributes = _parseXMLAttributes(),
-		js = []
-	advance('symbol', '>', 'end of the script tag')
-	while (!(peek('symbol', '</', 1) && peek('name', 'script', 2) && peek('symbol', '>', 3))) {
-		advance()
-		if (gToken.hadNewline) { js.push('\n') }
-		if (gToken.hadSpace) { js.push(' ') }
-		
-		if (gToken.type == 'string') {
-			js.push(gToken.annotations.single ? "'"+gToken.value+"'" : '"'+gToken.value+'"')
-		} else {
-			js.push(gToken.value)
-		}
-	}
-	advance('symbol', '</')
-	advance('name', 'script')
-	advance('symbol', '>')
-	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js.join('') }
-})
-
-/***********************************************
- * Callables - Templates, Handlers & Functions *
- ***********************************************/
-var _parseTemplateLiteral = astGenerator(function() {
-	var callable = _parseCallable(parseEmitStatement, 'template')
-	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
-})
-
-var _parseHandlerLiteral = astGenerator(function() {
-	var callable = _parseCallable(parseHandlerStatement, 'handler')
-	return { type:'HANDLER', signature:callable[0], block:callable[1] }
-})
-
-var _parseFunctionLiteral = astGenerator(function() {
-	var callable = _parseCallable(parseFunctionStatement, 'function')
-	return { type:'FUNCTION', signature:callable[0], block:callable[1] }
-})
-
-var _parseCallable = function(statementParseFn, keyword) {
-	advance('keyword', keyword)
-	advance('symbol', L_PAREN)
-	var signature = parseList(function() { return createAST({ type:'ARGUMENT', name:advance('name').value }) }, R_PAREN)
-	advance('symbol', R_PAREN)
-	var block = parseBlock(statementParseFn, keyword)
-	return [signature, block]
+/*************
+ * Functions *
+ *************/
+var parseFunctionBlock = function() {
+	var controlStatement = tryParseControlStatement(parseFunctionBlock)
+	if (controlStatement) { return controlStatement }
+	
+	if (peek('keyword', 'return')) { return _parseReturnStatement() }
+	
+	halt(peek(), 'Implement parseFunctionBlock')
 }
 
-/***********************
- * Function statements *
- ***********************/
-var parseFunctionStatement = astGenerator(function() {
-	if (peek('keyword')) {
-		if (peek('keyword', 'return')) {
-			advance('keyword', 'return')
-			var value = parseExpression()
-			return { type:'RETURN', value:value }
-		} else {
-			var controlStatement = tryParseControlStatement(parseFunctionStatement)
-			if (controlStatement) { return controlStatement }
-			throw new Error("Expected a control statement")
-		}
-	}
-	
-	if (peek('symbol', '<') && peek('name', 'script', 2)) {
-		advance('symbol', '<', 'Script tag open')
-		advance('name', 'script', 'Script tag name')
-		return _parseScript()
-	}
-	
-	halt(peek(), 'Implement parseFunctionStatement')
+var _parseReturnStatement = astGenerator(function() {
+	advance('keyword', 'return')
+	var value = parseExpression()
+	return { type:'RETURN', value:value }
 })
 
-/**********************
- * Handler statements *
- **********************/
-var parseHandlerStatement = function() {
+/************
+ * Handlers *
+ ************/
+var parseHandlerBlock = function() {
 	var token = peek()
 	switch(token.type) {
 		case 'keyword':
 			switch(token.value) {
-				case 'if':        return parseIfStatement(parseHandlerStatement)
+				case 'if':        return parseIfStatement(parseHandlerBlock)
 				case 'debugger':  return parseDebuggerLiteral()
 				// case 'let':       return parseAliasDeclaration()
 				default:          log(token); UNKNOWN_MUTATION_KEYWORD
@@ -401,7 +395,7 @@ var _parseMutationInvocation = astGenerator(function() {
 	var reference = parseReference(),
 		operator = reference.chain.pop()
 	advance('symbol', L_PAREN)
-	var args = parseList(parseExpression, R_PAREN)
+	var args = parseList(R_PAREN, parseExpression)
 	advance('symbol', R_PAREN, 'end of mutation operator')
 	return {type:'MUTATION', operand:reference, operator:operator, arguments:args}
 })
@@ -483,7 +477,7 @@ var _parseCase = astGenerator(function(statementParseFunction) {
  * Shared parsing functions *
  ****************************/
 // parses comma-seperated statements until <breakSymbol> is encounteded (e.g. R_PAREN or R_ARRAY)
-var parseList = function(statementParseFunction, breakSymbol) {
+var parseList = function(breakSymbol, statementParseFunction) {
 	var list = []
 	while (true) {
 		if (peek('symbol', breakSymbol)) { break }
