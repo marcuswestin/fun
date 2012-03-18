@@ -74,7 +74,7 @@ var _parseFunctionBlock = function() {
 	
 	if (peek('keyword', 'return')) { return _parseReturnStatement() }
 	
-	halt(peek(), 'Implement _parseFunctionBlock')
+	halt(peek(), 'Expected either a return statement or a control statement in this function block.')
 }
 
 var _parseReturnStatement = astGenerator(function() {
@@ -92,19 +92,13 @@ var parseHandlerLiteral = astGenerator(function() {
 })
 
 var _parseHandlerBlock = function() {
-	var token = peek()
-	switch(token.type) {
-		case 'keyword':
-			switch(token.value) {
-				case 'if':        return parseIfStatement(_parseHandlerBlock)
-				case 'debugger':  return parseDebuggerLiteral()
-				default:          console.log(token); UNKNOWN_MUTATION_KEYWORD
-			}
-		default:
-			return _parseMutationInvocation()
-	}
+	var controlStatement = tryParseControlStatement(_parseHandlerBlock)
+	if (controlStatement) { return controlStatement }
+	
+	return _parseMutationInvocation()
 }
 
+// TODO Should we make mutations syntactically different from invocations?
 var _parseMutationInvocation = astGenerator(function() {
 	var reference = parseReference(),
 		operator = reference.chain.pop()
