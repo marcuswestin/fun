@@ -17,12 +17,12 @@ var expressions = require('./expressions'),
 
 	fun.expressions = expressions
 	
-	fun.invoke = function(operand, args, hookName) {
+	fun.invoke = function(operand, args) {
 		var evaluatedOperand = operand.evaluate()
 		if (!evaluatedOperand.isInvocable()) {
 			throw new Error('Attempted to invoke a non-invocable: '+operand.inspect())
 		}
-		return evaluatedOperand.evaluate().invoke(hookName, args)
+		return evaluatedOperand.evaluate().invoke(args)
 	}
 /* Values
  ********/

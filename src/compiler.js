@@ -410,8 +410,13 @@ var compileExpression = function(ast) {
 				operator:q(ast.operator),
 				value:compileExpression(ast.value)
 			})
-		case 'INVOCATION':    return _compileInvocation(null, ast)
-		case 'FUNCTION':      return compileFunctionDefinition(ast)
+		case 'INVOCATION':
+			return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, "")', {
+				operand:compileExpression(ast.operand),
+				arguments:'['+map(ast.arguments, function(arg) { return compileExpression(arg) }).join(',')+']'
+			})
+		case 'FUNCTION':
+			return compileFunctionDefinition(ast)
 		
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
@@ -437,14 +442,6 @@ var _code = function(args, addNewlines) {
 		output = output.replace(wholeMatch, value)
 	}
 	return output
-}
-
-var _compileInvocation = function(context, ast) {
-	return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, {{ hookName }})', {
-		operand:compileExpression(ast.operand),
-		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(arg) }).join(',')+']',
-		hookName:q(context && context.hookName ? context.hookName : '')
-	})
 }
 
 var _types = { 'TEXT_LITERAL':'Text', 'NUMBER_LITERAL':'Number', 'LOGIC_LITERAL':'Logic', 'NULL_LITERAL':'Null', 'DICTIONARY_LITERAL':'Dictionary', 'LIST_LITERAL':'List' }
