@@ -378,11 +378,16 @@ var compileExpression = function(ast) {
 		case 'NUMBER_LITERAL':
 		case 'NULL_LITERAL':
 		case 'LOGIC_LITERAL':
-			return _inlineCode('fun.expressions.{{ valueType }}({{ value }})', { valueType:_getType(ast), value:q(ast.value) })
+			return _inlineCode('fun.expressions.{{ expressionType }}({{ value }})', {
+				expressionType:_getType(ast),
+				value:q(ast.value)
+			})
 		case 'REFERENCE':
 			return ast.chain.length
-				? _inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', { name:variableName(ast.name), chain:q(ast.chain) })
-				: variableName(ast.name)
+				? _inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', {
+					name:variableName(ast.name),
+					chain:q(ast.chain)
+				}) : variableName(ast.name)
 		case 'ARGUMENT':
 			return ast.runtimeName
 		case 'DICTIONARY_LITERAL':
