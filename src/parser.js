@@ -565,4 +565,3 @@ function createAST(astObj, startToken, endToken) {
 	}
 	return ast
 }
-
