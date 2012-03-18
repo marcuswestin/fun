@@ -276,42 +276,6 @@ var _compileScript = function(context, ast) {
 	})
 }
 
-/* Declarations
- **************/
-var compileValueDeclaration = function(ast) {
-	return code('fun.declare({{ uniqueID }}, {{ valueType }}, {{ initialValue }})', {
-		uniqueID: q(ast.uniqueID),
-		valueType: q(ast.valueType),
-		initialValue: q(ast.initialValue)
-	})
-}
-
-var compileListLiteral = function(ast) {
-	halt(ast, 'Implement compileListLiteral')
-}
-
-var compileTemplateDeclaration = function(ast) {
-	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same template twice')
-	ast.compiledFunctionName = name('TEMPLATE_FUNCTION')
-	var hookName = name('TEMPLATE_HOOK')
-	
-	return code(
-		'function {{ templateFunctionName }}({{ hookName }} {{ argNames }}) {',
-		'	{{ code }}',
-		'}',
-		{
-			templateFunctionName: ast.compiledFunctionName,
-			hookName: hookName,
-			code: indent(compile, {hookName:hookName}, ast.block),
-			argNames: _commaPrefixJoin(ast.signature, function(arg) { return arg.runtimeName })
-		})
-}
-
-var _commaPrefixJoin = function(arr, fn) {
-	if (arr.length == 0) { return '' }
-	return ', ' + map(arr, compileExpression).join(', ')
-}
-
 /* Functions
  ***********/
 var compileFunctionDefinition = function(ast) {
@@ -488,18 +452,6 @@ var _getType = function(ast) {
 	assert(ast, !!_types[ast.type], 'Unknown value literal type')
 	return _types[ast.type]
 }
-var _isAtomic = function(ast) {
-	switch(ast.type) {
-		case 'TEXT_LITERAL':
-		case 'NUMBER_LITERAL':
-		case 'LOGIC_LITERAL':
-		case 'NULL_LITERAL':
-			return true
-		default:
-			return false
-	}
-}
-
 
 var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 	var statementLines = Array.prototype.slice.call(arguments, 1, arguments.length - 1),
