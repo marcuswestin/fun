@@ -124,10 +124,14 @@ test('if/else in a div -> first if branch, then else branch')
 		'<div id="output">',
 		'	if (foo is < 100) { "foo is < 100" }',
 		'	else { "foo is >= 100" }',
-		'</div onclick=handler(){ foo.set(80) }>')
+		'</div>',
+		'<button id="lower" onclick=handler(){ foo.set(80) } />',
+		'<button id="higher" onclick=handler(){ foo.set(120) } />')
 	.textIs('#output', 'foo is >= 100')
-	.click('#output')
+	.click('#lower')
 	.textIs('#output', 'foo is < 100')
+	.click('#higher')
+	.textIs('#output', 'foo is >= 100')
 
 
 test('returning an argument reference from a function')

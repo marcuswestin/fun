@@ -185,10 +185,10 @@ var _compileIfStatement = function(blockCompileFn, context, ast) {
 		+ code('var {{ lastOutcomeName }}', { lastOutcomeName:lastOutcomeName })
 		+ _statementCode(ast.condition,
 		';(function(ifBranch, elseBranch) {',
-		'	if ({{ lastOutcome }} && {{ STATEMENT_VALUE }}.equals({{ lastOutcome }}).getContent()) { return }',
+		'	if ({{ lastOutcome }} && {{ STATEMENT_VALUE }}.equals({{ lastOutcome }}).isTruthy()) { return }',
 		'	{{ lastOutcome }} = {{ STATEMENT_VALUE }}',
 		'	fun.destroyHook({{ hookName }})',
-		'	if ({{ lastOutcome }}.getContent()) { ifBranch() } else { elseBranch() }',
+		'	{{ lastOutcome }}.isTruthy() ? ifBranch() : elseBranch()',
 		'})(',
 		'	function ifBranch(){',
 		'		{{ ifCode }}',
