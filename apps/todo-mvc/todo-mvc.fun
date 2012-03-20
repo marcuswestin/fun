@@ -21,35 +21,36 @@ localstorage.persist(tasks, 'todo-fun')
 				newTaskName.set('')
 			}>
 		</div>
-	</div>
-	<div id="todos">
-		<ul id="todo-list">
-			for (task in tasks) {
-				<li class="todo"+(task.done ? " done" : "")>
-					<input class="check" type="checkbox" data=task.done />
-					<div class="todo-content">task.name</div>
-				</li>
-			}
-		</ul>
-	</div>
-	<div id="todo-stats">
-		if (tasks.length is > 0) {
-			var doneTasks = filter(tasks, function(task) { return task.done })
-			<span class="todo-count">tasks.length - doneTasks.length " tasks left."</span>
-			if (doneTasks.length is > 0) {
-				<span class="todo-clear">
-					var tasksPluralized = doneTasks.length is > 1 ? "items" : "item"
-					<a href="#">"Clear "doneTasks.length" completed "tasksPluralized</a onclick=handler() {
-						var remainingTasks = []
-						for (task in tasks) {
-							if (!task.done) {
-								remainingTasks.push(task)
+		<div id="todos">
+			<ul id="todo-list">
+				for (task in tasks) {
+					<li class="todo"+(task.done ? " done" : "")>
+						<input class="check" type="checkbox" data=task.done />
+						<div class="todo-content">task.name</div>
+					</li>
+				}
+			</ul>
+		</div>
+		<div id="todo-stats">
+			if (tasks.length is > 0) {
+				var doneTasks = filter(tasks, function(task) { return task.done })
+				var pluralize = function(num) { return num is > 1 ? "items" : "item" }
+				var numTasksLeft = tasks.length - doneTasks.length
+				<span class="todo-count">numTasksLeft" "pluralize(numTasksLeft) " left."</span>
+				if (doneTasks.length is > 0) {
+					<span class="todo-clear">
+						<a href="#">"Clear "doneTasks.length" completed "pluralize(doneTasks.length)</a onclick=handler() {
+							var remainingTasks = []
+							for (task in tasks) {
+								if (!task.done) {
+									remainingTasks.push(task)
+								}
 							}
-						}
-						tasks.set(remainingTasks)
-					}>
-				</span>
+							tasks.set(remainingTasks)
+						}>
+					</span>
+				}
 			}
-		}
+		</div>
 	</div>
 </div>

@@ -213,9 +213,12 @@ var composite = module.exports.composite = proto(variableValueBase,
 		_type:'composite',
 		evaluate:function() { return operators[this.operator](this.left, this.right) },
 		observe:function(callback) {
-			// TODO store observation IDs
-			this.left.observe(callback)
-			this.right.observe(callback)
+			this._leftId = this.left.observe(callback)
+			this._rightId = this.right.observe(callback)
+		},
+		dismiss:function() {
+			this.left.dismiss(this._leftId)
+			this.right.dismiss(this._rightId)
 		}
 	}
 )
