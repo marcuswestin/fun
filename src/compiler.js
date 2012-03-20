@@ -70,8 +70,8 @@ var _doCompile = function(tokens) {
 	return exports._printHTML(withoutWhiteLines)
 }
 
-/* Templates
- ***********/
+/* Templates - emitting code that observes its expressions
+ *********************************************************/
 var compileTemplateBlock = function(context, ast) {
 	if (isArray(ast)) { return map(ast, curry(compileTemplateBlock, context)).join('\n') + '\n' }
 	
@@ -90,7 +90,7 @@ var compileTemplateBlock = function(context, ast) {
 		case 'TERNARY':
 		case 'INVOCATION':        return _emitExpression(context, ast)
 		
-		case 'XML':               return emitXML(context, ast)
+		case 'XML':               return _emitXML(context, ast)
 		
 		default:                  halt(ast, 'Unknown emit statement type '+ast.type)
 	}
@@ -104,9 +104,7 @@ var _emitExpression = function(context, ast) {
 	})
 }
 
-/* XML
- *****/
-var emitXML = function(context, ast) {
+var _emitXML = function(context, ast) {
 	var nodeHookName = name('XML_HOOK'),
 		newContext = copyContext(context, { hookName:nodeHookName })
 	
@@ -127,16 +125,16 @@ var emitXML = function(context, ast) {
 		})
 }
 
-/* Control statements - if/else, switch, for loop, script tag, debugger
- **********************************************************************/
+/* Template control statements
+ *****************************/
 var tryCompileControlStatement = function(blockCompileFn, context, ast) {
 	switch(ast.type) {
+		case 'SCRIPT_TAG':           return compileScript(context, ast)
+		case 'DEBUGGER':             return 'debugger'
 		case 'VARIABLE_DECLARATION': return _compileVariableDeclaration(context, ast)
-		case 'IF_STATEMENT':      return _compileIfStatement(blockCompileFn, context, ast)
-		case 'SWITCH_STATEMENT':  return _compileSwitchStatement(blockCompileFn, context, ast)
-		case 'FOR_LOOP':          return _compileForLoop(blockCompileFn, context, ast)
-		case 'SCRIPT_TAG':        return _compileScript(context, ast)
-		case 'DEBUGGER':          return 'debugger'
+		case 'IF_STATEMENT':         return _compileTemplateIfStatement(blockCompileFn, context, ast)
+		case 'SWITCH_STATEMENT':     return _compileTemplateSwitchStatement(blockCompileFn, context, ast)
+		case 'FOR_LOOP':             return _compileTemplateForLoop(blockCompileFn, context, ast)
 	}
 }
 
@@ -147,7 +145,7 @@ var _compileVariableDeclaration = function(context, ast) {
 	})
 }
 
-var _compileIfStatement = function(blockCompileFn, context, ast) {
+var _compileTemplateIfStatement = function(blockCompileFn, context, ast) {
 	var hookName = name('IF_ELSE_HOOK'),
 		ifElseContext = copyContext(context, { hookName:hookName }),
 		lastOutcomeName = name('LAST_VALUE')
@@ -176,7 +174,7 @@ var _compileIfStatement = function(blockCompileFn, context, ast) {
 		})
 }
 
-var _compileSwitchStatement = function(blockCompileFn, context, ast) {
+var _compileTemplateSwitchStatement = function(blockCompileFn, context, ast) {
 	var switchContext = copyContext(context, { hookName:name('SWITCH_HOOK') })
 		lastValueName = name('LAST_VALUE')
 
@@ -209,7 +207,7 @@ var _compileSwitchStatement = function(blockCompileFn, context, ast) {
 		})
 }
 
-var _compileForLoop = function(blockCompileFn, context, ast) {
+var _compileTemplateForLoop = function(blockCompileFn, context, ast) {
 	var loopContext = copyContext(context, { hookName:name('FOR_LOOP_EMIT_HOOK') })
 	return code(
 		'var {{ loopHookName }} = fun.name()',
@@ -232,23 +230,8 @@ var _compileForLoop = function(blockCompileFn, context, ast) {
 		})
 }
 
-var _compileScript = function(context, ast) {
-	var variables = (ast.attributes.length == 0) ? '' : 'var '+map(ast.attributes, function(attr) {
-		return attr.name+'='+compileExpression(attr.value)
-	}).join(', ')+';'
-	return code(';(function(){',
-	'	{{ variables }}',
-	'/* START INLINE JAVASCRIPT */',
-	'{{ javascript }}',
-	'/* END INLINE JAVASCRIPT */',
-	'})()', {
-		variables:variables,
-		javascript:ast.inlineJavascript
-	})
-}
-
-/* Functions
- ***********/
+/* Functions and Handlers - procedural code where expressions are not observed
+ *****************************************************************************/
 var compileFunctionDefinition = function(ast) {
 	return code(
 		'fun.expressions.Function(function block({{ arguments }}) {',
@@ -278,8 +261,6 @@ var _compileFunctionReturn = function(ast) {
 	)
 }
 
-/* Handlers
- **********/
 var compileHandlerDefinition = function(ast) {
 	return code(
 		'fun.expressions.Handler(function block() {',
@@ -396,6 +377,22 @@ var compileExpression = function(ast) {
 	}
 }
 
+var compileScript = function(context, ast) {
+	var variables = (ast.attributes.length == 0) ? '' : 'var '+map(ast.attributes, function(attr) {
+		return attr.name+'='+compileExpression(attr.value)
+	}).join(', ')+';'
+	return code(';(function(){',
+	'	{{ variables }}',
+	'/* START INLINE JAVASCRIPT */',
+	'{{ javascript }}',
+	'/* END INLINE JAVASCRIPT */',
+	'})()', {
+		variables:variables,
+		javascript:ast.inlineJavascript
+	})
+}
+
+
 var _inlineCode = function() { return _code(arguments, false) }
 var _emitReplaceRegex = /{{\s*(\w+)\s*}}/
 var _code = function(args, addNewlines) {
@@ -440,7 +437,7 @@ var _statementCode = function(ast /*, line1, line2, ..., lineN, values */) {
 		})
 }
 
-function _hookCode(hookName, parentHookName) {
+var _hookCode = function(hookName, parentHookName) {
 	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHookName }})',
