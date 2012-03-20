@@ -35,8 +35,10 @@ localstorage.persist(tasks, 'todo-fun')
 			if (tasks.length is > 0) {
 				var doneTasks = filter(tasks, function(task) { return task.done })
 				var pluralize = function(num) { return num is > 1 ? "items" : "item" }
-				var numTasksLeft = tasks.length - doneTasks.length
-				<span class="todo-count">numTasksLeft" "pluralize(numTasksLeft) " left."</span>
+				<span class="todo-count">
+					var numTasksLeft = tasks.length - doneTasks.length
+					<span class="number">numTasksLeft</span>" "pluralize(numTasksLeft) " left."
+				</span>
 				if (doneTasks.length is > 0) {
 					<span class="todo-clear">
 						<a href="#">"Clear "doneTasks.length" completed "pluralize(doneTasks.length)</a onclick=handler() {
