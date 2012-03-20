@@ -63,7 +63,7 @@ var _doCompile = function(tokens) {
 		resolved = resolver.resolve(ast),
 		compiledJS = exports.compile(resolved)
 	
-	var withoutWhiteLines = filter(js.split('\n'), function(line) {
+	var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
 		return strip(line).length > 0
 	}).join('\n')
 	
