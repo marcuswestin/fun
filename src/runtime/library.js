@@ -72,7 +72,13 @@ var expressions = require('./expressions'),
 			return
 		}
 		value.observe(function() {
-			if (match = key.match(/^style\.(\w+)$/)) {
+			if (match = key.match(/^on(\w+)$/)) {
+				// Todo remove event listeners
+				var eventName = match[1].toLowerCase()
+				fun.on(_hooks[hookName], eventName, function(e) {
+					value.invoke()
+				})
+			} else if (match = key.match(/^style\.(\w+)$/)) {
 				fun.setStyle(hookName, match[1], value)
 			} else if (key == 'style') {
 				each(value.getContent(), function(val, key) {

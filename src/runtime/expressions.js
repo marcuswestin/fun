@@ -160,13 +160,12 @@ var NullValue = (proto(constantAtomicBase,
 
 module.exports.Null = function() { return NullValue }
 
-var func = module.exports.Function = proto(invocableBase,
+module.exports.Function = proto(invocableBase,
 	function(block) {
 		if (typeof block != 'function') { TypeMismatch }
 		this._content = block
 	}, {
 		_type:'Function',
-		asLiteral:function() { return '' },
 		invoke:function(args) {
 			var invocationValue = variable(NullValue)
 			var yieldValue = function(value) { invocationValue.set(null, fromJsValue(value)) }
@@ -184,6 +183,18 @@ var func = module.exports.Function = proto(invocableBase,
 				executeBlock()
 			}
 			return invocationValue
+		}
+	}
+)
+
+module.exports.Handler = proto(invocableBase,
+	function(block) {
+		if (typeof block != 'function') { TypeMismatch }
+		this._content = block
+	}, {
+		_type:'Handler',
+		invoke:function() {
+			this._content.apply(this)
 		}
 	}
 )

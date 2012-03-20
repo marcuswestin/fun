@@ -4,7 +4,7 @@ var filter = function(list, func) {
 			items = list.getContent()
 		// TODO use list.iterate(function(item) { ... }
 		for (var i=0, item; item=items[i]; i++) {
-			if (func.invoke(null, [item]).isTruthy()) {
+			if (func.invoke([item]).isTruthy()) {
 				result.push(item)
 			}
 		}

@@ -110,49 +110,20 @@ var emitXML = function(context, ast) {
 	var nodeHookName = name('XML_HOOK'),
 		newContext = copyContext(context, { hookName:nodeHookName })
 	
-	var attrs = {},
-		backCompatHandlerCode = []
+	var attrs = {}
 	each(ast.attributes, function(attr) {
-		var match
-		if (match = attr.name.match(/^on(\w+)$/)) {
-			// TODO remove this backcompat code and replace with a proper runtime handler expression
-			backCompatHandlerCode.push(_backCompatHandlerCode(attr.value, nodeHookName, match[1].toLowerCase()))
-		} else {
-			attrs[attr.name] = attr.value
-		}
+		attrs[attr.name] = attr.value
 	})
-	
 	return code(
 		'var {{ hookName }} = fun.name()',
 		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ attrsObj }} })',
-		'{{ backCompatHandlerCode }}',
 		'{{ block }}',
 		{
 			parentHook: context.hookName,
 			hookName: nodeHookName,
 			tagName: q(ast.tagName),
 			attrsObj: compileDictionaryLiteral(attrs),
-			block: ast.block ? indent(compileTemplateBlock, newContext, ast.block) : '',
-			backCompatHandlerCode: backCompatHandlerCode.join('\n')
-		})
-}
-
-var _backCompatHandlerCode = function(ast, nodeHookName, eventName) {
-	// TODO Remove this
-	var handlerFunctionCode
-	if (ast.compiledFunctionName) {
-		handlerFunctionCode = ast.compiledFunctionName
-	} else {
-		handlerFunctionCode = compileHandlerDeclaration(ast)
-	}
-	return code(
-		'fun.withHook({{ hookName }}, function(hook) {',
-		'	fun.on(hook, "{{ eventName }}", {{ handlerFunctionCode }})',
-		'})',
-		{
-			hookName: nodeHookName,
-			eventName: eventName,
-			handlerFunctionCode: handlerFunctionCode
+			block: ast.block ? indent(compileTemplateBlock, newContext, ast.block) : ''
 		})
 }
 
@@ -309,18 +280,13 @@ var _compileFunctionReturn = function(ast) {
 
 /* Handlers
  **********/
-var compileHandlerDeclaration = function(ast) {
-	assert(ast, !ast.compiledFunctionName, 'Tried to compile the same handler twice')
-	ast.compiledFunctionName = name('HANDLER_FUNCTION')
-	var hookName = name('HANDLER_HOOK')
+var compileHandlerDefinition = function(ast) {
 	return code(
-		'function {{ handlerFunctionName }}({{ hookName }}) {',
-		'	{{ code }}',
-		'}',
+		'fun.expressions.Handler(function block() {',
+		'	{{ block }}',
+		'})',
 		{
-			handlerFunctionName: ast.compiledFunctionName,
-			hookName: hookName,
-			code: indent(map, ast.block, curry(_compileHandlerBlock, ast.closure)).join('\n')
+			block: indent(map, ast.block, curry(_compileHandlerBlock, ast.closure)).join('\n')
 		})
 }
 
@@ -422,6 +388,8 @@ var compileExpression = function(ast) {
 			})
 		case 'FUNCTION':
 			return compileFunctionDefinition(ast)
+		case 'HANDLER':
+			return compileHandlerDefinition(ast)
 		
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
