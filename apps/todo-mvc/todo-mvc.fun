@@ -36,6 +36,20 @@ localstorage.persist(tasks, 'todo-fun')
 		if (tasks.length is > 0) {
 			var doneTasks = filter(tasks, function(task) { return task.done })
 			<span class="todo-count">tasks.length - doneTasks.length " tasks left."</span>
+			if (doneTasks.length is > 0) {
+				<span class="todo-clear">
+					var tasksPluralized = doneTasks.length is > 1 ? "items" : "item"
+					<a href="#">"Clear "doneTasks.length" completed "tasksPluralized</a onclick=handler() {
+						var remainingTasks = []
+						for (task in tasks) {
+							if (!task.done) {
+								remainingTasks.push(task)
+							}
+						}
+						tasks.set(remainingTasks)
+					}>
+				</span>
+			}
 		}
 	</div>
 </div>
