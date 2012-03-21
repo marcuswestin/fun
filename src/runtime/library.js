@@ -76,7 +76,7 @@ var expressions = require('./expressions'),
 				// Todo remove event listeners
 				var eventName = match[1].toLowerCase()
 				fun.on(_hooks[hookName], eventName, function(e) {
-					value.invoke()
+					value.invoke(e)
 				})
 			} else if (match = key.match(/^style\.(\w+)$/)) {
 				fun.setStyle(hookName, match[1], value)

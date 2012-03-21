@@ -274,12 +274,19 @@ var _compileFunctionReturn = function(ast) {
 
 var compileHandlerDefinition = function(ast) {
 	return code(
-		'fun.expressions.Handler(function block() {',
+		'fun.expressions.Handler(function block({{ signature }}) {',
 		'	{{ block }}',
 		'})',
 		{
+			signature: _compileSignature(ast.signature),
 			block: indent(map, ast.block, curry(_compileHandlerBlock, ast.closure)).join('\n')
 		})
+}
+
+var _compileSignature = function(signature) {
+	return map(signature, function(argument, i) {
+		return variableName(argument.name)
+	}).join(', ')
 }
 
 var _compileHandlerBlock = function(context, ast) {

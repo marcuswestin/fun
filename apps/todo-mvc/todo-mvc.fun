@@ -15,11 +15,12 @@ localstorage.persist(tasks, 'todo-fun')
 	<div class="content">
 		<div id="create-todo">
 			var newTaskName
-			<input id="new-todo" data=newTaskName placeholder="What needs to be done?"/>
-			<button>"Create"</button onclick=handler() {
-				tasks.push({ name:newTaskName.copy(), done:false })
-				newTaskName.set('')
-			}>
+			<input id="new-todo" data=newTaskName placeholder="What needs to be done?" onkeypress=handler(event) {
+				if (event.keyCode is == 13) {
+					tasks.push({ name:newTaskName.copy(), done:false })
+					newTaskName.set('')
+				}
+			}/>
 		</div>
 		<div id="todos">
 			<ul id="todo-list">
