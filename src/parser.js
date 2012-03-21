@@ -168,13 +168,13 @@ var parseVariableDeclaration = astGenerator(function() {
  *******************************************************************************/
 var prefixOperators = ['-', '!'],
 	compositeOperators = ['+','-','*','/','%','?'],
-	conditionalOperators = ['<', '>', '<=', '>=', '=='],
+	conditionalOperators = ['<', '>', '<=', '>=', '==', '='],
 	conditionalJoiners = ['and', 'or']
 
 var bindingPowers = {
 	'?':10,
 	'and': 20, 'or': 20,
-	'<':   30, '>':  30, '<=': 30, '>=': 30, '==': 30,
+	'<':   30, '>':  30, '<=': 30, '>=': 30, '==': 30, '=': 30,
 	'+':   40, '-':  40,
 	'*':   50, '/':  50, '%':  50		
 }

@@ -262,6 +262,7 @@ var unaryOperators = {
 var operators = {
 	'+': add,
 	'-': subtract,
+	'=': equals,
 	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
 	'>=': greaterThanOrEquals,
 	'<=': lessThanOrEquals,
