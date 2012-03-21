@@ -45,4 +45,4 @@ If you want to hack on the source:
 	cd fun
 	sudo npm install
 	sudo npm link
-	make
+	make test
