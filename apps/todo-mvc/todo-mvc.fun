@@ -6,7 +6,6 @@ var tasks = []
 localstorage.persist(tasks, 'todo-fun')
 
 <link rel="stylesheet" type="text/css" href="http://addyosmani.github.com/todomvc/reference-examples/vanillajs/css/todos.css" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 
 <div id="todoapp">
 	<div class="title">
