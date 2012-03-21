@@ -457,6 +457,7 @@ var fromJsValue = module.exports.fromJsValue = module.exports.value = function(v
 		case 'string': return Text(val)
 		case 'number': return Number(val)
 		case 'boolean': return Logic(val)
+		case 'undefined': return NullValue
 		case 'object':
 			if (base.isPrototypeOf(val)) { return val }
 			if (val == null) {
