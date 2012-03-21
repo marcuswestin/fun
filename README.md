@@ -8,13 +8,13 @@ Try this:
 
 	sudo npm install -g fun
 	echo '"Hello world!"' > hello.fun
-	fun --file hello.fun
+	fun hello.fun
 	# Open your browser to localhost:8080
 
 Also try
 
 	curl https://raw.github.com/marcuswestin/fun/master/apps/todo-mvc/todo-mvc.fun > todo-mvc.fun
-	fun --file todo-mvc.fun
+	fun todo-mvc.fun
 
 Examples
 --------
