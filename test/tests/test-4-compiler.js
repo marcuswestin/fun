@@ -182,12 +182,20 @@ function test(name) {
 			module.exports['compile\t"'+name+'"'] = function(assert) {
 				currentTestCode = code
 				
-				try {
+				try { assertCompilationSucceeds() }
+				catch(e) { onError(e) }
+				
+				function assertCompilationSucceeds() {
 					var tokens = tokenizer.tokenize(currentTestCode),
-						parsedAST = parser.parse(tokens),
-						resolvedAST = resolver.resolve(parsedAST),
-						result = compiler._printHTML(compiler.compile(resolvedAST))
-				} catch(e) {
+						parsedAST = parser.parse(tokens)
+					
+					resolver.resolve(parsedAST, function(err, resolvedAST) {
+						if (err) { return onError(err) }
+						var result = compiler._printHTML(compiler.compile(resolvedAST))
+					})
+				}
+				
+				function onError(e) {
 					console.log(e.stack)
 					process.exit()
 				}
@@ -257,22 +265,25 @@ function createActionHandlers() {
 
 function startCompilerServer() {
 	compilerServer = http.createServer(function(res, res) {
-		try {
+		try { runTest() }
+		catch(e) { return onError(e) }
+		
+		function runTest() {
 			var tokens = tokenizer.tokenize(currentTestCode),
-				parsedAST = parser.parse(tokens),
-				resolvedAST = resolver.resolve(parsedAST),
-				result = compiler._printHTML(compiler.compile(resolvedAST))
-		} catch(e) {
-			var error = e
+				parsedAST = parser.parse(tokens)
+			
+			resolver.resolve(parsedAST, function(err, resolvedAST) {
+				if (err) { return onError(err) }
+				var result = compiler._printHTML(compiler.compile(resolvedAST))
+				res.writeHead(200, { 'Content-Length':result.length })
+				res.end(result)
+			})
 		}
 		
-		if (error) {
-			console.log("compiler server error", error.stack)
+		function onError(e) {
+			console.log("compiler server error", e.stack)
 			res.writeHead(500)
-			res.end(error.stack)
-		} else {
-			res.writeHead(200, { 'Content-Length':result.length })
-			res.end(result)
+			res.end(e.stack)
 		}
 	})
 	compilerServer.listen(compilerServerPort)

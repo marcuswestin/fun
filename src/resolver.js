@@ -6,7 +6,8 @@ var fs = require('fs'),
 	map = require('std/map'),
 	curry = require('std/curry'),
 	copy = require('std/copy'),
-	filter = require('std/filter')
+	filter = require('std/filter'),
+	blockFunction = require('std/blockFunction')
 
 var tokenizer = require('./tokenizer'),
 	parser = require('./parser')
@@ -16,13 +17,15 @@ var util = require('./util'),
 	assert = util.assert,
 	halt = util.halt
 
-exports.resolve = function(ast) {
-	var context = { imports:{}, names:{} },
+exports.resolve = function(ast, callback) {
+	var completion = blockFunction(function() {
+		callback(null, { expressions:expressions, imports:context.imports })
+	}).addBlock()
+	
+	var context = { imports:{}, names:{}, completion:completion },
 		expressions = util.cleanup(resolve(context, ast))
-	return {
-		expressions:expressions,
-		imports:context.imports
-	}
+	
+	completion.removeBlock()
 }
 
 /************************

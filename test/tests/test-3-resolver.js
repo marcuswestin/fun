@@ -161,12 +161,20 @@ function test(name) {
 			testName = '"'+name+'" ' + (count++)
 		}
 		module.exports[testName] = function(assert) {
-			try {
-				var inputAST = parser.parse(tokenizer.tokenize(inputCode)),
-					output = resolver.resolve(inputAST).expressions
-				assert.deepEqual(expectedAST, output)
-				assert.done()
-			} catch(e) {
+			try { runTest() }
+			catch(e) { onError(e) }
+			
+			function runTest() {
+				var inputAST = parser.parse(tokenizer.tokenize(inputCode))
+				resolver.resolve(inputAST, function(err, resolved) {
+					if (err) { return onError(e) }
+					var output = resolved.expressions
+					assert.deepEqual(expectedAST, output)
+					assert.done()
+				})
+			}
+			
+			function onError(e) {
 				if (expectedErrorRe && e.message.match(expectedErrorRe)) {
 					assert.done()
 				} else {

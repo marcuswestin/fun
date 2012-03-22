@@ -17,12 +17,14 @@ var util = require('./util'),
 	parser = require('./parser'),
 	resolver = require('./resolver')
 
-exports.compileFile = function(sourceFilePath) {
-	return _doCompile(tokenizer.tokenizeFile(sourceFilePath))
+exports.compileFile = function(sourceFilePath, callback) {
+	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), callback) }
+	catch(e) { callback(e, null) }
 }
 
-exports.compileCode = function(sourceCode) {
-	return _doCompile(tokenizer.tokenize(sourceCode))
+exports.compileCode = function(sourceCode, callback) {
+	try { _doCompile(tokenizer.tokenize(sourceCode), callback) }
+	catch(e) { callback(e, null) }
 }
 
 exports._printHTML = function(compiledJS) {
@@ -58,16 +60,23 @@ exports.compileRaw = function(ast, rootHook) {
 	return compileTemplateBlock(context, ast)
 }
 
-var _doCompile = function(tokens) {
-	var ast = parser.parse(tokens),
-		resolved = resolver.resolve(ast),
-		compiledJS = exports.compile(resolved)
+var _doCompile = function(tokens, callback) {
+	try { var ast = parser.parse(tokens) }
+	catch(e) { return callback(e, null) }
 	
-	var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
-		return strip(line).length > 0
-	}).join('\n')
-	
-	return exports._printHTML(withoutWhiteLines)
+	resolver.resolve(ast, function(err, resolved) {
+		if (err) { return callback(err) }
+		try {
+			var compiledJS = exports.compile(resolved)
+			var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
+				return strip(line).length > 0
+			}).join('\n')
+			var appHtml = exports._printHTML(withoutWhiteLines)
+			callback(null, appHtml)
+		} catch(e) {
+			callback(e, null)
+		}
+	})
 }
 
 /* Templates - emitting code that observes its expressions

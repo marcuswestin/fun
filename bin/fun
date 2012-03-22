@@ -45,11 +45,15 @@ http.createServer(function(req, res) {
 	if (req.url == '/develop') { return develop(res) }
 	if (req.url == '/compile') { return compile(req, res) }
 	
-	try {
-		res.end(loadCompiler().compileFile(file))
-	} catch(e) {
-		res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
-	}
+	loadCompiler().compileFile(file, function(e, appHtml) {
+		if (e) {
+			res.writeHead(500)
+			res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
+		} else {
+			res.writeHead(200)
+			res.end(appHtml)
+		}
+	})
 }).listen(port, host)
 console.log('Serving', argv._[0], 'on', (host||'localhost')+':'+port,'\n')
 
