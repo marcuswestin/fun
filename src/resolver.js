@@ -71,7 +71,6 @@ var resolve = function(context, ast) {
 		case 'MUTATION':             return resolveMutation(context, ast)
 		case 'RETURN':               return resolveReturn(context, ast)
 		
-		// case 'ALIAS':                return resolve(context, lookup(context, ast))
 		default:                     halt(ast, '_resolveStatement: Unknown AST type "'+ast.type+'"')
 	}
 }
