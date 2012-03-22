@@ -1,3 +1,6 @@
+v0.2.13
++ test new packaging system
+
 v0.2.12
 + handler and function code now runs procedurally. Only template code is reactive and functional. However, functions are still truly functional (no side effects).
 + control flow statements parse and compile correctly in templates, handler and functions.
