@@ -18,8 +18,9 @@ var util = require('./util'),
 	halt = util.halt
 
 exports.resolve = function(ast, callback) {
-	var completion = blockFunction(function() {
-		callback(null, { expressions:expressions, imports:context.imports })
+	var completion = blockFunction(function(err) {
+		if (err) { callback(err, null) }
+		else { callback(null, { expressions:expressions, imports:context.imports }) }
 	}).addBlock()
 	
 	var context = { imports:{}, names:{}, completion:completion },
