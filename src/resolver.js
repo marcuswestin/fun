@@ -53,7 +53,7 @@ var resolve = function(context, ast) {
 		case 'TEMPLATE':             return resolveInvocable(context, ast)
 		case 'FUNCTION':             return resolveInvocable(context, ast)
 
-		case 'DICTIONARY_LITERAL':       return resolveObjectLiteral(context, ast)
+		case 'DICTIONARY_LITERAL':   return resolveObjectLiteral(context, ast)
 		case 'LIST_LITERAL':         return resolveList(context, ast)
 
 		case 'XML':                  return resolveXML(context, ast)
