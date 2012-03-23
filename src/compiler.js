@@ -27,11 +27,13 @@ exports.compileCode = function(sourceCode, callback) {
 	catch(e) { callback(e, null) }
 }
 
-exports._printHTML = function(compiledJS) {
+exports._printHTML = function(headers, compiledJS) {
 	runtimeUtilJS = requireCompiler.compile(__dirname + '/../src/runtime/library.js', { minify:false })
 	return [
 		'<!doctype html>',
-		'<html><head></head><body><script>',
+		'<html><head>',
+			_compileHeaders(headers),
+		'</head><body><script>',
 			'fun = {}',
 			runtimeUtilJS + "\n" + compiledJS,
 		'</script></body></html>'
@@ -60,6 +62,12 @@ exports.compileRaw = function(ast, rootHook) {
 	return compileTemplateBlock(context, ast)
 }
 
+var _compileHeaders = function(headers) {
+	return map(headers, function(header) {
+		return header
+	}).join('\n')
+}
+
 var _doCompile = function(tokens, callback) {
 	try { var ast = parser.parse(tokens) }
 	catch(e) { return callback(e, null) }
@@ -71,7 +79,7 @@ var _doCompile = function(tokens, callback) {
 			var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
 				return strip(line).length > 0
 			}).join('\n')
-			var appHtml = exports._printHTML(withoutWhiteLines)
+			var appHtml = exports._printHTML(resolved.headers, withoutWhiteLines)
 			callback(null, appHtml)
 		} catch(e) {
 			callback(e, null)
@@ -114,6 +122,8 @@ var _emitExpression = function(context, ast) {
 }
 
 var _emitXML = function(context, ast) {
+	if (ast.skipCompilation) { return '' }
+	
 	var nodeHookName = name('XML_HOOK'),
 		newContext = copyContext(context, { hookName:nodeHookName })
 	

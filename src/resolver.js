@@ -7,7 +7,8 @@ var fs = require('fs'),
 	curry = require('std/curry'),
 	copy = require('std/copy'),
 	filter = require('std/filter'),
-	blockFunction = require('std/blockFunction')
+	blockFunction = require('std/blockFunction'),
+	request = require('request')
 
 var tokenizer = require('./tokenizer'),
 	parser = require('./parser')
@@ -20,10 +21,10 @@ var util = require('./util'),
 exports.resolve = function(ast, callback) {
 	var completion = blockFunction(function(err) {
 		if (err) { callback(err, null) }
-		else { callback(null, { expressions:expressions, imports:context.imports }) }
+		else { callback(null, { expressions:expressions, imports:context.imports, headers:context.headers }) }
 	}).addBlock()
 	
-	var context = { imports:{}, names:{}, completion:completion },
+	var context = { headers:[], imports:{}, names:{}, completion:completion },
 		expressions = util.cleanup(resolve(context, ast))
 	
 	completion.removeBlock()
@@ -150,7 +151,44 @@ var resolveXML = function(context, ast) {
 		attribute.value = resolve(context, attribute.value)
 	})
 	ast.block = ast.block && filter(resolve(context, ast.block))
+	
+	var linkHref = getStaticHref(ast)
+	if (linkHref && !ast.block.length) {
+		if (linkHref.match(/^http/)) {
+			context.completion.addBlock()
+			console.log("Fetching", linkHref)
+			request.get(linkHref, function(err, resp, body) {
+				if (err) {
+					console.log("Error fetching", linkHref)
+					return context.completion.fail(err)
+				}
+				console.log("Done fetching", linkHref)
+				// TODO Support e.g. stylus
+				ast.skipCompilation = true
+				context.headers.push([
+					'<style type="text/css">',
+						'/* inlined stylesheet: '+linkHref+ ' */',
+						body,
+					'</style>'
+				].join('\n'))
+				context.completion.removeBlock()
+			})
+		}
+	}
+	
 	return ast
+}
+
+function getStaticHref(ast) {
+	if (ast.tagName != 'link') { return }
+	var attributes = ast.attributes,
+		staticAttrs = {}
+	each(attributes, function(attr) {
+		var valueAST = attr.value
+		if (valueAST.type != 'TEXT_LITERAL') { return }
+		staticAttrs[attr.name] = valueAST.value
+	})
+	return staticAttrs.rel == 'stylesheet' && staticAttrs.href
 }
 
 /*******************************
