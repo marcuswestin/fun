@@ -55,6 +55,9 @@ var parseTemplateBlock = function() {
 	var controlStatement = tryParseControlStatement(parseTemplateBlock)
 	if (controlStatement) { return controlStatement }
 	
+	var inlineScript = tryParseInlineScript(parseTemplateBlock)
+	if (inlineScript) { return inlineScript }
+	
 	if (peek('symbol', '<')) { return parseXML() }
 	
 	return parseExpression()
@@ -71,6 +74,9 @@ var parseFunctionLiteral = astGenerator(function() {
 var _parseFunctionBlock = function() {
 	var controlStatement = tryParseControlStatement(_parseFunctionBlock)
 	if (controlStatement) { return controlStatement }
+	
+	var inlineScript = tryParseInlineScript(_parseFunctionBlock)
+	if (inlineScript) { return inlineScript }
 	
 	if (peek('keyword', 'return')) { return _parseReturnStatement() }
 	
@@ -94,40 +100,130 @@ var parseHandlerLiteral = astGenerator(function() {
 var _parseHandlerBlock = function() {
 	var controlStatement = tryParseControlStatement(_parseHandlerBlock)
 	if (controlStatement) { return controlStatement }
+
+	var inlineScript = tryParseInlineScript(_parseHandlerBlock)
+	if (inlineScript) { return inlineScript }
 	
 	return _parseMutationInvocation()
 }
 
-// TODO Should we make mutations syntactically different from invocations?
+// TODO We should make mutations syntactically different from invocations?
 var _parseMutationInvocation = astGenerator(function() {
 	var reference = parseReference(),
 		operator = reference.chain.pop()
 	advance('symbol', L_PAREN)
 	var args = parseList(R_PAREN, parseExpression)
 	advance('symbol', R_PAREN, 'end of mutation operator')
-	return {type:'MUTATION', operand:reference, operator:operator, arguments:args}
+	return { type:'MUTATION', operand:reference, operator:operator, arguments:args }
 })
 
 /***************************
  * Control flow statements *
  ***************************/
 var tryParseControlStatement = function(blockParseFunction) {
-	if (peek('symbol', '<') && peek('name', 'script', 2)) {
-		advance('symbol', '<', 'Script tag open')
-		advance('name', 'script', 'Script tag name')
-		return _parseScript()
-	}
-	
 	switch(peek().value) {
-		case 'let':      return parseVariableDeclaration()
-		case 'for':      return parseForLoopStatement(blockParseFunction)
-		case 'if':       return parseIfStatement(blockParseFunction)
-		case 'switch':   return parseSwitchStatement(blockParseFunction)
-		case 'debugger': return parseDebuggerLiteral()
+		case 'let':      return _parseVariableDeclaration()
+		case 'for':      return _parseForLoopStatement(blockParseFunction)
+		case 'if':       return _parseIfStatement(blockParseFunction)
+		case 'switch':   return _parseSwitchStatement(blockParseFunction)
+		case 'debugger': return _parseDebuggerLiteral()
 	}
 }
 
-var _parseScript = astGenerator(function() {
+var _parseVariableDeclaration = function() {
+	advance('keyword', 'let')
+	var declarations = [_parseDeclaration()]
+	while (peek('symbol', ',')) {
+		advance('symbol', ',')
+		declarations.push(_parseDeclaration())
+	}
+	return declarations
+}
+
+var _parseForLoopStatement = astGenerator(function(statementParseFunction) {
+	advance('keyword', 'for')
+	
+	var iteratorName = advance('name', null, 'for_loop\'s iterator reference').value,
+		iterator = createAST({ type:'REFERENCE', name:iteratorName, chain:null })
+	
+	advance('keyword', 'in', 'for_loop\'s "in" keyword')
+	var iterable = parseExpression()
+	
+	var block = parseBlock(statementParseFunction, 'for_loop')
+	
+	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
+})
+
+
+var _parseDeclaration = astGenerator(function() {
+	var name = advance('name').value
+	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
+	if (peek('symbol', '=')) {
+		advance('symbol', '=')
+		var initialValue = parseExpression(parseExpression)
+	}
+	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
+})
+
+var _parseIfStatement = astGenerator(function(statementParseFunction) {
+	advance('keyword', 'if')
+	var condition = parseExpression()
+	
+	var ifBlock = parseBlock(statementParseFunction, 'if statement')
+	
+	var elseBlock = null
+	if (peek('keyword', 'else')) {
+		advance('keyword', 'else')
+		elseBlock = parseBlock(statementParseFunction, 'else statement')
+	}
+	
+	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
+})
+
+var _parseSwitchStatement = astGenerator(function(statementParseFunction) {
+	advance('keyword', 'switch')
+	var controlValue = parseExpression()
+	var cases = parseBlock(curry(_parseCase, statementParseFunction), 'switch case statement')
+	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
+})
+
+var _parseCase = astGenerator(function(statementParseFunction) {
+	var labelToken = advance('keyword', ['case', 'default']),
+		isDefault = (labelToken.value == 'default'),
+		values = [],
+		statements = []
+	
+	if (labelToken.value == 'case') {
+		while (true) {
+			values.push(parseExpression())
+			if (!peek('symbol', ',')) { break }
+			advance('symbol', ',')
+		}
+	}
+	advance('symbol', ':')
+	while (true) {
+		statements.push(statementParseFunction())
+		if (peek('keyword', ['case', 'default']) || peek('symbol', R_CURLY)) { break }
+	}
+	return { type:'SWITCH_CASE', values:values, statements:statements, isDefault:isDefault }
+})
+
+var _parseDebuggerLiteral = astGenerator(function() {
+	advance('keyword', 'debugger')
+	return { type:'DEBUGGER' }
+})
+
+/**********************
+ * Inline script tags *
+ **********************/
+var tryParseInlineScript = function() {
+	if (peek('symbol', '<') && peek('name', 'script', 2)) { return _parseInlineScript() }
+}
+
+var _parseInlineScript = astGenerator(function() {
+	advance('symbol', '<', 'Script tag open')
+	advance('name', 'script', 'Script tag name')
+	
 	var attributes = _parseXMLAttributes(),
 		js = []
 	advance('symbol', '>', 'end of the script tag')
@@ -146,31 +242,7 @@ var _parseScript = astGenerator(function() {
 	advance('name', 'script')
 	advance('symbol', '>')
 	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js.join('') }
-})
-
-
-/****************
- * Declarations *
- ****************/
-var parseVariableDeclaration = function() {
-	advance('keyword', 'let')
-	var declarations = [_parseDeclaration()]
-	while (peek('symbol', ',')) {
-		advance('symbol', ',')
-		declarations.push(_parseDeclaration())
-	}
-	return declarations
-}
-
-var _parseDeclaration = astGenerator(function() {
-var name = advance('name').value
-	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
-	if (peek('symbol', '=')) {
-		advance('symbol', '=')
-		var initialValue = parseExpression(parseExpression)
-	}
-	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
-})
+})	
 
 /*******************************************************************************
  * Expressions (literals, references, invocations, composites, ternaries, ...) *
@@ -373,72 +445,6 @@ var _parseXMLAttribute = astGenerator(function() {
 })
 
 
-/*************
-* For loops *
-*************/
-var parseForLoopStatement = astGenerator(function(statementParseFunction) {
-	advance('keyword', 'for')
-	
-	var iteratorName = advance('name', null, 'for_loop\'s iterator reference').value,
-		iterator = createAST({ type:'REFERENCE', name:iteratorName, chain:null })
-	
-	advance('keyword', 'in', 'for_loop\'s "in" keyword')
-	var iterable = parseExpression()
-	
-	var block = parseBlock(statementParseFunction, 'for_loop')
-	
-	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
-})
-
-/****************
- * If statement *
- ****************/
-var parseIfStatement = astGenerator(function(statementParseFunction) {
-	advance('keyword', 'if')
-	var condition = parseExpression()
-	
-	var ifBlock = parseBlock(statementParseFunction, 'if statement')
-	
-	var elseBlock = null
-	if (peek('keyword', 'else')) {
-		advance('keyword', 'else')
-		elseBlock = parseBlock(statementParseFunction, 'else statement')
-	}
-	
-	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
-})
-
-/********************
- * Switch statement *
- ********************/
-var parseSwitchStatement = astGenerator(function(statementParseFunction) {
-	advance('keyword', 'switch')
-	var controlValue = parseExpression()
-	var cases = parseBlock(curry(_parseCase, statementParseFunction), 'switch case statement')
-	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
-})
-
-var _parseCase = astGenerator(function(statementParseFunction) {
-	var labelToken = advance('keyword', ['case', 'default']),
-		isDefault = (labelToken.value == 'default'),
-		values = [],
-		statements = []
-	
-	if (labelToken.value == 'case') {
-		while (true) {
-			values.push(parseExpression())
-			if (!peek('symbol', ',')) { break }
-			advance('symbol', ',')
-		}
-	}
-	advance('symbol', ':')
-	while (true) {
-		statements.push(statementParseFunction())
-		if (peek('keyword', ['case', 'default']) || peek('symbol', R_CURLY)) { break }
-	}
-	return { type:'SWITCH_CASE', values:values, statements:statements, isDefault:isDefault }
-})
-
 /****************************
  * Shared parsing functions *
  ****************************/
@@ -476,11 +482,6 @@ function parseSignatureAndBlock(keyword, blockParseFn) {
 	var block = parseBlock(blockParseFn, keyword)
 	return [signature, block]
 }
-
-var parseDebuggerLiteral = astGenerator(function() {
-	advance('keyword', 'debugger')
-	return { type:'DEBUGGER' }
-})
 
 var parseReference = astGenerator(function() {
 	var name = advance('name').value
