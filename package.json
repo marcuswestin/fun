@@ -1,7 +1,7 @@
 {
   "name": "fun",
   "description": "A programming language for realtime web applications",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "homepage": "https://github.com/marcuswestin/fun",
   "repository": {
     "type": "git",
@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "optimist": "0.2.8",
-    "request": "2.9.153"
+    "request": "2.9.153",
+    "std": "0.1.32",
+    "require": "0.4.8"
   },
   "devDependencies": {
     "nodeunit": "0.6.4",
