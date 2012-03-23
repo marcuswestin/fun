@@ -163,10 +163,8 @@ var _parseForLoopStatement = astGenerator(function(statementParseFunction) {
 var _parseDeclaration = astGenerator(function() {
 	var name = advance('name').value
 	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
-	if (peek('symbol', '=')) {
-		advance('symbol', '=')
-		var initialValue = parseExpression(parseExpression)
-	}
+	advance('symbol', '=')
+	var initialValue = parseExpression(parseExpression)
 	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
 })
 

@@ -13,7 +13,7 @@ localstorage.persist(tasks, 'todo-fun')
 	</div>
 	<div class="content">
 		<div id="create-todo">
-			let newTaskName
+			let newTaskName = null
 			<input id="new-todo" data=newTaskName placeholder="What needs to be done?" onkeypress=handler(event) {
 				if event.keyCode is == 13 {
 					tasks push: { name:newTaskName.copy(), done:false }
