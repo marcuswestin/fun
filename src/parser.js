@@ -107,7 +107,6 @@ var _parseHandlerBlock = function() {
 	return _parseMutationInvocation()
 }
 
-// TODO We should make mutations syntactically different from invocations?
 var _parseMutationInvocation = astGenerator(function() {
 	var reference = parseReference(),
 		operator = advance('name').value
