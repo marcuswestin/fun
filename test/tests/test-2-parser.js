@@ -124,7 +124,7 @@ test('a handler')
 test('a button which mutates state')
 	.code(
 		'let foo="bar"',
-		'<button></button onclick=handler(){ foo.set("cat") }>'
+		'<button></button onclick=handler(){ foo set: "cat" }>'
 	)
 	.expect(
 		a.variable('foo', a.literal("bar")),
@@ -137,8 +137,8 @@ test('handler with logic')
 	.code(
 		'let cat = "hi"',
 		'let foo = handler() {',
-		'	if cat is == "hi" { cat.set("bye") }',
-		'	else { cat.set(foo) }',
+		'	if cat is == "hi" { cat set: "bye" }',
+		'	else { cat set: foo }',
 		'}'
 	)
 	.expect(

@@ -16,8 +16,8 @@ localstorage.persist(tasks, 'todo-fun')
 			let newTaskName
 			<input id="new-todo" data=newTaskName placeholder="What needs to be done?" onkeypress=handler(event) {
 				if event.keyCode is == 13 {
-					tasks.push({ name:newTaskName.copy(), done:false })
-					newTaskName.set('')
+					tasks push: { name:newTaskName.copy(), done:false }
+					newTaskName set: ''
 				}
 			}/>
 		</div>
@@ -45,10 +45,10 @@ localstorage.persist(tasks, 'todo-fun')
 							let remainingTasks = []
 							for task in tasks {
 								if !task.done {
-									remainingTasks.push(task)
+									remainingTasks push: task
 								}
 							}
-							tasks.set(remainingTasks)
+							tasks set: remainingTasks
 						}>
 					</span>
 				}

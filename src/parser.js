@@ -110,10 +110,16 @@ var _parseHandlerBlock = function() {
 // TODO We should make mutations syntactically different from invocations?
 var _parseMutationInvocation = astGenerator(function() {
 	var reference = parseReference(),
-		operator = reference.chain.pop()
-	advance('symbol', L_PAREN)
-	var args = parseList(R_PAREN, parseExpression)
-	advance('symbol', R_PAREN, 'end of mutation operator')
+		operator = advance('name').value
+	
+	advance('symbol', ':')
+	
+	var args = [parseExpression()]
+	while (peek('symbol', ',')) {
+		advance('symbol', ',')
+		values.push(parseExpression())
+	}
+	
 	return { type:'MUTATION', operand:reference, operator:operator, arguments:args }
 })
 

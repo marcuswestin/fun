@@ -56,8 +56,8 @@ test('clicking a button updates the UI')
 		'let qwe = "cat"',
 		'<div id="output">foo</div>',
 		'<button id="button">"Click me"</button onClick=handler() {',
-		'	foo.set("cat")',
-		'	qwe.set(foo)',
+		'	foo set: "cat"',
+		'	qwe set: foo',
 		'}>')
 	.expect(
 		a.variable('foo', a.literal('bar')),

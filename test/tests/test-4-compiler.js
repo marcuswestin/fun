@@ -27,7 +27,7 @@ test('clicking a button updates the UI').code(
 	'let foo = "bar"',
 	'<div id="output">foo</div>',
 	'<button id="button"></button onClick=handler() {',
-	'	foo.set("cat")',
+	'	foo set: "cat"',
 	'}>')
 	.textIs('#output', 'bar')
 	.click('#button')
@@ -69,7 +69,7 @@ test('changing object literals - TODO FIX THIS').code(
 	'	{ foo: { a:foo.a } }',
 	'	{ a:foo.a }',
 	'	foo',
-	'</div onclick=handler(){ foo.a.set(2) }>'
+	'</div onclick=handler(){ foo.a set: 2 }>'
 	)
 	.textIs('#output', '{ "foo":{ "a":1 } }{ "a":1 }{ "a":1 }')
 	.click('#output')
@@ -125,8 +125,8 @@ test('if/else in a div -> first if branch, then else branch')
 		'	if foo is < 100 { "foo is < 100" }',
 		'	else { "foo is >= 100" }',
 		'</div>',
-		'<button id="lower" onclick=handler(){ foo.set(80) } />',
-		'<button id="higher" onclick=handler(){ foo.set(120) } />')
+		'<button id="lower" onclick=handler(){ foo set: 80 } />',
+		'<button id="higher" onclick=handler(){ foo set: 120 } />')
 	.textIs('#output', 'foo is >= 100')
 	.click('#lower')
 	.textIs('#output', 'foo is < 100')
@@ -163,7 +163,7 @@ test('mutation of variable returned from closure propegates')
 	.code(
 		'let foo = "ASD"',
 		'let fun = function() { return foo }',
-		'<div id="output">fun()</div onclick=handler() { foo.set("QWE") }>'
+		'<div id="output">fun()</div onclick=handler() { foo set: "QWE" }>'
 	)
 	.textIs('#output', 'ASD')
 	.click('#output')
