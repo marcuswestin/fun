@@ -3,22 +3,7 @@
 
 // (c) 2006 Douglas Crockford
 
-// Produce an array of simple token objects from a string.
-// A simple token object contains these members:
-//      type: 'name', 'string', 'number', 'symbol'
-//      value: string or number value of the token
-//      from: index of first character of the token
-//      to: index of the last character + 1
-
-// Comments of the // type are ignored.
-
-// Operators are by default single characters. Multicharacter
-// symbols can be made by supplying a string of prefix and
-// suffix characters.
-// characters. For example,
-//      '<>+-&', '=>&:'
-// will match any of these:
-//      <=  >>  >>>  <>  >=  +: -: &: &&: &&
+// Small mods by Marcus Westin 2011
 
 var fs = require('fs'),
 	util = require('./util')
