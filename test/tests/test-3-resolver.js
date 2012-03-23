@@ -71,7 +71,7 @@ test('clicking a button updates the UI')
 
 test('variable declaration inside div')
 	.code('<div>let cat="cat"</div>')
-	.expect(a.xml('div', [], [a.variable('cat', a.literal('cat'))]))
+	.expect(a.xml('div', [], [[a.variable('cat', a.literal('cat'))]]))
 
 test('function invocation')
 	.code('let fun = function() { return 1 }', 'fun()')

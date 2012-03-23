@@ -1,5 +1,6 @@
 Intended v0.2.15
 + Use `let` instead of `var` for variable declarations
++ allow for comma-seperated declarations (e.g. let foo = 1, bar = 2)
 
 v0.2.14
 + inline statically referenced stylesheets

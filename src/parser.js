@@ -152,9 +152,18 @@ var _parseScript = astGenerator(function() {
 /****************
  * Declarations *
  ****************/
-var parseVariableDeclaration = astGenerator(function() {
+var parseVariableDeclaration = function() {
 	advance('keyword', 'let')
-	var name = advance('name').value
+	var declarations = [_parseDeclaration()]
+	while (peek('symbol', ',')) {
+		advance('symbol', ',')
+		declarations.push(_parseDeclaration())
+	}
+	return declarations
+}
+
+var _parseDeclaration = astGenerator(function() {
+var name = advance('name').value
 	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
 	if (peek('symbol', '=')) {
 		advance('symbol', '=')

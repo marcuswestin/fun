@@ -166,7 +166,7 @@ test('parse emits then declarations')
 
 test('variable declaration inside div')
 	.code('<div>let cat="cat"</div>')
-	.expect(a.xml('div', null, [a.variable('cat', a.literal('cat'))]))
+	.expect(a.xml('div', null, [[a.variable('cat', a.literal('cat'))]]))
 
 test('null value')
 	.code('null')
@@ -216,6 +216,12 @@ test('for loop over object literal')
 	.expect(
 		a.forLoop('foo', a.literal({ bar:'bar', cat:'cat' }), [])
 	)
+
+test('double declaration')
+	.code(
+		'let foo = 1,',
+		'	bar = 2'
+	).expect(a.variable('foo', a.literal(1)), a.variable('bar', a.literal(2)))
 
 /* Util
  ******/

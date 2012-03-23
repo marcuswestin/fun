@@ -33,8 +33,8 @@ localstorage.persist(tasks, 'todo-fun')
 		</div>
 		<div id="todo-stats">
 			if tasks.length is > 0 {
-				let doneTasks = filter(tasks, function(task) { return task.done })
-				let pluralize = function(num) { return num is > 1 ? "items" : "item" }
+				let doneTasks = filter(tasks, function(task) { return task.done }),
+					pluralize = function(num) { return num is > 1 ? "items" : "item" }
 				<span class="todo-count">
 					let numTasksLeft = tasks.length - doneTasks.length
 					<span class="number">numTasksLeft</span>" "pluralize(numTasksLeft) " left."
