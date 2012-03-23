@@ -1,4 +1,4 @@
-var filter = function(list, func) {
+let filter = function(list, func) {
 	<script list=list func=func>
 		var result = [],
 			items = list.getContent()

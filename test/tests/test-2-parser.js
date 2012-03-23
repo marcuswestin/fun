@@ -13,7 +13,7 @@ test('number literal')
 	.expect(a.literal(1))
 
 test('declaration')
-	.code('var greeting = "hello"')
+	.code('let greeting = "hello"')
 	.expect(a.variable('greeting', a.literal("hello")))
 
 test('alias single namespace')
@@ -45,11 +45,11 @@ test('simple if statement')
 	.expect(a.ifElse(a.composite(a.literal(1), '<', a.literal(2)), a.literal(1)))
 
 test('has no null statements or expressions')
-	.code('var foo="bar"\n1')
+	.code('let foo="bar"\n1')
 	.expect(a.variable("foo",a.literal("bar")), a.literal(1))
 
 test('variable declaration')
-	.code('var foo = "bar"')
+	.code('let foo = "bar"')
 	.expect(a.variable('foo', a.literal('bar')))
 
 test('parses empty program')
@@ -81,7 +81,7 @@ test('self-closing xml')
 	.expect(a.xml('div'))
 
 test('inline javascript')
-	.code('var foo = 1\n <script fooVariable=foo> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
+	.code('let foo = 1\n <script fooVariable=foo> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
 	.expect(
 		a.variable('foo', a.literal(1)),
 		a.inlineScript({ fooVariable:a.reference('foo') }, ' var i = 1; function a() { alert(i++) }; setInterval(a);')
@@ -97,7 +97,7 @@ test('file import')
 
 test('nested declaration')
 	.code(
-		'var foo = { nested: { cat:"yay" } }',
+		'let foo = { nested: { cat:"yay" } }',
 		'foo bar foo.nested'
 	)
 	.expect(
@@ -106,16 +106,16 @@ test('nested declaration')
 	)
 
 test('deep nested declaration')
-	.code('var asd = {a:{b:{c:{d:{e:{f:{}}}}}}}')
+	.code('let asd = {a:{b:{c:{d:{e:{f:{}}}}}}}')
 	.expect(a.variable('asd', a.literal({a:{b:{c:{d:{e:{f:{}}}}}}})))
 
 test('just a declaration')
-	.code('var foo = { bar:1 }')
+	.code('let foo = { bar:1 }')
 	.expect(a.variable('foo', a.literal({ bar:1 })))
 
 test('a handler')
 	.code(
-		'var aHandler = handler(){}'
+		'let aHandler = handler(){}'
 	)
 	.expect(
 		a.variable('aHandler', a.handler())
@@ -123,7 +123,7 @@ test('a handler')
 
 test('a button which mutates state')
 	.code(
-		'var foo="bar"',
+		'let foo="bar"',
 		'<button></button onclick=handler(){ foo.set("cat") }>'
 	)
 	.expect(
@@ -135,8 +135,8 @@ test('a button which mutates state')
 
 test('handler with logic')
 	.code(
-		'var cat = "hi"',
-		'var foo = handler() {',
+		'let cat = "hi"',
+		'let foo = handler() {',
 		'	if cat is == "hi" { cat.set("bye") }',
 		'	else { cat.set(foo) }',
 		'}'
@@ -154,9 +154,9 @@ test('handler with logic')
 
 test('parse emits then declarations')
 	.code(
-		'var foo="foo"',
+		'let foo="foo"',
 		'<div></div>',
-		'var cat="cat"'
+		'let cat="cat"'
 	)
 	.expect(
 		a.variable('foo', a.literal('foo')),
@@ -165,7 +165,7 @@ test('parse emits then declarations')
 	)
 
 test('variable declaration inside div')
-	.code('<div>var cat="cat"</div>')
+	.code('<div>let cat="cat"</div>')
 	.expect(a.xml('div', null, [a.variable('cat', a.literal('cat'))]))
 
 test('null value')
@@ -173,7 +173,7 @@ test('null value')
 	.expect(a.null())
 
 test('function arguments')
-	.code('var fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
+	.code('let fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
 	.expect(
 		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
 			a.return(
@@ -199,7 +199,7 @@ test('if/else in a div')
 
 test('script tag in function parses')
 	.code(
-		'var foo = function(qwe) {',
+		'let foo = function(qwe) {',
 		'	<script missing=missing>',
 		'	</script>',
 		'	return 1',

@@ -1,4 +1,4 @@
-var localstorage = {
+let localstorage = {
 	// TODO Make this a template so that it doesn't execute multiple times
 	persist:function(variable, name) {
 		<script variable=variable name=name>

@@ -7,7 +7,7 @@ var a = require('../resolver-mocks'),
 
 test("a declared alias for a string")
 	.code(
-		'var guy = "Marcus"',
+		'let guy = "Marcus"',
 		'guy'
 	)
 	.expect(
@@ -21,7 +21,7 @@ test("an empty div")
 
 test("nested aliases")
 	.code(
-		'var foo = { bar:1, cat:"cat" }',
+		'let foo = { bar:1, cat:"cat" }',
 		'foo foo.bar foo.cat'
 	)
 	.expect(
@@ -52,8 +52,8 @@ test("nested aliases")
 	
 test('clicking a button updates the UI')
 	.code(
-		'var foo = "bar"',
-		'var qwe = "cat"',
+		'let foo = "bar"',
+		'let qwe = "cat"',
 		'<div id="output">foo</div>',
 		'<button id="button">"Click me"</button onClick=handler() {',
 		'	foo.set("cat")',
@@ -70,15 +70,15 @@ test('clicking a button updates the UI')
 	)
 
 test('variable declaration inside div')
-	.code('<div>var cat="cat"</div>')
+	.code('<div>let cat="cat"</div>')
 	.expect(a.xml('div', [], [a.variable('cat', a.literal('cat'))]))
 
 test('function invocation')
-	.code('var fun = function() { return 1 }', 'fun()')
+	.code('let fun = function() { return 1 }', 'fun()')
 	.expect(a.variable('fun', a.function([], [a.return(a.literal(1))])), a.invocation(a.reference('fun')))
 
 test('function arguments')
-	.code('var fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
+	.code('let fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
 	.expect(
 		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
 			a.return(a.composite(a.reference('arg1'), '+', a.reference('arg2')))
@@ -88,7 +88,7 @@ test('function arguments')
 
 test('missing script tag attribute value is caught')
 	.code(
-		'var foo = function(qwe) {',
+		'let foo = function(qwe) {',
 		'	<script missing=missing>',
 		'	</script>',
 		'	return 1',
@@ -96,7 +96,7 @@ test('missing script tag attribute value is caught')
 	.expectError(/^Couldn't find a variable called "missing"/)
 
 test('variable names must start with a lowercase letter')
-	.code('var Foo = "qwe"')
+	.code('let Foo = "qwe"')
 	.expectError(/^Variable names must start with/)
 
 // Boolean values

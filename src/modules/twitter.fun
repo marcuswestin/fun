@@ -1,4 +1,4 @@
-var twitter = {
+let twitter = {
 	search:function(searchQuery) {
 		// var result = { loading:true, error:null, response:null }
 		var result = null

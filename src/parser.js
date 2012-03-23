@@ -119,7 +119,7 @@ var tryParseControlStatement = function(blockParseFunction) {
 	}
 	
 	switch(peek().value) {
-		case 'var':      return parseVariableDeclaration()
+		case 'let':      return parseVariableDeclaration()
 		case 'for':      return parseForLoopStatement(blockParseFunction)
 		case 'if':       return parseIfStatement(blockParseFunction)
 		case 'switch':   return parseSwitchStatement(blockParseFunction)
@@ -153,7 +153,7 @@ var _parseScript = astGenerator(function() {
  * Declarations *
  ****************/
 var parseVariableDeclaration = astGenerator(function() {
-	advance('keyword', 'var')
+	advance('keyword', 'let')
 	var name = advance('name').value
 	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
 	if (peek('symbol', '=')) {
