@@ -1,3 +1,6 @@
+Intended v0.2.15
++ Use `let` instead of `var` for variable declarations
+
 v0.2.14
 + inline statically referenced stylesheets
 + remove parentheseses around the conditinoal of if, for and switch statements.
