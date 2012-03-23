@@ -180,45 +180,43 @@ function test(name) {
 				actions = this._actions = []
 			
 			module.exports['compile\t"'+name+'"'] = function(assert) {
+				if (isFirstTest) { console.log('loading headless browser - hang tight!'); isFirstTest = false }
+				
 				currentTestCode = code
 				
-				try { assertCompilationSucceeds() }
+				try { runTest() }
 				catch(e) { onError(e) }
 				
-				function assertCompilationSucceeds() {
-					var tokens = tokenizer.tokenize(currentTestCode),
-						parsedAST = parser.parse(tokens)
-					
-					resolver.resolve(parsedAST, function(err, resolvedAST) {
+				function runTest() {
+					// First make sure that compilation succeeds
+					compiler.compileCode(currentTestCode, function(err) {
 						if (err) { return onError(err) }
-						var result = compiler._printHTML(compiler.compile(resolvedAST))
+						
+						zombie.visit('http://localhost:'+compilerServerPort, { debug:false }, function(err, browser) {
+							if (err || browser.statusCode != 200) {
+								onError(new Error("Error: " + err + " " + browser.statusCode + " " + browser.errors + " " + browser.dump()))
+							}
+							;(function nextAction() {
+								if (!actions.length) {
+									assert.done()
+									scheduleCompilerServerShutdown()
+									return
+								}
+								var action = actions.shift()
+								try {
+									actionHandlers[action.name].apply(this, [assert, browser, nextAction].concat(action.args))
+								} catch(e) {
+									console.log('compiler threw -', e.stack, '\n\nThe test code that caused the error:\n', currentTestCode)
+								}
+							})()
+						})
 					})
 				}
 				
 				function onError(e) {
-					console.log(e.stack)
+					console.log(e.stack || e)
 					process.exit()
 				}
-				
-				if (isFirstTest) { console.log('loading headless browser - hang tight!'); isFirstTest = false }
-				zombie.visit('http://localhost:'+compilerServerPort, { debug:false }, function(err, browser) {
-					if (err || browser.statusCode != 200) {
-						throw new Error("Error: " + err + " " + browser.statusCode + " " + browser.errors + " " + browser.dump())
-					}
-					(function nextAction() {
-						if (!actions.length) {
-							assert.done()
-							scheduleCompilerServerShutdown()
-							return
-						}
-						var action = actions.shift()
-						try {
-							actionHandlers[action.name].apply(this, [assert, browser, nextAction].concat(action.args))
-						} catch(e) {
-							console.log('compiler threw -', e.stack, '\n\nThe test code that caused the error:\n', currentTestCode)
-						}
-					})()
-				})
 			}
 			return this
 		}
@@ -269,14 +267,10 @@ function startCompilerServer() {
 		catch(e) { return onError(e) }
 		
 		function runTest() {
-			var tokens = tokenizer.tokenize(currentTestCode),
-				parsedAST = parser.parse(tokens)
-			
-			resolver.resolve(parsedAST, function(err, resolvedAST) {
+			compiler.compileCode(currentTestCode, function(err, appHtml) {
 				if (err) { return onError(err) }
-				var result = compiler._printHTML(compiler.compile(resolvedAST))
-				res.writeHead(200, { 'Content-Length':result.length })
-				res.end(result)
+				res.writeHead(200, { 'Content-Length':appHtml.length })
+				res.end(appHtml)
 			})
 		}
 		

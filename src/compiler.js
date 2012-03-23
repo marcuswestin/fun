@@ -40,34 +40,6 @@ exports._printHTML = function(headers, compiledJS) {
 	].join('\n')
 }
 
-exports.compile = function(resolvedAST) {
-	var rootHook = name('ROOT_HOOK')
-	return ';(function funApp() {' + code(
-		'var {{ hookName }} = fun.name("rootHook")',
-		'fun.setHook({{ hookName }}, document.body)',
-		'{{ modules }}',
-		'{{ code }}',
-		{
-			hookName: rootHook,
-			code: exports.compileRaw(resolvedAST.expressions, rootHook),
-			modules: map(resolvedAST.imports, function(module, name) {
-				return boxComment('Module: ' + name) + '\n' + exports.compileRaw(module)
-			}).join('\n\n\n')
-		}) + '\n})();'
-}
-
-exports.compileRaw = function(ast, rootHook) {
-	// TODO No longer a need for an entire context object. Just make it hookname, and pass that through
-	var context = { hookName:rootHook || name('ROOT_HOOK') }
-	return compileTemplateBlock(context, ast)
-}
-
-var _compileHeaders = function(headers) {
-	return map(headers, function(header) {
-		return header
-	}).join('\n')
-}
-
 var _doCompile = function(tokens, callback) {
 	try { var ast = parser.parse(tokens) }
 	catch(e) { return callback(e, null) }
@@ -75,7 +47,7 @@ var _doCompile = function(tokens, callback) {
 	resolver.resolve(ast, function(err, resolved) {
 		if (err) { return callback(err) }
 		try {
-			var compiledJS = exports.compile(resolved)
+			var compiledJS = _compileJs(resolved)
 			var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
 				return strip(line).length > 0
 			}).join('\n')
@@ -85,6 +57,34 @@ var _doCompile = function(tokens, callback) {
 			callback(e, null)
 		}
 	})
+}
+
+var _compileJs = function(resolvedAST) {
+	var rootHook = name('ROOT_HOOK')
+	return ';(function funApp() {' + code(
+		'var {{ hookName }} = fun.name("rootHook")',
+		'fun.setHook({{ hookName }}, document.body)',
+		'{{ modules }}',
+		'{{ code }}',
+		{
+			hookName: rootHook,
+			code: _compileRaw(resolvedAST.expressions, rootHook),
+			modules: map(resolvedAST.imports, function(module, name) {
+				return boxComment('Module: ' + name) + '\n' + _compileRaw(module)
+			}).join('\n\n\n')
+		}) + '\n})();'
+}
+
+var _compileRaw = function(ast, rootHook) {
+	// TODO No longer a need for an entire context object. Just make it hookname, and pass that through
+	var context = { hookName:rootHook || name('ROOT_HOOK') }
+	return compileTemplateBlock(context, ast)
+}
+
+var _compileHeaders = function(headers) {
+	return map(headers, function(header) {
+		return header
+	}).join('\n')
 }
 
 /* Templates - emitting code that observes its expressions
