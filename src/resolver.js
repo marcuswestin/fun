@@ -160,7 +160,7 @@ var resolveXML = function(context, ast) {
 			request.get(linkHref, function(err, resp, body) {
 				if (err) {
 					console.log("Error fetching", linkHref)
-					return context.completion.fail(err)
+					return context.completion.fail(new Error('Could not fetch '+linkHref+'\n'+err.message))
 				}
 				console.log("Done fetching", linkHref)
 				// TODO Support e.g. stylus
