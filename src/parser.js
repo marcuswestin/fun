@@ -369,7 +369,6 @@ var _parseXMLAttribute = astGenerator(function() {
 *************/
 var parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'for')
-	advance('symbol', L_PAREN, 'beginning of for_loop\'s iterator statement')
 	
 	var iteratorName = advance('name', null, 'for_loop\'s iterator reference').value,
 		iterator = createAST({ type:'REFERENCE', name:iteratorName, chain:null })
@@ -377,7 +376,6 @@ var parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	var iterable = parseExpression()
 	
-	advance('symbol', R_PAREN, 'end of for_loop\'s iterator statement')
 	var block = parseBlock(statementParseFunction, 'for_loop')
 	
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
@@ -388,9 +386,7 @@ var parseForLoopStatement = astGenerator(function(statementParseFunction) {
  ****************/
 var parseIfStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'if')
-	advance('symbol', L_PAREN, 'beginning of the if statement\'s conditional')
 	var condition = parseExpression()
-	advance('symbol', R_PAREN, 'end of the if statement\'s conditional')
 	
 	var ifBlock = parseBlock(statementParseFunction, 'if statement')
 	
@@ -408,9 +404,7 @@ var parseIfStatement = astGenerator(function(statementParseFunction) {
  ********************/
 var parseSwitchStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'switch')
-	advance('symbol', L_PAREN, 'beginning of the switch statement\'s value')
 	var controlValue = parseExpression()
-	advance('symbol', R_PAREN, 'end of the switch statement\'s value')
 	var cases = parseBlock(curry(_parseCase, statementParseFunction), 'switch case statement')
 	return { type:'SWITCH_STATEMENT', controlValue:controlValue, cases:cases }
 })

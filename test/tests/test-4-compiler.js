@@ -105,7 +105,7 @@ test('statements after return do not evaluate').code(
 test('if/else in a div -> if branch')
 	.code(
 		'var foo = 120',
-		'<div id="output"> if (foo is >= 100) { "foo is >= 100" }',
+		'<div id="output"> if foo is >= 100 { "foo is >= 100" }',
 		'else { "foo is < 100" }</div>')
 	.textIs('#output', 'foo is >= 100')
 
@@ -113,7 +113,7 @@ test('if/else in a div -> else branch')
 	.code(
 		'var foo = 120',
 		'<div id="output">',
-		'	if (foo is < 100) { "foo is < 100" }',
+		'	if foo is < 100 { "foo is < 100" }',
 		'	else { "foo is >= 100" }',
 		'</div>')
 	.textIs('#output', 'foo is >= 100')
@@ -122,7 +122,7 @@ test('if/else in a div -> first if branch, then else branch')
 	.code(
 		'var foo = 120',
 		'<div id="output">',
-		'	if (foo is < 100) { "foo is < 100" }',
+		'	if foo is < 100 { "foo is < 100" }',
 		'	else { "foo is >= 100" }',
 		'</div>',
 		'<button id="lower" onclick=handler(){ foo.set(80) } />',

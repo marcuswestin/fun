@@ -41,7 +41,7 @@ test('parenthesized subtraction')
 	.expect(a.composite(a.literal(1), '-', a.literal(1)))
 
 test('simple if statement')
-	.code('if (1 is < 2) { 1 }')
+	.code('if 1 is < 2 { 1 }')
 	.expect(a.ifElse(a.composite(a.literal(1), '<', a.literal(2)), a.literal(1)))
 
 test('has no null statements or expressions')
@@ -73,7 +73,7 @@ test('list literal')
 	.expect(a.literal(['foo', 1, null]))
 
 test('empty for loop over list literal')
-	.code('for (iterator in [1,2,3]) {}')
+	.code('for iterator in [1,2,3] {}')
 	.expect(a.forLoop('iterator', a.literal([1,2,3]), []))
 
 test('self-closing xml')
@@ -137,7 +137,7 @@ test('handler with logic')
 	.code(
 		'var cat = "hi"',
 		'var foo = handler() {',
-		'	if (cat is == "hi") { cat.set("bye") }',
+		'	if cat is == "hi" { cat.set("bye") }',
 		'	else { cat.set(foo) }',
 		'}'
 	)
@@ -185,7 +185,7 @@ test('function arguments')
 
 test('if/else in a div')
 	.code(
-		'<div> if (Mouse.x is >= 100) { "mouse.x is >= 100" }',
+		'<div> if Mouse.x is >= 100 { "mouse.x is >= 100" }',
 		'else { "mouse.x is < 100" }</div>')
 	.expect(
 		a.xml('div', null, [
@@ -212,7 +212,7 @@ test('script tag in function parses')
 	)
 
 test('for loop over object literal')
-	.code('for (foo in { bar:"bar", cat:"cat" }) {}')
+	.code('for foo in { bar:"bar", cat:"cat" } {}')
 	.expect(
 		a.forLoop('foo', a.literal({ bar:'bar', cat:'cat' }), [])
 	)

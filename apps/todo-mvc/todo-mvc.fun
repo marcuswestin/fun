@@ -15,7 +15,7 @@ localstorage.persist(tasks, 'todo-fun')
 		<div id="create-todo">
 			var newTaskName
 			<input id="new-todo" data=newTaskName placeholder="What needs to be done?" onkeypress=handler(event) {
-				if (event.keyCode is == 13) {
+				if event.keyCode is == 13 {
 					tasks.push({ name:newTaskName.copy(), done:false })
 					newTaskName.set('')
 				}
@@ -23,7 +23,7 @@ localstorage.persist(tasks, 'todo-fun')
 		</div>
 		<div id="todos">
 			<ul id="todo-list">
-				for (task in tasks) {
+				for task in tasks {
 					<li class="todo"+(task.done ? " done" : "")>
 						<input class="check" type="checkbox" data=task.done />
 						<div class="todo-content">task.name</div>
@@ -32,19 +32,19 @@ localstorage.persist(tasks, 'todo-fun')
 			</ul>
 		</div>
 		<div id="todo-stats">
-			if (tasks.length is > 0) {
+			if tasks.length is > 0 {
 				var doneTasks = filter(tasks, function(task) { return task.done })
 				var pluralize = function(num) { return num is > 1 ? "items" : "item" }
 				<span class="todo-count">
 					var numTasksLeft = tasks.length - doneTasks.length
 					<span class="number">numTasksLeft</span>" "pluralize(numTasksLeft) " left."
 				</span>
-				if (doneTasks.length is > 0) {
+				if doneTasks.length is > 0 {
 					<span class="todo-clear">
 						<a href="#">"Clear "doneTasks.length" completed "pluralize(doneTasks.length)</a onclick=handler() {
 							var remainingTasks = []
-							for (task in tasks) {
-								if (!task.done) {
+							for task in tasks {
+								if !task.done {
 									remainingTasks.push(task)
 								}
 							}

@@ -1,5 +1,6 @@
 Intended v0.2.14
 + inline statically referenced stylesheets
++ remove parentheseses around the conditinoal of if, for and switch statements.
 
 v0.2.13
 + test new packaging system
