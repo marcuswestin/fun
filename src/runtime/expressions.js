@@ -430,7 +430,7 @@ var List = module.exports.List = proto(collectionBase,
 				return No
 			}
 			for (var i=0; i<this._content.length; i++) {
-				if (that._content[i].equals(this._content[key])) { continue }
+				if (that._content[i].equals(this._content[i])) { continue }
 				return No
 			}
 			return Yes
