@@ -195,13 +195,11 @@ module.exports.Handler = proto(invocableBase,
 		this._content = block
 	}, {
 		_type:'Handler',
-		invoke:function(e) {
-			var event = fromJsValue({ keyCode:e.keyCode, type:e.type })
+		invoke:function(event) {
 			this._content.call(this, event)
 		}
 	}
 )
-
 
 /* Variable value expressions
  ****************************/
