@@ -2,6 +2,7 @@ Intended v0.2.17
 + Variable declarations require a value (let foo is no longer valid, must to let foo = null)
 + implement json module
 + add an instagram example app
++ add access to npm node_modules with the require() statement in inline javascript code
 
 v0.2.16
 + Fix broken v0.2.15 build
