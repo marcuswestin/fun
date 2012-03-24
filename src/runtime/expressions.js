@@ -11,6 +11,7 @@ var base = module.exports.base = {
 	observe:function(callback) { callback() },
 	asJSON:function() { return this.asLiteral() },
 	isTruthy:function() { return true },
+	isNull:function() { return false },
 	getters:{
 		copy:function() {
 			var self = this
@@ -154,7 +155,8 @@ var NullValue = (proto(constantAtomicBase,
 		asString:function() { return '' },
 		equals:function(that) { return that.getType() == 'Null' ? Yes : No },
 		asLiteral:function() { return 'null' },
-		isTruthy:function() { return false }
+		isTruthy:function() { return false },
+		isNull:function() { return true }
 	}
 ))();
 
