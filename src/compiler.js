@@ -17,22 +17,22 @@ var util = require('./util'),
 	parser = require('./parser'),
 	resolver = require('./resolver')
 
-exports.compileFile = function(sourceFilePath, callback) {
-	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), callback) }
+exports.compileFile = function(sourceFilePath, opts, callback) {
+	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), opts, callback) }
 	catch(e) { callback(e, null) }
 }
 
-exports.compileCode = function(sourceCode, callback) {
-	try { _doCompile(tokenizer.tokenize(sourceCode), callback) }
+exports.compileCode = function(sourceCode, opts, callback) {
+	try { _doCompile(tokenizer.tokenize(sourceCode), opts, callback) }
 	catch(e) { callback(e, null) }
 }
 
-exports._printHTML = function(headers, compiledJS) {
+exports._printHTML = function(headers, opts, compiledJS) {
 	var minify = false
 	// TODO make the runtimeUrilJS just a require(...) statement
 	// TODO expose minification for non-dev compilation
-	runtimeUtilJS = requireCompiler.compile(__dirname + '/../src/runtime/library.js', { minify:minify })
-	compiledJS = requireCompiler.compileCode(compiledJS, { minify:minify })
+	runtimeUtilJS = requireCompiler.compile(__dirname + '/../src/runtime/library.js', { minify:opts.minify })
+	compiledJS = requireCompiler.compileCode(compiledJS, { minify:opts.minify })
 	return [
 		'<!doctype html>',
 		'<html><head>',
@@ -44,7 +44,7 @@ exports._printHTML = function(headers, compiledJS) {
 	].join('\n')
 }
 
-var _doCompile = function(tokens, callback) {
+var _doCompile = function(tokens, opts, callback) {
 	try { var ast = parser.parse(tokens) }
 	catch(e) { return callback(e, null) }
 	
@@ -55,7 +55,7 @@ var _doCompile = function(tokens, callback) {
 			var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
 				return strip(line).length > 0
 			}).join('\n')
-			var appHtml = exports._printHTML(resolved.headers, withoutWhiteLines)
+			var appHtml = exports._printHTML(resolved.headers, opts, withoutWhiteLines)
 			callback(null, appHtml)
 		} catch(e) {
 			callback(e, null)

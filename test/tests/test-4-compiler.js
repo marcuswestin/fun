@@ -189,7 +189,7 @@ function test(name) {
 				
 				function runTest() {
 					// First make sure that compilation succeeds
-					compiler.compileCode(currentTestCode, function(err) {
+					compiler.compileCode(currentTestCode, { minify:false }, function(err) {
 						if (err) { return onError(err) }
 						
 						zombie.visit('http://localhost:'+compilerServerPort, { debug:false }, function(err, browser) {
@@ -267,7 +267,7 @@ function startCompilerServer() {
 		catch(e) { return onError(e) }
 		
 		function runTest() {
-			compiler.compileCode(currentTestCode, function(err, appHtml) {
+			compiler.compileCode(currentTestCode, { minify:false }, function(err, appHtml) {
 				if (err) { return onError(err) }
 				res.writeHead(200, { 'Content-Length':appHtml.length })
 				res.end(appHtml)

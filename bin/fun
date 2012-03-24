@@ -14,48 +14,51 @@ var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=1
 	file = path.join(process.cwd(), argv.compile || argv._[0])
 
 if (argv.compile) {
-	var htmlFile = loadCompiler().compileFile(file)
-	util.puts(htmlFile)
-	return process.exit(0)
-}
-
-if (!argv._[0]) {
+	loadCompiler().compileFile(file, { minify:true }, function(err, htmlFile) {
+		if (err) {
+			console.log(err)
+			return process.exit(-1)
+		}
+		util.puts(htmlFile)
+		return process.exit(0)
+	})
+} else if (!argv._[0]) {
 	console.error(commandline.help())
 	return process.exit(-1)
+} else {
+	// dev variables
+	var port = argv.port || 8080,
+		host = argv.host
+
+	try {
+		var stat = fs.statSync(file)
+	} catch(e) {
+		console.error('Error:', e.message ? e.message : e.toString())
+		return process.exit(-1)
+	}
+
+	if (!stat.isFile()) {
+		console.error('Error:', file, 'is not a file.')
+		return process.exit(-1)
+	}
+
+	http.createServer(function(req, res) {
+		if (req.url == '/favicon.ico') { return send404(res) }
+		if (req.url == '/develop') { return develop(res) }
+		if (req.url == '/compile') { return compile(req, res, { minify:false }) }
+
+		loadCompiler().compileFile(file, { minify:false }, function(e, appHtml) {
+			if (e) {
+				res.writeHead(500)
+				res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
+			} else {
+				res.writeHead(200)
+				res.end(appHtml)
+			}
+		})
+	}).listen(port, host)
+	console.log('Serving', argv._[0], 'on', (host||'localhost')+':'+port,'\n')
 }
-
-// Variables
-var port = argv.port || 8080,
-	host = argv.host
-
-try {
-	var stat = fs.statSync(file)
-} catch(e) {
-	console.error('Error:', e.message ? e.message : e.toString())
-	return process.exit(-1)
-}
-
-if (!stat.isFile()) {
-	console.error('Error:', file, 'is not a file.')
-	return process.exit(-1)
-}
-
-http.createServer(function(req, res) {
-	if (req.url == '/favicon.ico') { return send404(res) }
-	if (req.url == '/develop') { return develop(res) }
-	if (req.url == '/compile') { return compile(req, res) }
-	
-	loadCompiler().compileFile(file, function(e, appHtml) {
-		if (e) {
-			res.writeHead(500)
-			res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
-		} else {
-			res.writeHead(200)
-			res.end(appHtml)
-		}
-	})
-}).listen(port, host)
-console.log('Serving', argv._[0], 'on', (host||'localhost')+':'+port,'\n')
 
 function send404(res) {
 	res.writeHead(404)
@@ -73,13 +76,13 @@ function develop(res) {
 	].join('\n'))
 }
 
-function compile(req, res) {
+function compile(req, res, opts) {
 	var code = ''
 	req.on('data', function(data) { code += data })
 	req.on('end', function() {
 		try {
 			// code == "code=<URI+encoded+code>"
-			var result = loadCompiler().compileCode(decodeURIComponent(code.substr(5).replace(/\+/g, ' ')))
+			var result = loadCompiler().compileCode(decodeURIComponent(code.substr(5).replace(/\+/g, ' ')), opts)
 		} catch(e) {
 			res.writeHead(500)
 			res.end(e.stack)
