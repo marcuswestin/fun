@@ -28,7 +28,11 @@ exports.compileCode = function(sourceCode, callback) {
 }
 
 exports._printHTML = function(headers, compiledJS) {
-	runtimeUtilJS = requireCompiler.compile(__dirname + '/../src/runtime/library.js', { minify:false })
+	var minify = false
+	// TODO make the runtimeUrilJS just a require(...) statement
+	// TODO expose minification for non-dev compilation
+	runtimeUtilJS = requireCompiler.compile(__dirname + '/../src/runtime/library.js', { minify:minify })
+	compiledJS = requireCompiler.compileCode(compiledJS, { minify:minify })
 	return [
 		'<!doctype html>',
 		'<html><head>',
