@@ -55,7 +55,7 @@ function mutation(operand, operator, args) {
 }
 
 function variable(name, initialValue) {
-	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
+	return { type:'DECLARATION', name:name, initialValue:initialValue }
 }
 
 function composite(left, operator, right) {

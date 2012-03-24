@@ -150,7 +150,7 @@ var tryCompileTemplateControlStatement = function(context, ast) {
 	switch(ast.type) {
 		case 'SCRIPT_TAG':           return compileScript(context, ast)
 		case 'DEBUGGER':             return compileDebugger(context, ast)
-		case 'VARIABLE_DECLARATION': return compileVariableDeclaration(context, ast)
+		case 'DECLARATION':          return compileDeclaration(context, ast)
 		case 'IF_STATEMENT':         return _compileTemplateIfStatement(context, ast)
 		case 'SWITCH_STATEMENT':     return _compileTemplateSwitchStatement(context, ast)
 		case 'FOR_LOOP':             return _compileTemplateForLoop(context, ast)
@@ -276,10 +276,13 @@ var compileFunctionDefinition = function(ast) {
 }
 
 var _compileFunctionBlock = function(context, ast) {
+	if (isArray(ast)) { return map(ast, curry(_compileFunctionBlock, context)).join('\n') + '\n' }
+	
 	var controlStatementCode = tryCompileControlStatement(_compileFunctionBlock, context, ast)
 	if (controlStatementCode) { return controlStatementCode }
-
+	
 	switch(ast.type) {
+		case 'DECLARATION':  return compileDeclaration(context, ast)
 		case 'RETURN':       return _compileFunctionReturn(ast)
 		default:             halt(ast, 'Unknown function statement type')
 	}
@@ -316,6 +319,7 @@ var _compileHandlerBlock = function(context, ast) {
 	
 	switch(ast.type) {
 		case 'MUTATION':          return _compileMutationStatement(ast)
+		case 'INVOCATION':        return compileInvocation(ast)
 		default:                  halt(ast, 'Unknown handler statement type')
 	}
 }
@@ -335,7 +339,7 @@ var tryCompileControlStatement = function(blockCompileFn, context, ast) {
 	switch(ast.type) {
 		case 'SCRIPT_TAG':           return compileScript(context, ast)
 		case 'DEBUGGER':             return compileDebugger(context, ast)
-		case 'VARIABLE_DECLARATION': return compileVariableDeclaration(context, ast)
+		case 'DECLARATION':          return compileDeclaration(context, ast)
 		case 'IF_STATEMENT':         return _compileIfStatement(blockCompileFn, context, ast)
 		case 'SWITCH_STATEMENT':     return _compileSwitchStatement(blockCompileFn, context, ast)
 		case 'FOR_LOOP':             return _compileForLoop(blockCompileFn, context, ast)
@@ -470,10 +474,7 @@ var compileExpression = function(ast) {
 				value:compileExpression(ast.value)
 			})
 		case 'INVOCATION':
-			return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, "")', {
-				operand:compileExpression(ast.operand),
-				arguments:'['+map(ast.arguments, function(arg) { return compileExpression(arg) }).join(',')+']'
-			})
+			return compileInvocation(ast)
 		case 'FUNCTION':
 			return compileFunctionDefinition(ast)
 		case 'HANDLER':
@@ -482,6 +483,13 @@ var compileExpression = function(ast) {
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
 	}
+}
+
+var compileInvocation = function(ast) {
+	return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, "")', {
+		operand:compileExpression(ast.operand),
+		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(arg) }).join(',')+']'
+	})
 }
 
 var compileScript = function(context, ast) {
@@ -499,7 +507,7 @@ var compileScript = function(context, ast) {
 	})
 }
 
-var compileVariableDeclaration = function(context, ast) {
+var compileDeclaration = function(context, ast) {
 	return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
 		name:variableName(ast.name),
 		initialContent:compileExpression(ast.initialValue)

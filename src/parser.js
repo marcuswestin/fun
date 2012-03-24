@@ -104,13 +104,14 @@ var _parseHandlerBlock = function() {
 	var inlineScript = tryParseInlineScript(_parseHandlerBlock)
 	if (inlineScript) { return inlineScript }
 	
-	return _parseMutationInvocation()
+	return _parseMutationOrInvocation()
 }
 
-var _parseMutationInvocation = astGenerator(function() {
-	var reference = parseReference(),
-		operator = advance('name').value
+var _parseMutationOrInvocation = astGenerator(function() {
+	var reference = _parseReferenceOrInvocation()
+	if (reference.type == 'INVOCATION') { return reference }
 	
+	var operator = advance('name').value
 	advance('symbol', ':')
 	
 	var args = [parseExpression()]
@@ -165,7 +166,7 @@ var _parseDeclaration = astGenerator(function() {
 	assert(gToken, 'a' <= name[0] && name[0] <= 'z', 'Variable names must start with a lowercase letter')
 	advance('symbol', '=')
 	var initialValue = parseExpression(parseExpression)
-	return { type:'VARIABLE_DECLARATION', name:name, initialValue:initialValue }
+	return { type:'DECLARATION', name:name, initialValue:initialValue }
 })
 
 var _parseIfStatement = astGenerator(function(statementParseFunction) {
