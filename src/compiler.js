@@ -15,7 +15,10 @@ var util = require('./util'),
 	requireCompiler = require('require/compiler'),
 	tokenizer = require('./tokenizer'),
 	parser = require('./parser'),
-	resolver = require('./resolver')
+	resolver = require('./resolver'),
+	path = require('path')
+
+requireCompiler.addFile('fun-runtime-library', __dirname + '/runtime/library.js')
 
 exports.compileFile = function(sourceFilePath, opts, callback) {
 	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), opts, callback) }
@@ -28,18 +31,18 @@ exports.compileCode = function(sourceCode, opts, callback) {
 }
 
 exports._printHTML = function(headers, opts, compiledJS) {
-	var minify = false
-	// TODO make the runtimeUrilJS just a require(...) statement
-	// TODO expose minification for non-dev compilation
-	runtimeUtilJS = requireCompiler.compile(__dirname + '/../src/runtime/library.js', { minify:opts.minify })
-	compiledJS = requireCompiler.compileCode(compiledJS, { minify:opts.minify })
+	compiledJS = requireCompiler.compileCode(
+		'fun = require("fun-runtime-library"); \n\n' + compiledJS,
+		{ minify:opts.minify }
+	)
+	
+	var compiledHeaders = _compileHeaders(headers)
 	return [
 		'<!doctype html>',
 		'<html><head>',
-			_compileHeaders(headers),
+			compiledHeaders,
 		'</head><body><script>',
-			'fun = {}',
-			runtimeUtilJS + "\n" + compiledJS,
+			compiledJS,
 		'</script></body></html>'
 	].join('\n')
 }
