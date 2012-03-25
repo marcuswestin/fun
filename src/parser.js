@@ -47,7 +47,7 @@ var _parseImportStatement = astGenerator(function() {
  * Templates *
  *************/
 var parseTemplateLiteral = astGenerator(function() {
-	var callable = parseSignatureAndBlock('template', parseTemplateStatement)
+	var callable = parseSignatureAndBlock('template', parseTemplateBlock)
 	return { type:'TEMPLATE', signature:callable[0], block:callable[1] }
 })
 

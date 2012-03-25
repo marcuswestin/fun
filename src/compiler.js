@@ -341,6 +341,10 @@ var _compileMutationStatement = function(ast) {
 	})
 }
 
+var compileTemplateDefinition = function(ast) {
+	throw new Error("Implement compileTemplateDefinition")
+}
+
 /* Function and Handler control code
  ***********************************/
 var tryCompileControlStatement = function(blockCompileFn, context, ast) {
@@ -487,7 +491,8 @@ var compileExpression = function(ast) {
 			return compileFunctionDefinition(ast)
 		case 'HANDLER':
 			return compileHandlerDefinition(ast)
-		
+		case 'TEMPLATE':
+			return compileTemplateDefinition(ast)
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
 	}
