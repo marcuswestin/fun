@@ -16,24 +16,25 @@ var util = require('./util'),
 	tokenizer = require('./tokenizer'),
 	parser = require('./parser'),
 	resolver = require('./resolver'),
-	path = require('path')
+	path = require('path'),
+	create = require('std/create')
 
 requireCompiler.addFile('fun-runtime-library', __dirname + '/runtime/library.js')
 
 exports.compileFile = function(sourceFilePath, opts, callback) {
-	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), opts, callback) }
+	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), create(opts, { dirname:path.dirname(sourceFilePath) }), callback) }
 	catch(e) { callback(e, null) }
 }
 
 exports.compileCode = function(sourceCode, opts, callback) {
-	try { _doCompile(tokenizer.tokenize(sourceCode), opts, callback) }
+	try { _doCompile(tokenizer.tokenize(sourceCode), create(opts, { dirname:process.cwd() }), callback) }
 	catch(e) { callback(e, null) }
 }
 
 exports._printHTML = function(headers, opts, compiledJS) {
 	compiledJS = requireCompiler.compileCode(
 		'fun = require("fun-runtime-library"); \n\n' + compiledJS,
-		{ minify:opts.minify }
+		{ minify:opts.minify, dirname:process.cwd() }
 	)
 	
 	var compiledHeaders = _compileHeaders(headers)
@@ -51,7 +52,7 @@ var _doCompile = function(tokens, opts, callback) {
 	try { var ast = parser.parse(tokens) }
 	catch(e) { return callback(e, null) }
 	
-	resolver.resolve(ast, function(err, resolved) {
+	resolver.resolve(ast, { dirname:opts.dirname }, function(err, resolved) {
 		if (err) { return callback(err) }
 		try {
 			var compiledJS = _compileJs(resolved)

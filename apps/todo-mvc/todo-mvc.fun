@@ -5,7 +5,7 @@ let tasks = []
 
 localstorage.persist(tasks, 'todo-fun')
 
-<link rel="stylesheet" type="text/css" href="http://addyosmani.github.com/todomvc/reference-examples/vanillajs/css/todos.css" />
+<link rel="stylesheet" type="text/css" href="./todo-mvc.css" />
 
 <div id="todoapp">
 	<div class="title">

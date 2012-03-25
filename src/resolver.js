@@ -18,13 +18,13 @@ var util = require('./util'),
 	assert = util.assert,
 	halt = util.halt
 
-exports.resolve = function(ast, callback) {
+exports.resolve = function(ast, opts, callback) {
 	var completion = blockFunction(function(err) {
 		if (err) { callback(err, null) }
 		else { callback(null, { expressions:expressions, imports:context.imports, headers:context.headers }) }
 	}).addBlock()
 	
-	var context = { headers:[], imports:{}, names:{}, completion:completion },
+	var context = { headers:[], imports:{}, names:{}, dirname:opts.dirname, completion:completion },
 		expressions = util.cleanup(resolve(context, ast))
 	
 	completion.removeBlock()
@@ -154,23 +154,34 @@ var resolveXML = function(context, ast) {
 	
 	var linkHref = getStaticHref(ast)
 	if (linkHref && !ast.block.length) {
+		function addStyle(content) {
+			// TODO Support e.g. stylus
+			ast.skipCompilation = true
+			context.headers.push([
+				'<style type="text/css">',
+					'/* inlined stylesheet: '+linkHref+ ' */',
+					content,
+				'</style>'
+			].join('\n'))
+		}
 		if (linkHref.match(/^http/)) {
 			context.completion.addBlock()
 			console.log("Fetching", linkHref)
-			request.get(linkHref, function(err, resp, body) {
+			request.get(linkHref, function(err, resp, content) {
 				if (err) {
 					console.log("Error fetching", linkHref)
 					return context.completion.fail(new Error('Could not fetch '+linkHref+'\n'+err.message))
 				}
 				console.log("Done fetching", linkHref)
-				// TODO Support e.g. stylus
-				ast.skipCompilation = true
-				context.headers.push([
-					'<style type="text/css">',
-						'/* inlined stylesheet: '+linkHref+ ' */',
-						body,
-					'</style>'
-				].join('\n'))
+				addStyle(content)
+				context.completion.removeBlock()
+			})
+		} else {
+			context.completion.addBlock()
+			fs.readFile(path.join(context.dirname, linkHref), function(err, content) {
+				if (!err) {
+					addStyle(content)
+				}
 				context.completion.removeBlock()
 			})
 		}
