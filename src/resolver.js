@@ -50,7 +50,7 @@ var resolve = function(context, ast) {
 		case 'NULL':                 return ast
 		case 'DEBUGGER':             return ast
 
-		case 'DECLARATION': return resolveVariableDeclaration(context, ast)
+		case 'DECLARATION':          return resolveVariableDeclaration(context, ast)
 		case 'HANDLER':              return resolveInvocable(context, ast)
 		case 'TEMPLATE':             return resolveInvocable(context, ast)
 		case 'FUNCTION':             return resolveInvocable(context, ast)
