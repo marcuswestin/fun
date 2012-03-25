@@ -11,10 +11,10 @@ var fs = require('fs'),
  *********************/
 var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=127.0.0.1 --port=8080]'),
 	argv = commandline.argv,
-	file = path.join(process.cwd(), argv.compile || argv._[0])
+	filename = path.join(process.cwd(), argv.compile || argv._[0])
 
 if (argv.compile) {
-	loadCompiler().compileFile(file, { minify:true }, function(err, htmlFile) {
+	loadCompiler().compileFile(filename, { minify:true }, function(err, htmlFile) {
 		if (err) {
 			console.log(err)
 			return process.exit(-1)
@@ -31,14 +31,14 @@ if (argv.compile) {
 		host = argv.host
 
 	try {
-		var stat = fs.statSync(file)
+		var stat = fs.statSync(filename)
 	} catch(e) {
 		console.error('Error:', e.message ? e.message : e.toString())
 		return process.exit(-1)
 	}
 
 	if (!stat.isFile()) {
-		console.error('Error:', file, 'is not a file.')
+		console.error('Error:', filename, 'is not a file.')
 		return process.exit(-1)
 	}
 
@@ -47,7 +47,7 @@ if (argv.compile) {
 		if (req.url == '/develop') { return develop(res) }
 		if (req.url == '/compile') { return compile(req, res, { minify:false }) }
 
-		loadCompiler().compileFile(file, { minify:false }, function(e, appHtml) {
+		loadCompiler().compileFile(filename, { minify:false }, function(e, appHtml) {
 			if (e) {
 				res.writeHead(500)
 				res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
