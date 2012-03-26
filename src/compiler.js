@@ -17,18 +17,18 @@ var util = require('./util'),
 	parser = require('./parser'),
 	resolver = require('./resolver'),
 	path = require('path'),
-	create = require('std/create'),
+	extend = require('std/extend'),
 	fs = require('fs')
 
 requireCompiler.addFile('fun-runtime-library', __dirname + '/runtime/library.js')
 
 exports.compileFile = function(sourceFilePath, opts, callback) {
-	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), create(opts, { dirname:path.dirname(sourceFilePath) }), callback) }
+	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), extend(opts, { dirname:path.dirname(sourceFilePath) }), callback) }
 	catch(e) { callback(e, null) }
 }
 
 exports.compileCode = function(sourceCode, opts, callback) {
-	try { _doCompile(tokenizer.tokenize(sourceCode), create(opts, { dirname:process.cwd() }), callback) }
+	try { _doCompile(tokenizer.tokenize(sourceCode), extend(opts, { dirname:process.cwd() }), callback) }
 	catch(e) { callback(e, null) }
 }
 
