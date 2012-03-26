@@ -25,10 +25,10 @@ exports.resolve = function(ast, opts, callback) {
 		else { callback(null, { expressions:expressions, imports:context.imports, headers:context.headers }) }
 	}).addBlock()
 	
+	addStylesheet(context, path.join(__dirname, 'runtime/normalize.css'))
+
 	var context = { headers:[], imports:{}, names:{}, opts:opts, completion:completion },
 		expressions = util.cleanup(resolve(context, ast))
-	
-	addStylesheet(context, path.join(__dirname, 'runtime/normalize.css'))
 	
 	completion.removeBlock()
 }
