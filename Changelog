@@ -1,3 +1,6 @@
+v0.2.19
++ Disabled minification for now
+
 v0.2.18
 + Allow for `foo is "image"` as a shorthand for `foo is = "image"`
 + Inline all stylesheets with static hrefs as a <style> tag in the header
