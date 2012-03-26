@@ -1,5 +1,6 @@
 v0.2.19
 + Disabled minification for now
++ Add -v/--version flags
 
 v0.2.18
 + Allow for `foo is "image"` as a shorthand for `foo is = "image"`
