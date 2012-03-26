@@ -269,7 +269,7 @@ var _observeExpression = function(context, ast /*, line1, line2, ..., lineN, val
 
 /* Functions and Handlers - procedural code where expressions are not observed
  *****************************************************************************/
-var compileFunctionDefinition = function(ast) {
+var compileFunctionDefinition = function(context, ast) {
 	return code(
 		'fun.expressions.Function(function block({{ arguments }}) {',
 		'	{{ block }}',
@@ -301,7 +301,7 @@ var _compileFunctionReturn = function(context, ast) {
 	)
 }
 
-var compileHandlerDefinition = function(ast) {
+var compileHandlerDefinition = function(context, ast) {
 	return code(
 		'fun.expressions.Handler(function block({{ signature }}) {',
 		'	{{ block }}',
@@ -340,7 +340,7 @@ var _compileMutationStatement = function(context, ast) {
 	})
 }
 
-var compileTemplateDefinition = function(ast) {
+var compileTemplateDefinition = function(context, ast) {
 	throw new Error("Implement compileTemplateDefinition")
 }
 
@@ -487,11 +487,11 @@ var compileExpression = function(context, ast) {
 		case 'INVOCATION':
 			return compileInvocation(context, ast)
 		case 'FUNCTION':
-			return compileFunctionDefinition(ast)
+			return compileFunctionDefinition(context, ast)
 		case 'HANDLER':
-			return compileHandlerDefinition(ast)
+			return compileHandlerDefinition(context, ast)
 		case 'TEMPLATE':
-			return compileTemplateDefinition(ast)
+			return compileTemplateDefinition(context, ast)
 		default:
 			halt(ast, 'Unknown runtime value type ' + ast.type)
 	}
