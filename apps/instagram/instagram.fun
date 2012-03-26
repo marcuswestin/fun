@@ -15,7 +15,7 @@ if popularRequest.error {
 }
 if popularRequest.response {
 	for item in popularRequest.response {
-		if item.type is = 'image' {
+		if item.type is 'image' {
 			<div class="image">
 				<img src=item.images.low_resolution.url />
 				for comment in item.comments.data {

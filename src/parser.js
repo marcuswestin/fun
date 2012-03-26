@@ -295,11 +295,17 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 	
 	var expression = _parseAtomicValue()
 	
-	var rightOperatorToken, rightOperator
+	var rightOperatorToken, impliedEqualityOp
 	while (true) {
+		// All conditional comparisons require the is keyword (e.g. `foo is < 10`)
+		// to avoid ambiguity between the conditional operator < and the beginning of XML
 		if (peek('keyword', 'is')) {
 			rightOperatorToken = peek('symbol', conditionalOperators, 2)
-			assert(peek(null, null, 2), rightOperatorToken, 'expected a conditional operator')
+			// It is OK to skip the comparative operator, and simple say `foo is "bar"` in place of `foo is = "bar"`
+			if (!rightOperatorToken) {
+				rightOperatorToken = { value:'=' }
+				impliedEqualityOp = true
+			}
 		} else {
 			rightOperatorToken = peek('symbol', compositeOperators)
 		}
@@ -322,7 +328,9 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 		if (peek('keyword', 'is')) {
 			advance() // the "is" keyword
 		}
-		advance() // the operator
+		if (!impliedEqualityOp) {
+			advance() // the operator
+		}
 		
 		expression = { type:'COMPOSITE', left:expression, operator:rightOperator, right:_parseMore(rightOperatorBinding) }
 	}
