@@ -1,5 +1,7 @@
-Intended v0.2.18
+v0.2.18
 + Allow for `foo is "image"` as a shorthand for `foo is = "image"`
++ Inline all stylesheets with static hrefs as a <style> tag in the header
++ Minify the CSS of inlined style tags using clean-css
 
 v0.2.17
 + Variable declarations require a value (let foo is no longer valid, must to let foo = null)
