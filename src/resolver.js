@@ -201,10 +201,9 @@ var addStylesheet = function(context, linkHref) {
 	}
 	function doAddStyle(content) {
 		// TODO Support e.g. stylus
-		context.headers.push(
-			'<style type="text/css">\n/* inlined stylesheet: ' + linkHref + ' */\n'
-			+ (context.opts.minify ? cleanCSS.process(content) : content) + '\n'
-			+ '</style>')
+		var comment = context.opts.minify ? '' : '/* inlined stylesheet: ' + linkHref + ' */\n',
+			css = context.opts.minify ? cleanCSS.process(content) : content
+		context.headers.push('<style type="text/css">\n'+comment+css+'\n</style>')
 		context.completion.removeBlock()
 	}
 	function doReportError(err, verb) {
