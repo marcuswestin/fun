@@ -131,7 +131,6 @@ var expressions = require('./expressions'),
 				input.value = property.evaluate().asString()
 			})
 			fun.on(input, 'keypress', function(e) {
-				var oldValue = input.value
 				setTimeout(function() {
 					var value = input.value
 					property.set(null, fun.expressions.Text(input.value))
