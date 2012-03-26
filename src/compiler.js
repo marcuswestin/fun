@@ -17,7 +17,8 @@ var util = require('./util'),
 	parser = require('./parser'),
 	resolver = require('./resolver'),
 	path = require('path'),
-	create = require('std/create')
+	create = require('std/create'),
+	fs = require('fs')
 
 requireCompiler.addFile('fun-runtime-library', __dirname + '/runtime/library.js')
 
@@ -90,6 +91,7 @@ var _compileRaw = function(ast, rootHook) {
 }
 
 var _compileHeaders = function(headers) {
+	headers.unshift('<style type="text/css">\n/* normalize.css, included by default in all fun apps */\n'+fs.readFileSync(__dirname+'/runtime/normalize.css')+'\n</style>')
 	return map(headers, function(header) {
 		return header
 	}).join('\n')
