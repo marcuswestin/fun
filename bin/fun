@@ -5,14 +5,15 @@ var fs = require('fs'),
 	http = require('http'),
 	path = require('path'),
 	optimist = require('optimist'),
-	map = require('std/map')
+	map = require('std/map'),
+	package = require('../package')
 
 /* Commandline options
  *********************/
 var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=127.0.0.1 --port=8080]'),
 	argv = commandline.argv,
-	filenameRaw = argv.compile || argv._[0],
-	filename = filenameRaw[0] == '/' ? filenameRaw : path.join(process.cwd(), filenameRaw)
+	filenameRaw = argv.compile || (argv._ && argv._[0]),
+	filename = filenameRaw && filenameRaw[0] == '/' ? filenameRaw : path.join(process.cwd(), filenameRaw)
 
 if (argv.compile) {
 	loadCompiler().compileFile(filename, { minify:false }, function(err, htmlFile) {
@@ -23,6 +24,9 @@ if (argv.compile) {
 		util.puts(htmlFile)
 		return process.exit(0)
 	})
+} else if (argv.v || argv.version) {
+	console.log("fun", package.version)
+	return process.exit(0)
 } else if (!argv._[0]) {
 	console.error(commandline.help())
 	return process.exit(-1)
