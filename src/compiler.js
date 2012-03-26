@@ -31,7 +31,26 @@ exports.compileCode = function(sourceCode, opts, callback) {
 	catch(e) { callback(e, null) }
 }
 
-exports._printHTML = function(headers, opts, compiledJS) {
+var _doCompile = function(tokens, opts, callback) {
+	try { var ast = parser.parse(tokens) }
+	catch(e) { return callback(e, null) }
+	
+	resolver.resolve(ast, { dirname:opts.dirname }, function(err, resolved) {
+		if (err) { return callback(err) }
+		try {
+			var compiledJS = _compileJs(resolved)
+			var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
+				return strip(line).length > 0
+			}).join('\n')
+			var appHtml = _printHTML(resolved.headers, opts, withoutWhiteLines)
+			callback(null, appHtml)
+		} catch(e) {
+			callback(e, null)
+		}
+	})
+}
+
+var _printHTML = function(headers, opts, compiledJS) {
 	compiledJS = requireCompiler.compileCode(
 		'fun = require("fun-runtime-library"); \n\n' + compiledJS,
 		{ minify:opts.minify, dirname:process.cwd() }
@@ -46,25 +65,6 @@ exports._printHTML = function(headers, opts, compiledJS) {
 			compiledJS,
 		'</script></body></html>'
 	].join('\n')
-}
-
-var _doCompile = function(tokens, opts, callback) {
-	try { var ast = parser.parse(tokens) }
-	catch(e) { return callback(e, null) }
-	
-	resolver.resolve(ast, { dirname:opts.dirname }, function(err, resolved) {
-		if (err) { return callback(err) }
-		try {
-			var compiledJS = _compileJs(resolved)
-			var withoutWhiteLines = filter(compiledJS.split('\n'), function(line) {
-				return strip(line).length > 0
-			}).join('\n')
-			var appHtml = exports._printHTML(resolved.headers, opts, withoutWhiteLines)
-			callback(null, appHtml)
-		} catch(e) {
-			callback(e, null)
-		}
-	})
 }
 
 var _compileJs = function(resolvedAST) {
