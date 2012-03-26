@@ -8,7 +8,8 @@ var fs = require('fs'),
 	copy = require('std/copy'),
 	filter = require('std/filter'),
 	blockFunction = require('std/blockFunction'),
-	request = require('request')
+	request = require('request'),
+	cleanCSS = require('clean-css')
 
 var tokenizer = require('./tokenizer'),
 	parser = require('./parser')
@@ -24,8 +25,10 @@ exports.resolve = function(ast, opts, callback) {
 		else { callback(null, { expressions:expressions, imports:context.imports, headers:context.headers }) }
 	}).addBlock()
 	
-	var context = { headers:[], imports:{}, names:{}, dirname:opts.dirname, completion:completion },
+	var context = { headers:[], imports:{}, names:{}, opts:opts, completion:completion },
 		expressions = util.cleanup(resolve(context, ast))
+	
+	addStylesheet(context, path.join(__dirname, 'runtime/normalize.css'))
 	
 	completion.removeBlock()
 }
@@ -154,40 +157,11 @@ var resolveXML = function(context, ast) {
 	
 	var linkHref = getStaticHref(ast)
 	if (linkHref && !ast.block.length) {
-		function addStyle(content) {
-			// TODO Support e.g. stylus
-			ast.skipCompilation = true
-			context.headers.push([
-				'<style type="text/css">',
-					'/* inlined stylesheet: '+linkHref+ ' */',
-					content,
-				'</style>'
-			].join('\n'))
-		}
-		if (linkHref.match(/^http/)) {
-			context.completion.addBlock()
-			console.log("Fetching", linkHref)
-			request.get(linkHref, function(err, resp, content) {
-				if (err) {
-					console.log("Error fetching", linkHref)
-					return context.completion.fail(new Error('Could not fetch '+linkHref+'\n'+err.message))
-				}
-				console.log("Done fetching", linkHref)
-				addStyle(content)
-				context.completion.removeBlock()
-			})
-		} else {
-			context.completion.addBlock()
-			fs.readFile(path.join(context.dirname, linkHref), function(err, content) {
-				if (!err) {
-					addStyle(content)
-				}
-				context.completion.removeBlock()
-			})
-		}
+		addStylesheet(context, linkHref)
+		return null
+	} else {
+		return ast
 	}
-	
-	return ast
 }
 
 function getStaticHref(ast) {
@@ -200,6 +174,43 @@ function getStaticHref(ast) {
 		staticAttrs[attr.name] = valueAST.value
 	})
 	return staticAttrs.rel == 'stylesheet' && staticAttrs.href
+}
+
+var addStylesheet = function(context, linkHref) {
+	context.completion.addBlock()
+	if (linkHref.match(/^http/)) {
+		console.error("Fetching", linkHref)
+		request.get(linkHref, function(err, resp, content) {
+			if (err) {
+				doReportError(err, 'fetch')
+			} else if (resp.statusCode != 200) {
+				doReportError(new Error('Server returned non-200 status code: '+resp.statusCode), 'fetch')
+			} else {
+				console.error("Done fetching", linkHref)
+				doAddStyle(content)
+			}
+		})
+	} else {
+		if (linkHref[0] != '/') {
+			linkHref = path.join(context.opts.dirname, linkHref)
+		}
+		var content = fs.readFile(linkHref, function(err, content) {
+			if (err) { doReportError(err, 'read') }
+			else { doAddStyle(content.toString()) }
+		})
+	}
+	function doAddStyle(content) {
+		// TODO Support e.g. stylus
+		context.headers.push(
+			'<style type="text/css">\n/* inlined stylesheet: ' + linkHref + ' */\n'
+			+ (context.opts.minify ? cleanCSS.process(content) : content) + '\n'
+			+ '</style>')
+		context.completion.removeBlock()
+	}
+	function doReportError(err, verb) {
+		console.log("Error", verb+'ing', linkHref)
+		context.completion.fail(new Error('Could not '+verb+' '+linkHref+'\n'+err.message))
+	}
 }
 
 /*******************************

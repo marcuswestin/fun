@@ -36,7 +36,7 @@ var _doCompile = function(tokens, opts, callback) {
 	try { var ast = parser.parse(tokens) }
 	catch(e) { return callback(e, null) }
 	
-	resolver.resolve(ast, { dirname:opts.dirname }, function(err, resolved) {
+	resolver.resolve(ast, opts, function(err, resolved) {
 		if (err) { return callback(err) }
 		try {
 			var compiledJS = _compileJs(resolved)
@@ -91,7 +91,6 @@ var _compileRaw = function(ast, rootHook) {
 }
 
 var _compileHeaders = function(headers) {
-	headers.unshift('<style type="text/css">\n/* normalize.css, included by default in all fun apps */\n'+fs.readFileSync(__dirname+'/runtime/normalize.css')+'\n</style>')
 	return map(headers, function(header) {
 		return header
 	}).join('\n')
@@ -132,8 +131,6 @@ var _emitExpression = function(context, ast) {
 }
 
 var _emitXML = function(context, ast) {
-	if (ast.skipCompilation) { return '' }
-	
 	var nodeHookName = name('XML_HOOK'),
 		newContext = copyContext(context, { hookName:nodeHookName })
 	

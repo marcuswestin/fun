@@ -15,6 +15,7 @@
   "dependencies": {
     "optimist": "0.2.8",
     "request": "2.9.153",
+    "clean-css": "0.3.2",
     "std": "0.1.32",
     "require": "0.4.8"
   },

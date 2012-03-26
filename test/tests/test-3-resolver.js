@@ -165,9 +165,10 @@ function test(name) {
 			catch(e) { onError(e) }
 			
 			function runTest() {
-				var inputAST = parser.parse(tokenizer.tokenize(inputCode))
-				resolver.resolve(inputAST, { dirname:__dirname }, function(err, resolved) {
-					if (err) { return onError(e) }
+				var inputAST = parser.parse(tokenizer.tokenize(inputCode)),
+					opts = { dirname:__dirname, minify:false }
+				resolver.resolve(inputAST, opts, function(err, resolved) {
+					if (err) { return onError(err) }
 					var output = resolved.expressions
 					assert.deepEqual(expectedAST, output)
 					assert.done()
