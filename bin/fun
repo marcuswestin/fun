@@ -15,7 +15,7 @@ var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=1
 	filename = filenameRaw[0] == '/' ? filenameRaw : path.join(process.cwd(), filenameRaw)
 
 if (argv.compile) {
-	loadCompiler().compileFile(filename, { minify:true }, function(err, htmlFile) {
+	loadCompiler().compileFile(filename, { minify:false }, function(err, htmlFile) {
 		if (err) {
 			console.log(err)
 			return process.exit(-1)
