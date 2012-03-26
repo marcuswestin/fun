@@ -126,7 +126,7 @@ var _emitExpression = function(context, ast) {
 	return code(
 		'fun.emit({{ hookName }}, {{ value }})', {
 		hookName:context.hookName,
-		value:compileExpression(ast)
+		value:compileExpression(context, ast)
 	})
 }
 
@@ -146,7 +146,7 @@ var _emitXML = function(context, ast) {
 			parentHook: context.hookName,
 			hookName: nodeHookName,
 			tagName: q(ast.tagName),
-			attrsObj: compileDictionaryLiteral(attrs),
+			attrsObj: compileDictionaryLiteral(context, attrs),
 			block: ast.block ? indent(compileTemplateBlock, newContext, ast.block) : ''
 		})
 }
@@ -171,7 +171,7 @@ var _compileTemplateIfStatement = function(context, ast) {
 	
 	return _hookCode(hookName, context.hookName)
 		+ code('var {{ lastOutcomeName }}', { lastOutcomeName:lastOutcomeName })
-		+ _observeExpression(ast.condition,
+		+ _observeExpression(context, ast.condition,
 		';(function(ifBranch, elseBranch) {',
 		'	if ({{ lastOutcome }} && {{ STATEMENT_VALUE }}.equals({{ lastOutcome }}).isTruthy()) { return }',
 		'	{{ lastOutcome }} = {{ STATEMENT_VALUE }}',
@@ -209,7 +209,7 @@ var _compileTemplateSwitchStatement = function(context, ast) {
 					var labels = switchCase.isDefault
 							? 'default:\n'
 							: map(switchCase.values, function(value) {
-								return 'case ' + compileExpression(value) + ':\n'
+								return 'case ' + compileExpression(context, value) + ':\n'
 							}).join('')
 					return labels
 						+ 'branches['+i+'](); break'
@@ -242,15 +242,15 @@ var _compileTemplateForLoop = function(context, ast) {
 		{
 			parentHook: context.hookName,
 			loopHookName: name('FOR_LOOP_HOOK'),
-			iterableValue: compileExpression(ast.iterable),
+			iterableValue: compileExpression(context, ast.iterable),
 			iteratorName: variableName(ast.iterator.name),
 			emitHookName: loopContext.hookName,
 			loopBlock: indent(compileTemplateBlock, loopContext, ast.block)
 		})
 }
 
-var _observeExpression = function(ast /*, line1, line2, ..., lineN, values */) {
-	var statementLines = Array.prototype.slice.call(arguments, 1, arguments.length - 1),
+var _observeExpression = function(context, ast /*, line1, line2, ..., lineN, values */) {
+	var statementLines = Array.prototype.slice.call(arguments, 2, arguments.length - 1),
 		injectValues = arguments[arguments.length - 1]
 	
 	injectValues['STATEMENT_VALUE'] = name('STATEMENT_VALUE')
@@ -262,7 +262,7 @@ var _observeExpression = function(ast /*, line1, line2, ..., lineN, values */) {
 		'})',
 		{
 			STATEMENT_VALUE: injectValues['STATEMENT_VALUE'],
-			__statementValue: compileExpression(ast)
+			__statementValue: compileExpression(context, ast)
 		})
 }
 
@@ -290,14 +290,14 @@ var _compileFunctionBlock = function(context, ast) {
 	
 	switch(ast.type) {
 		case 'DECLARATION':  return compileDeclaration(context, ast)
-		case 'RETURN':       return _compileFunctionReturn(ast)
+		case 'RETURN':       return _compileFunctionReturn(context, ast)
 		default:             halt(ast, 'Unknown function statement type')
 	}
 }
 
-var _compileFunctionReturn = function(ast) {
+var _compileFunctionReturn = function(context, ast) {
 	return code(
-		'yieldValue({{ value }}); return', { value:compileExpression(ast.value) }
+		'yieldValue({{ value }}); return', { value:compileExpression(context, ast.value) }
 	)
 }
 
@@ -325,18 +325,18 @@ var _compileHandlerBlock = function(context, ast) {
 	if (controlStatementCode) { return controlStatementCode }
 	
 	switch(ast.type) {
-		case 'MUTATION':          return _compileMutationStatement(ast)
-		case 'INVOCATION':        return compileInvocation(ast)
+		case 'MUTATION':          return _compileMutationStatement(context, ast)
+		case 'INVOCATION':        return compileInvocation(context, ast)
 		default:                  halt(ast, 'Unknown handler statement type')
 	}
 }
 
-var _compileMutationStatement = function(ast) {
+var _compileMutationStatement = function(context, ast) {
 	return code('{{ operand }}.{{ operator }}({{ chain }}, {{ value }})', {
-		operand:compileExpression(ast.operand),
+		operand:compileExpression(context, ast.operand),
 		operator:ast.operator,
 		chain:null,
-		value:compileExpression(ast.arguments[0])
+		value:compileExpression(context, ast.arguments[0])
 	})
 }
 
@@ -370,7 +370,7 @@ var _compileIfStatement = function(blockCompileFn, context, ast) {
 		'	}',
 		')',
 		{
-			expression: compileExpression(ast.condition),
+			expression: compileExpression(context, ast.condition),
 			ifCode: indent(blockCompileFn, context, ast.ifBlock),
 			elseCode: ast.elseBlock && indent(blockCompileFn, context, ast.elseBlock)
 		})
@@ -384,7 +384,7 @@ var _compileSwitchStatement = function(blockCompileFn, context, ast) {
 					var labels = switchCase.isDefault
 							? 'default:\n'
 							: map(switchCase.values, function(value) {
-								return 'case ' + compileExpression(value) + ':\n'
+								return 'case ' + compileExpression(context, value) + ':\n'
 							}).join('')
 					return labels
 						+ 'branches['+i+'](); break'
@@ -396,7 +396,7 @@ var _compileSwitchStatement = function(blockCompileFn, context, ast) {
 			}).join(',\n'),
 		'])',
 		{
-			expression: compileExpression(ast.controlValue)
+			expression: compileExpression(context, ast.controlValue)
 		})
 }
 
@@ -406,7 +406,7 @@ var _compileForLoop = function(blockCompileFn, context, ast) {
 		'	{{ loopBlock }}',
 		'})',
 		{
-			expression: compileExpression(ast.iterable),
+			expression: compileExpression(context, ast.iterable),
 			iteratorName: variableName(ast.iterator.name),
 			loopBlock: indent(blockCompileFn, context, ast.block)
 		})
@@ -426,9 +426,9 @@ var indent = function(fn /*, arg1, ... argN */) {
 	return result
 }
 
-var compileDictionaryLiteral = function(obj) {
+var compileDictionaryLiteral = function(context, obj) {
 	return '{ '+map(obj, function(value, name) {
-		return '"'+name+'":'+compileExpression(value)
+		return '"'+name+'":'+compileExpression(context, value)
 	}).join(', ')+' }'
 }
 
@@ -440,7 +440,7 @@ var copyContext = function(context, addValues) {
 	return addValues // we currently have only a hookName - we can probably get rid of compilation context and just have the hook name
 }
 
-var compileExpression = function(ast) {
+var compileExpression = function(context, ast) {
 	assert(ast, typeof ast == 'object', 'ASTs should always be objects')
 	switch(ast.type) {
 		case 'TEXT_LITERAL':
@@ -461,31 +461,31 @@ var compileExpression = function(ast) {
 			return ast.runtimeName
 		case 'DICTIONARY_LITERAL':
 			return _inlineCode('fun.expressions.Dictionary({{ contentObj }})', {
-				contentObj:compileDictionaryLiteral(ast.content)
+				contentObj:compileDictionaryLiteral(context, ast.content)
 			})
 		case 'LIST_LITERAL':
 			return _inlineCode('fun.expressions.List([ {{ content }} ])', {
-				content:map(ast.content, compileExpression).join(', ')
+				content:map(ast.content, curry(compileExpression, context)).join(', ')
 			})
 		case 'COMPOSITE':
 			return _inlineCode('fun.expressions.composite({{ left }}, "{{ operator }}", {{ right }})', {
-				left:compileExpression(ast.left),
+				left:compileExpression(context, ast.left),
 				operator:ast.operator,
-				right:compileExpression(ast.right)
+				right:compileExpression(context, ast.right)
 			})
 		case 'TERNARY':
 			return _inlineCode('fun.expressions.ternary({{ condition }}, {{ ifValue }}, {{ elseValue }})', {
-				condition:compileExpression(ast.condition),
-				ifValue:compileExpression(ast.ifValue),
-				elseValue:compileExpression(ast.elseValue)
+				condition:compileExpression(context, ast.condition),
+				ifValue:compileExpression(context, ast.ifValue),
+				elseValue:compileExpression(context, ast.elseValue)
 			})
 		case 'UNARY':
 			return _inlineCode('fun.expressions.unary({{ operator }}, {{ value }})', {
 				operator:q(ast.operator),
-				value:compileExpression(ast.value)
+				value:compileExpression(context, ast.value)
 			})
 		case 'INVOCATION':
-			return compileInvocation(ast)
+			return compileInvocation(context, ast)
 		case 'FUNCTION':
 			return compileFunctionDefinition(ast)
 		case 'HANDLER':
@@ -497,16 +497,16 @@ var compileExpression = function(ast) {
 	}
 }
 
-var compileInvocation = function(ast) {
+var compileInvocation = function(context, ast) {
 	return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, "")', {
-		operand:compileExpression(ast.operand),
-		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(arg) }).join(',')+']'
+		operand:compileExpression(context, ast.operand),
+		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(context, arg) }).join(',')+']'
 	})
 }
 
 var compileScript = function(context, ast) {
 	var variables = (ast.attributes.length == 0) ? '' : 'var '+map(ast.attributes, function(attr) {
-		return attr.name+'='+compileExpression(attr.value)
+		return attr.name+'='+compileExpression(context, attr.value)
 	}).join(', ')+';'
 	return code(';(function(){',
 	'	{{ variables }}',
@@ -522,7 +522,7 @@ var compileScript = function(context, ast) {
 var compileDeclaration = function(context, ast) {
 	return code('var {{ name }} = fun.expressions.variable({{ initialContent }})', {
 		name:variableName(ast.name),
-		initialContent:compileExpression(ast.initialValue)
+		initialContent:compileExpression(context, ast.initialValue)
 	})
 }
 
