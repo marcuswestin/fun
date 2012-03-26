@@ -223,6 +223,15 @@ test('double declaration')
 		'	bar = 2'
 	).expect(a.variable('foo', a.literal(1)), a.variable('bar', a.literal(2)))
 
+test('if, else if, else')
+	.code(
+		'if (false) { "qwe" }',
+		'else if (true) { "foo" }',
+		'else { "cat" }'
+	).expect(
+		a.ifElse(a.literal(false), a.literal("qwe"), a.ifElse(a.literal(true), a.literal("foo"), a.literal("cat")))
+	)
+
 /* Util
  ******/
 function test(name) {

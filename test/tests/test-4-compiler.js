@@ -169,6 +169,21 @@ test('mutation of variable returned from closure propegates')
 	.click('#output')
 	.textIs('#output', 'QWE')
 
+test('if, else if, else')
+	.code(
+		'let foo = "qwe"',
+		'<div id="output">',
+		'if false { "case1" }',
+		'else if foo is = "asd" { "case2" }',
+		'else { "case3" }',
+		'</div>',
+		'<button id="button" onclick=handler(){ foo set: "asd" }/>'
+	)
+	.textIs('#output', 'case3')
+	.click('#button')
+	.textIs('#output', 'case2')
+
+
 /* Util
  ******/
 var isFirstTest = true

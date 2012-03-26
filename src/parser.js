@@ -178,7 +178,11 @@ var _parseIfStatement = astGenerator(function(statementParseFunction) {
 	var elseBlock = null
 	if (peek('keyword', 'else')) {
 		advance('keyword', 'else')
-		elseBlock = parseBlock(statementParseFunction, 'else statement')
+		if (peek('keyword', 'if')) {
+			elseBlock = [_parseIfStatement(statementParseFunction)]
+		} else {
+			elseBlock = parseBlock(statementParseFunction, 'else statement')
+		}
 	}
 	
 	return { type:'IF_STATEMENT', condition:condition, ifBlock:ifBlock, elseBlock:elseBlock }
