@@ -80,6 +80,10 @@ var expressions = require('./expressions'),
 			if (match = key.match(/^on(\w+)$/)) {
 				// Todo remove event listeners
 				var eventName = match[1].toLowerCase()
+				if (value.getType() != 'Handler') {
+					console.warn('Event attribute', eventName, 'value is not a Handler')
+					return
+				}
 				fun.on(_hooks[hookName], eventName, function(e) {
 					var event = expressions.fromJsValue({ keyCode:e.keyCode, type:e.type })
 					value.invoke(event)
