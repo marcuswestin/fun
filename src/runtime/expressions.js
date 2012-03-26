@@ -30,15 +30,13 @@ var constantAtomicBase = create(base, {
 	isMutable:function() { return false },
 	asString:function() { return this._content.toString() },
 	equals:function(that) { return (this.getType() == that.getType() && this.getContent() == that.getContent()) ? Yes : No },
-	isInvocable:function() { return false },
 	getContent:function() { return this._content },
 	hasVariableContent:function() { return false },
 	dismiss:function(id) { /* This function intentionally left blank */  }
 })
 
 var invocableBase = create(constantAtomicBase, {
-	asLiteral:function() { return '<block>' },
-	isInvocable: function() { return true }
+	asLiteral:function() { return '<block>' }
 })
 
 var variableValueBase = create(base, {

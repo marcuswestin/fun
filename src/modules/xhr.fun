@@ -12,7 +12,7 @@ let xhr = {
 			xhr[method](path.asString(), args, function(err, response) {
 				if (!responseHandler.isNull()) {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
-					responseHandler.invoke(event)
+					responseHandler.handle(event)
 				}
 				if (err) {
 					result.error.set(fun.expressions.fromJsValue(err))

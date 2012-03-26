@@ -18,12 +18,17 @@ var expressions = require('./expressions'),
 	fun.expressions = expressions
 	
 	fun.invoke = function(operand, args) {
-		var evaluatedOperand = operand.evaluate()
-		if (!evaluatedOperand.isInvocable()) {
-			throw new Error('Attempted to invoke a non-invocable: '+operand.inspect())
+		operand = operand.evaluate()
+		// TODO Observe operand
+		// TODO Observe arguments
+		switch (operand.getType()) {
+			case 'Handler': return operand.handle(args)
+			case 'Function': return operand.invoke(args)
+			case 'Template': throw new Error("Implement Template invokation"); // return operand.render()
+			default: throw new Error('Attempted to invoke a non-invocable: '+operand.inspect())
 		}
-		return evaluatedOperand.evaluate().invoke(args)
 	}
+	
 /* Values
  ********/
 	fun.emit = function(parentHookName, value) {
