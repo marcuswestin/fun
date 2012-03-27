@@ -183,6 +183,12 @@ test('if, else if, else')
 	.click('#button')
 	.textIs('#output', 'case2')
 
+test('composite expression with invocation')
+	.code(
+		'let foo = function() { return 2 }',
+		'<div id="output">1 + foo() + 3</div>'
+	)
+	.textIs('#output', 6)
 
 /* Util
  ******/
