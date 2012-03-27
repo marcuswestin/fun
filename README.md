@@ -14,6 +14,7 @@ Try this:
 Also try
 
 	curl https://raw.github.com/marcuswestin/fun/master/apps/todo-mvc/todo-mvc.fun > todo-mvc.fun
+	curl https://raw.github.com/marcuswestin/fun/master/apps/todo-mvc/todo-mvc.css > todo-mvc.css
 	fun todo-mvc.fun
 
 Examples
