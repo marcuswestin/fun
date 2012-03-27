@@ -1,3 +1,6 @@
+Intended v0.2.20
++ Add support for automatic less preprocessing of <link ref="stylesheet/less" ... /> elements
+
 v0.2.19
 + Disabled minification for now
 + Add -v/--version flags

@@ -9,7 +9,8 @@ var fs = require('fs'),
 	filter = require('std/filter'),
 	blockFunction = require('std/blockFunction'),
 	request = require('request'),
-	cleanCSS = require('clean-css')
+	cleanCSS = require('clean-css'),
+	less = require('less')
 
 var tokenizer = require('./tokenizer'),
 	parser = require('./parser')
@@ -27,7 +28,7 @@ exports.resolve = function(ast, opts, callback) {
 	
 	var context = { headers:[], imports:{}, names:{}, opts:opts, completion:completion }
 
-	addStylesheet(context, path.join(__dirname, 'runtime/normalize.css'))
+	addStylesheet(context, { href:path.join(__dirname, 'runtime/normalize.css') })
 	
 	var expressions = util.cleanup(resolve(context, ast))
 	
@@ -156,16 +157,16 @@ var resolveXML = function(context, ast) {
 	})
 	ast.block = ast.block && filter(resolve(context, ast.block))
 	
-	var linkHref = getStaticHref(ast)
-	if (linkHref && !ast.block.length) {
-		addStylesheet(context, linkHref)
+	var staticLinkAttrs = getStaticLinkAttrs(ast)
+	if (staticLinkAttrs && !ast.block.length) {
+		addStylesheet(context, staticLinkAttrs)
 		return null
 	} else {
 		return ast
 	}
 }
 
-function getStaticHref(ast) {
+function getStaticLinkAttrs(ast) {
 	if (ast.tagName != 'link') { return }
 	var attributes = ast.attributes,
 		staticAttrs = {}
@@ -174,10 +175,13 @@ function getStaticHref(ast) {
 		if (valueAST.type != 'TEXT_LITERAL') { return }
 		staticAttrs[attr.name] = valueAST.value
 	})
-	return staticAttrs.rel == 'stylesheet' && staticAttrs.href
+	return staticAttrs.rel && staticAttrs.rel.match(/^stylesheet/) && staticAttrs
 }
 
-var addStylesheet = function(context, linkHref) {
+var addStylesheet = function(context, attrs) {
+	var linkHref = attrs.href,
+		rel = attrs.rel || 'stylesheet/css'
+	
 	context.completion.addBlock()
 	if (linkHref.match(/^http/)) {
 		console.error("Fetching", linkHref)
@@ -202,14 +206,35 @@ var addStylesheet = function(context, linkHref) {
 	}
 	function doAddStyle(content) {
 		// TODO Support e.g. stylus
-		var comment = context.opts.minify ? '' : '/* inlined stylesheet: ' + linkHref + ' */\n',
-			css = context.opts.minify ? cleanCSS.process(content) : content
-		context.headers.push('<style type="text/css">\n'+comment+css+'\n</style>')
-		context.completion.removeBlock()
+		var comment = '/* inlined stylesheet: ' + linkHref + ' */\n'
+		if (context.opts.minify) { comment = '' }
+		
+		cssPreprocessors[rel](comment + content, function(err, css) {
+			if (err) {
+				doReportError(err, 'preprocess')
+			} else {
+				context.headers.push('<style type="text/css">\n'+css+'\n</style>')
+				context.completion.removeBlock()
+			}
+		})
 	}
 	function doReportError(err, verb) {
 		console.log("Error", verb+'ing', linkHref)
 		context.completion.fail(new Error('Could not '+verb+' '+linkHref+'\n'+err.message))
+	}
+}
+
+var cssPreprocessors = {
+	'stylesheet': function(css, callback) {
+		callback(null, css)
+	},
+	'stylesheet/css': function(css, callback) {
+		callback(null, css)
+	},
+	'stylesheet/less': function(lessContent, callback) {
+		less.render(lessContent, function(err, css) {
+			callback(err, css)
+		})
 	}
 }
 
