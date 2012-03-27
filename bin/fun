@@ -6,7 +6,8 @@ var fs = require('fs'),
 	path = require('path'),
 	optimist = require('optimist'),
 	map = require('std/map'),
-	package = require('../package')
+	package = require('../package'),
+	exec = require('child_process').exec
 
 /* Commandline options
  *********************/

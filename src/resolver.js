@@ -10,7 +10,7 @@ var fs = require('fs'),
 	blockFunction = require('std/blockFunction'),
 	request = require('request'),
 	cleanCSS = require('clean-css'),
-	less = require('less')
+	exec = require('child_process').exec
 
 var tokenizer = require('./tokenizer'),
 	parser = require('./parser')
@@ -209,7 +209,7 @@ var addStylesheet = function(context, attrs) {
 		var comment = '/* inlined stylesheet: ' + linkHref + ' */\n'
 		if (context.opts.minify) { comment = '' }
 		
-		cssPreprocessors[rel](comment + content, function(err, css) {
+		cssPreprocessors[rel](linkHref, comment + content, function(err, css) {
 			if (err) {
 				doReportError(err, 'preprocess')
 			} else {
@@ -225,17 +225,43 @@ var addStylesheet = function(context, attrs) {
 }
 
 var cssPreprocessors = {
-	'stylesheet': function(css, callback) {
+	'stylesheet': function(href, css, callback) {
 		callback(null, css)
 	},
-	'stylesheet/css': function(css, callback) {
+	'stylesheet/css': function(href, css, callback) {
 		callback(null, css)
 	},
-	'stylesheet/less': function(lessContent, callback) {
-		less.render(lessContent, function(err, css) {
-			callback(err, css)
-		})
+	'stylesheet/less': function(href, lessContent, callback) {
+		try { require('less').render(lessContent, callback) }
+		catch(err) {
+			installNodeModule('less', function(err) {
+				if (err) { return callback(err, null) }
+				require('less').render(lessContent, callback)
+			})
+		}
+	},
+	'stylesheet/stylus': function(href, stylusContent, callback) {
+		try { require('stylus').render(stylusContent, { filename:href }, callback) }
+		catch(err) {
+			installNodeModule('stylus', function(err) {
+				if (err) { return callback(err, null) }
+				require('stylus').render(stylusContent, { filename:href }, callback)
+			})
+		}
 	}
+}
+
+var installNodeModule = function(name, callback) {
+	var cwd = process.cwd(),
+		command = 'sudo npm install '+name
+	console.error("attempting to install node module", name, "...")
+	console.error(command)
+	process.chdir(__dirname + '/..')
+	exec(command, function(err, stdout, stderr) {
+		process.chdir(cwd)
+		console.error(err ? "error" : "success", "installing node module", name)
+		callback(err)
+	})
 }
 
 /*******************************
