@@ -1,12 +1,16 @@
 import mouse
+import localstorage
 
-"A draggable square"
+"A draggable square that's sticky between page reloads"
 
 <pre>"
 let drag = {
 	pos:{ x:100, y:100 },
 	offset:{ x:0, y:0 }
 }
+
+localstorage.persist(drag, 'drag')
+
 let dragStyle = {
 	cursor:'move',
 	width:100,
