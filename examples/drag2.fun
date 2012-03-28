@@ -5,7 +5,7 @@ import mouse
 <pre>"
 import mouse
 
-let drag = { pos:{ x:0, y:0 }, offset:{ x:0, y:0 } }
+let drag = { pos:{ x:100, y:100 }, offset:{ x:0, y:0 } }
 
 <div style={ cursor:'move', width:100, height:100, background:'red', position:'absolute', left:drag.pos.x + drag.offset.x, top:drag.pos.y + drag.offset.y }></div
 	onmousedown=handler(e) {
@@ -21,7 +21,7 @@ let drag = { pos:{ x:0, y:0 }, offset:{ x:0, y:0 } }
 >
 "</pre>
 
-let drag = { pos:{ x:0, y:0 }, offset:{ x:0, y:0 } }
+let drag = { pos:{ x:100, y:100 }, offset:{ x:0, y:0 } }
 
 <div style={ cursor:'move', width:100, height:100, background:'red', position:'absolute', left:drag.pos.x + drag.offset.x, top:drag.pos.y + drag.offset.y }></div
 	onmousedown=handler(e) {
