@@ -85,7 +85,14 @@ var expressions = require('./expressions'),
 					return
 				}
 				fun.on(_hooks[hookName], eventName, function(e) {
-					var event = expressions.fromJsValue({ keyCode:e.keyCode, type:e.type })
+					var event = expressions.fromJsValue({
+						keyCode:e.keyCode,
+						type:e.type,
+						cancel:fun.expressions.Function(function() {
+							if (e.preventDefault) { e.preventDefault() }
+							else { e.returnValue = false }
+						})
+					})
 					value.invoke(event)
 				})
 			} else if (match = key.match(/^style\.(\w+)$/)) {
