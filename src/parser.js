@@ -450,6 +450,10 @@ var _parseXMLAttributes = function() {
 	var XMLAttributes = []
 	while (!peek('symbol', ['/>','>'])) {
 		XMLAttributes.push(_parseXMLAttribute())
+		if (peek('symbol', ',')) {
+			// Allow for <div foo="bar", cat="qwe"/>
+			advance()
+		}
 	}
 	return XMLAttributes
 }
