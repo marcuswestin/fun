@@ -1,6 +1,6 @@
 import mouse
 
-"Two divs that kind of follow the mouse."
+"Two divs that follow the mouse."
 
 <pre>'
 var offset = 25
