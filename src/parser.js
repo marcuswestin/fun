@@ -209,9 +209,8 @@ var _parseCase = astGenerator(function(statementParseFunction) {
 		}
 	}
 	advance('symbol', ':')
-	while (true) {
+	while (!peek('keyword', ['case', 'default']) && !peek('symbol', R_CURLY)) {
 		statements.push(statementParseFunction())
-		if (peek('keyword', ['case', 'default']) || peek('symbol', R_CURLY)) { break }
 	}
 	return { type:'SWITCH_CASE', values:values, statements:statements, isDefault:isDefault }
 })

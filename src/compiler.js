@@ -194,22 +194,24 @@ var _compileTemplateIfStatement = function(context, ast) {
 }
 
 var _compileTemplateSwitchStatement = function(context, ast) {
-	var switchContext = copyContext(context, { hookName:name('SWITCH_HOOK') })
-		lastValueName = name('LAST_VALUE')
-
-	return _hookCode(switchContext.hookName, context.hookName)
-		+ code('var {{ lastValueName }}', { lastValueName:lastValueName })
-		+ _statementCode(ast.controlValue,
+	var hookName = name('SWITCH_HOOK'),
+		switchContext = copyContext(context, { hookName:hookName }),
+		lastOutcomeName = name('LAST_VALUE'),
+		lastWasDefaultName = name('LAST_WAS_DEFAULT')
+	
+	return _hookCode(hookName, context.hookName)
+		+ code('var {{ lastOutcomeName }}', { lastOutcomeName:lastOutcomeName })
+		+ code('var {{ lastWasDefaultName }}', { lastWasDefaultName:lastWasDefaultName })
+		+ _observeExpression(context, ast.controlValue,
 		';(function(branches) {',
-		'	if ({{ STATEMENT_VALUE }} === {{ lastValueName }}) { return }',
-		'	{{ lastValueName }} = {{ STATEMENT_VALUE }}',
-		'	fun.destroyHook({{ hookName }})',
-		'	switch ({{ STATEMENT_VALUE }}) {',
+		'	if (typeof {{ lastOutcome }} == "object" && {{ STATEMENT_VALUE }}.equals({{ lastOutcome }}).isTruthy()) { return }',
+		'	{{ lastOutcome }} = {{ STATEMENT_VALUE }}',
+		'	switch ({{ STATEMENT_VALUE }}.getContent()) {',
 				map(ast.cases, function(switchCase, i) {
 					var labels = switchCase.isDefault
-							? 'default:\n'
+							? 'default: if ({{lastWasDefault}}) { break }; {{lastWasDefault}}=true \n'
 							: map(switchCase.values, function(value) {
-								return 'case ' + compileExpression(context, value) + ':\n'
+								return 'case ' + q(value.value) + ': {{lastWasDefault}}=false;\n'
 							}).join('')
 					return labels
 						+ 'branches['+i+'](); break'
@@ -217,12 +219,13 @@ var _compileTemplateSwitchStatement = function(context, ast) {
 		'	}',
 		'})([',
 			map(ast.cases, function(switchCase, i) {
-				return 'function branches'+i+'(){ ' + indent(compileTemplateBlock, switchContext, switchCase.statements) + '}'
+				return 'function branches'+i+'(){ fun.destroyHook({{ hookName }}); ' + indent(compileTemplateBlock, switchContext, switchCase.statements) + '}'
 			}).join(',\n'),
 		'])',
 		{
-			hookName: switchContext.hookName,
-			lastValueName: lastValueName
+			hookName: hookName,
+			lastOutcome: lastOutcomeName,
+			lastWasDefault: lastWasDefaultName
 		})
 }
 

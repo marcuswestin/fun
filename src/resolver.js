@@ -10,7 +10,8 @@ var fs = require('fs'),
 	blockFunction = require('std/blockFunction'),
 	request = require('request'),
 	cleanCSS = require('clean-css'),
-	exec = require('child_process').exec
+	exec = require('child_process').exec,
+	arrayToObject = require('std/arrayToObject')
 
 var tokenizer = require('./tokenizer'),
 	parser = require('./parser')
@@ -358,7 +359,7 @@ var resolveSwitchStatement = function(context, ast) {
 	each(ast.cases, function(aCase) {
 		aCase.values = map(aCase.values, curry(resolve, context))
 		each(aCase.values, function(aCase) {
-			assert(aCase, aCase.type == 'VALUE_LITERAL', "Switch statements' case values must be numbers or texts (e.g. 2, 3, 'hello')")
+			assert(aCase, _caseValues[aCase.type], "Switch statements' case values must be numbers or texts (e.g. 2, 3, 'hello')")
 		})
 		aCase.statements = map(aCase.statements, curry(resolve, context))
 	})
@@ -366,6 +367,7 @@ var resolveSwitchStatement = function(context, ast) {
 	assert(ast, defaultCases.length < 2, "Found two default cases in switch statement - well, that doesn't make sense")
 	return ast
 }
+var _caseValues = arrayToObject(['TEXT_LITERAL', 'NUMBER_LITERAL'])
 
 /***********
  * Utility *
