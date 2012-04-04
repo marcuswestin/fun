@@ -149,8 +149,11 @@ var _parseVariableDeclaration = function() {
 var _parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	advance('keyword', 'for')
 	
-	var iteratorName = advance('name', null, 'for_loop\'s iterator reference').value,
+	var iteratorName, iterator
+	_allowParens(function() {
+		iteratorName = advance('name', null, 'for_loop\'s iterator reference').value
 		iterator = createAST({ type:'REFERENCE', name:iteratorName, chain:null })
+	})
 	
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
 	var iterable = parseExpression()
@@ -160,6 +163,15 @@ var _parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 })
 
+var _allowParens = function(fn) {
+	if (peek('symbol', L_PAREN)) {
+		advance()
+		_allowParens(fn)
+		advance('symbol', R_PAREN)
+	} else {
+		fn()
+	}
+}
 
 var _parseDeclaration = astGenerator(function() {
 	var name = advance('name').value
