@@ -273,14 +273,16 @@ var handleModuleImport = function(context, ast) {
 }
 
 var handleFileImport = function(context, ast) {
-	// TODO resolve files relative to current file path
-	var filePath = path.resolve(process.cwd() + '/examples/' + ast.path + '.fun')
-	_importFile(context, filePath, ast)
+	var filePath = (ast.path[0] == '.'
+		? path.join(context.opts.dirname, ast.path + '.fun')
+		: path.normalize(ast.path))
+	_importFile(context, ast, filePath)
 }
 
 var _importFile = function(context, ast, filePath) {
 	if (context.imports[filePath]) { return }
-	assert(ast, fs.statSync(filePath).isFile(), 'Could not find module '+filePath)
+	try { assert(ast, fs.statSync(filePath).isFile(), 'Could not find module '+filePath) }
+	catch(e) { halt(ast, e) }
 	var tokens = tokenizer.tokenizeFile(filePath),
 		newAST = parser.parse(tokens),
 		resolvedAST = util.cleanup(resolve(context, newAST))
