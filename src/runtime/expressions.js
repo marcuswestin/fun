@@ -260,6 +260,8 @@ var unaryOperators = {
 var operators = {
 	'+': add,
 	'-': subtract,
+	'/': divide,
+	'*': multiply,
 	'=': equals,
 	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
 	'>=': greaterThanOrEquals,
@@ -278,6 +280,22 @@ function add(left, right) {
 function subtract(left, right) {
 	if (left.getType() == 'Number' && right.getType() == 'Number') {
 		return Number(left.getContent() - right.getContent())
+	} else {
+		return NullValue
+	}
+}
+
+function divide(left, right) {
+	if (left.getType() == 'Number' && right.getType() == 'Number') {
+		return Number(left.getContent() / right.getContent())
+	} else {
+		return NullValue
+	}
+}
+
+function multiply(left, right) {
+	if (left.getType() == 'Number' && right.getType() == 'Number') {
+		return Number(left.getContent() * right.getContent())
 	} else {
 		return NullValue
 	}
