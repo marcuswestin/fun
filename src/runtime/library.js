@@ -137,13 +137,19 @@ var expressions = require('./expressions'),
 			property.observe(function() {
 				input.value = property.evaluate().asString()
 			})
-			fun.on(input, 'keypress', function(e) {
+			fun.on(input, 'keypress', update)
+			fun.on(input, 'keyup', update)
+			fun.on(input, 'keydown', function(e) {
+				if (e.keyCode == 86) { update(e) } // catch paste events
+			})
+			function update(e) {
 				setTimeout(function() {
 					var value = input.value
+					if (property.getContent() === value) { return }
 					property.set(null, fun.expressions.Text(input.value))
 					input.value = value
 				}, 0)
-			})
+			}
 		}
 	}
 
