@@ -172,21 +172,43 @@ module.exports.Function = proto(invocableBase,
 			var yieldValue = function(value) { invocationValue.set(null, fromJsValue(value)) }
 			var __hackFirstExecution = true
 			var executeBlock = bind(this, function() {
+				if (waitForSetup) { return }
 				var isFirstExecution = __hackFirstExecution
 				__hackFirstExecution = false
 				this._content.apply(this, [yieldValue, isFirstExecution].concat(args))
 			})
-			if (args.length) {
-				each(args, function(arg) {
-					arg && arg.observe(executeBlock)
-				})
-			} else {
-				executeBlock()
-			}
+			
+			var waitForSetup = true
+			each(args, function(arg) {
+				arg && arg.observe(executeBlock)
+			})
+			waitForSetup = false
+			executeBlock()
+			
 			return invocationValue
 		}
 	}
 )
+
+function waitFor(fn) {
+	var waitingFor = 0
+	return {
+		addWaiter:function() {
+			var responded = false
+			waitingFor++
+			return function() {
+				if (!responded) {
+					responded = true
+					waitingFor--
+				}
+				if (!waitingFor) { fn() }
+			}
+		},
+		tryNow:function() {
+			if (!waitingFor) { fn() }
+		}
+	}
+}
 
 module.exports.Handler = proto(invocableBase,
 	function(block) {
