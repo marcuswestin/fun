@@ -109,7 +109,7 @@ function errorHtmlResponse(e) {
 }
 
 function reloadButtonHTML() {
-	return '<div style="width:15px; background:red; text-align:center; position:fixed; top:3px; right:3px; opacity:0.75; cursor:pointer;" onclick="location.reload()">r</div>'
+	return '<div style="width:15px; background:red; text-align:center; position:fixed; top:3px; right:3px; opacity:0.75; cursor:pointer;" ontouchstart="location.reload();" onclick="location.reload()">r</div>'
 }
 
 function loadCompiler() {
