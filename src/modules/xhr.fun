@@ -9,15 +9,15 @@ let xhr = {
 		let result = { loading:true, error:null, response:null }
 		<script method=method path=path args=args responseHandler=responseHandler result=result>
 			var xhr = require('std/xhr')
-			xhr[method](path.asString(), args, function(err, response) {
-				if (!responseHandler.isNull()) {
+			xhr[method.asString()](path.asString(), args, function(err, response) {
+				if (responseHandler && !responseHandler.isNull()) {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
 					responseHandler.handle(event)
 				}
 				if (err) {
-					result.error.set(fun.expressions.fromJsValue(err))
+					result.set(['error'], fun.expressions.fromJsValue(err))
 				} else {
-					result.response.set(fun.expressions.fromJsValue(response))
+					result.set(['response'], fun.expressions.fromJsValue(response))
 				}
 			})
 		</script>

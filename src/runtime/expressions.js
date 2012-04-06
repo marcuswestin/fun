@@ -177,7 +177,7 @@ module.exports.Function = proto(invocableBase,
 			})
 			if (args.length) {
 				each(args, function(arg) {
-					arg.observe(executeBlock)
+					arg && arg.observe(executeBlock)
 				})
 			} else {
 				executeBlock()

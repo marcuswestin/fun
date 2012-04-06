@@ -7,8 +7,7 @@ let jsonp = {
 			if (!win.__jsonpId) { win.__jsonpId = 1 }
 			var id = '__jsonp_'+(win.__jsonpId++)
 			win[id] = function(response) {
-				var err = null,
-					response = response.data
+				var err = null
 				if (responseHandler && !responseHandler.isNull()) {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
 					handler.handle(event)
