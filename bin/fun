@@ -56,10 +56,10 @@ if (argv.compile) {
 		loadCompiler().compileFile(filename, { minify:false }, function(e, appHtml) {
 			if (e) {
 				res.writeHead(500)
-				res.end(e.stack ? e.stack : e.message ? e.message : e.toString())
+				res.end(errorHtmlResponse(e))
 			} else {
 				res.writeHead(200)
-				res.end(appHtml)
+				res.end(appHtml + reloadButtonHTML())
 			}
 		})
 	}).listen(port, host)
@@ -88,15 +88,28 @@ function compile(req, res, opts) {
 	req.on('end', function() {
 		try {
 			// code == "code=<URI+encoded+code>"
-			var result = loadCompiler().compileCode(decodeURIComponent(code.substr(5).replace(/\+/g, ' ')), opts)
+			var result = loadCompiler().compileCode(decodeURIComponent(code.substr(5).replace(/\+/g, ' ')), opts) + reloadButtonHTML()
 		} catch(e) {
 			res.writeHead(500)
-			res.end(e.stack)
+			res.end(errorHtmlResponse(e))
 			return
 		}
 		res.writeHead(200)
 		res.end(result)
 	})
+}
+
+function errorHtmlResponse(e) {
+	return ['<!doctype html>','<body>',
+		reloadButtonHTML(),
+		'<pre>',
+		e.stack ? e.stack : e.message ? e.message : e.toString(),
+		'</pre>'
+	].join('\n')
+}
+
+function reloadButtonHTML() {
+	return '<div style="width:15px; background:red; text-align:center; position:fixed; top:3px; right:3px; opacity:0.75; cursor:pointer;" onclick="location.reload()">r</div>'
 }
 
 function loadCompiler() {
