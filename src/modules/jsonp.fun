@@ -10,7 +10,7 @@ let jsonp = {
 				var err = null
 				if (responseHandler && !responseHandler.isNull()) {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
-					handler.handle(event)
+					handler.invoke(event)
 				}
 				if (err) {
 					result.set(['error'], fun.expressions.fromJsValue(err))

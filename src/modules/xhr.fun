@@ -13,7 +13,7 @@ let xhr = {
 			xhr[method.asString()](path.asString(), args.asJSONObject(), function(err, response) {
 				if (responseHandler && !responseHandler.isNull()) {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
-					responseHandler.handle(event)
+					responseHandler.invoke(event)
 				}
 				result.set(['loading'], fun.expressions.No)
 				if (err) {

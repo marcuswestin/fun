@@ -22,7 +22,7 @@ var expressions = require('./expressions'),
 		// TODO Observe operand
 		// TODO Observe arguments
 		switch (operand.getType()) {
-			case 'Handler': return operand.handle(args)
+			case 'Handler': return operand.invoke(args)
 			case 'Function': return operand.invoke(args)
 			case 'Template': throw new Error("Implement Template invokation"); // return operand.render()
 			default: throw new Error('Attempted to invoke a non-invocable: '+operand.inspect())
