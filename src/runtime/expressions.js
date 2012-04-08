@@ -222,6 +222,19 @@ module.exports.Handler = proto(invocableBase,
 	}
 )
 
+module.exports.Template = proto(invocableBase,
+	function(block) {
+		if (typeof block != 'function') { TypeMismatch }
+		this._content = block
+	}, {
+		_type:'Template',
+		render:function(hookName, args) {
+			this._content.apply(this, [hookName].concat(args))
+			return NullValue // This is a bit ghetto - allows template invocations to render nothing. I'm thinking more and more that template invocations may want their own syntax (<templateName foo=foo, bar=bar, gee=gee> </templateName>)
+		}
+	}
+)
+
 /* Variable value expressions
  ****************************/
 var composite = module.exports.composite = proto(variableValueBase,

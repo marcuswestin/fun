@@ -344,7 +344,16 @@ var _compileMutationStatement = function(context, ast) {
 }
 
 var compileTemplateDefinition = function(context, ast) {
-	throw new Error("Implement compileTemplateDefinition")
+	var hookName = name('TEMPLATE_HOOK'),
+		templateBlockContext = copyContext(ast.closure, { hookName:variableName(hookName) })
+	return code(
+		'fun.expressions.Template(function block({{ signature }}) {',
+		'	{{ block }}',
+		'})',
+		{
+			signature: _compileSignature([{ name:hookName }].concat(ast.signature)),
+			block: indent(map, ast.block, curry(compileTemplateBlock, templateBlockContext)).join('\n')
+		})
 }
 
 /* Function and Handler control code
@@ -501,9 +510,10 @@ var compileExpression = function(context, ast) {
 }
 
 var compileInvocation = function(context, ast) {
-	return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, "")', {
+	return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, {{ hookName }})', {
 		operand:compileExpression(context, ast.operand),
-		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(context, arg) }).join(',')+']'
+		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(context, arg) }).join(',')+']',
+		hookName:context.hookName || q('')
 	})
 }
 

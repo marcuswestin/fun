@@ -190,6 +190,38 @@ test('composite expression with invocation')
 	)
 	.textIs('#output', 6)
 
+test('template invocations with arguments')
+	.code(
+		'let greet = template(name) { "hello "+name }',
+		'<div id="output">greet("foo") greet("bar") " " greet("cat")</div>'
+	)
+	.textIs('#output', 'hello foohello bar hello cat')
+
+test('template argument mutation mutates emission')
+	.code(
+		'let emit = template(arg) { arg }',
+		'let foo = "bar"',
+		'<div id="output">',
+		'	emit(foo)',
+		'</div onclick=handler(){ foo set: "cat" }>'
+	)
+	.textIs('#output', 'bar')
+	.click('#output')
+	.textIs('#output', 'cat')
+
+test('variable in template closure updates the template emission when the variable mutates')
+	.code(
+		'let foo = "bar"',
+		'<div id="output">',
+		'	let qwe = template() { foo }',
+		'	qwe()',
+		'</div onclick=handler(){ foo set: "cat" }>'
+	)
+	.textIs('#output', 'bar')
+	.click('#output')
+	.textIs('#output', 'cat')
+
+
 /* Util
  ******/
 var isFirstTest = true
