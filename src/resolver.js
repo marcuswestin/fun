@@ -30,6 +30,7 @@ exports.resolve = function(ast, opts, callback) {
 	var context = { headers:[], imports:{}, names:{}, opts:opts, completion:completion }
 
 	addStylesheet(context, { href:path.join(__dirname, 'runtime/normalize.css') })
+	context.headers.push('<meta charset="UTF-8">')
 	
 	var expressions = util.cleanup(resolve(context, ast))
 	
