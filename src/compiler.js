@@ -134,19 +134,22 @@ var _emitXML = function(context, ast) {
 	var nodeHookName = name('XML_HOOK'),
 		newContext = copyContext(context, { hookName:nodeHookName })
 	
-	var attrs = {}
-	each(ast.attributes, function(attr) {
-		attrs[attr.name] = attr.value
-	})
+	var attrs = ast.attributes.length == 0 ? 'null' :
+		'[{' +
+			map(ast.attributes, function(attr) {
+				return 'name:'+q(attr.name)+',value:'+compileExpression(context, attr.value)
+			}).join('}, {') +
+		'}]'
+	
 	return code(
 		'var {{ hookName }} = fun.name()',
-		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ attrsObj }} })',
+		'fun.hook({{ hookName }}, {{ parentHook }}, { tagName:{{ tagName }}, attrs:{{ attrs }} })',
 		'{{ block }}',
 		{
 			parentHook: context.hookName,
 			hookName: nodeHookName,
 			tagName: q(ast.tagName),
-			attrsObj: compileDictionaryLiteral(context, attrs),
+			attrs: attrs,
 			block: ast.block ? indent(compileTemplateBlock, newContext, ast.block) : ''
 		})
 }

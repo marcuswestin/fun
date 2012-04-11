@@ -1,7 +1,9 @@
 var expressions = require('./expressions'),
 	each = require('std/each'),
 	curry = require('std/curry'),
-	throttle = require('std/throttle')
+	throttle = require('std/throttle'),
+	addClass = require('dom/addClass'),
+	removeClass = require('dom/removeClass')
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }
@@ -52,7 +54,9 @@ var expressions = require('./expressions'),
 		var parent = _hooks[parentName],
 			hook = _hooks[name] = document.createElement(opts.tagName || 'hook')
 		
-		for (var key in opts.attrs) { fun.attr(name, key, opts.attrs[key]) }
+		each(opts.attrs, function(attr) {
+			fun.attr(name, attr.name, attr.value)
+		})
 		
 		if (_hookCallbacks[name]) {
 			for (var i=0, callback; callback = _hookCallbacks[name][i]; i++) {
@@ -80,15 +84,18 @@ var expressions = require('./expressions'),
 			fun.reflectInput(hookName, value)
 			return
 		}
+		var hook = _hooks[hookName],
+			lastValue
 		value.observe(function() {
 			if (match = key.match(/^on(\w+)$/)) {
-				// Todo remove event listeners
+				if (lastValue) { fun.off(hook, eventName, lastValue) }
+				
 				var eventName = match[1].toLowerCase()
 				if (value.getType() != 'Handler') {
 					console.warn('Event attribute', eventName, 'value is not a Handler')
 					return
 				}
-				fun.on(_hooks[hookName], eventName, function(e) {
+				fun.on(hook, eventName, lastValue = function(e) {
 					var event = expressions.fromJsValue({
 						keyCode:e.keyCode,
 						type:e.type,
@@ -99,23 +106,25 @@ var expressions = require('./expressions'),
 					})
 					value.evaluate().invoke(event)
 				})
-			} else if (match = key.match(/^style\.(\w+)$/)) {
-				fun.setStyle(hookName, match[1], value)
 			} else if (key == 'style') {
+				// TODO remove old styles
 				each(value.getContent(), function(val, key) {
-					fun.setStyle(hookName, key, val)
+					fun.setStyle(hook, key, val)
 				})
+			} else if (key == 'class' || key == 'className') {
+				if (lastValue) { removeClass(hook, lastValue) }
+				addClass(hook, lastValue = value.getContent())
 			} else {
-				_hooks[hookName].setAttribute(key, value.getContent())
+				hook.setAttribute(key, value.getContent())
 			}
 		})
 	}
 
-	fun.setStyle = function(hookName, key, value) {
+	fun.setStyle = function(hook, key, value) {
 		var rawValue = value.evaluate().asString()
 		if (value.getType() == 'Number' || rawValue.match(/^\d+$/)) { rawValue = rawValue + 'px' }
 		if (key == 'float') { key = 'cssFloat' }
-		_hooks[hookName].style[key] = rawValue
+		hook.style[key] = rawValue
 	}
 	
 	fun.on = function(element, eventName, handler) {
@@ -123,6 +132,14 @@ var expressions = require('./expressions'),
 			element.addEventListener(eventName, handler, false)
 		} else if (element.attachEvent){
 			element.attachEvent("on"+eventName, handler)
+		}
+	}
+	
+	fun.off = function(element, eventName, handler) {
+		if (element.removeEventListener) {
+			element.removeEventListener(eventName, handler, false)
+		} else if (element.dettachEvent){
+			element.dettachEvent("on"+eventName, handler)
 		}
 	}
 	

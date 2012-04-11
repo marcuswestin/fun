@@ -63,9 +63,11 @@ function composite(left, operator, right) {
 }
 
 function xml(tag, attrs, block) {
-	attrs = map(attrs, function(val, key) {
-		return { name:key, value:val }
-	})
+	if (!isArray(attrs)) {
+		attrs = map(attrs, function(val, key) {
+			return { name:key, value:val }
+		})
+	}
 	return { type:'XML', tagName:tag, attributes:attrs, block:block || [] }
 }
 

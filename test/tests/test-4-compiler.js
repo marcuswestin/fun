@@ -8,7 +8,9 @@ var tokenizer = require('../../src/tokenizer'),
 	compilerServerPort = 9797,
 	slice = require('std/slice'),
 	bind = require('std/bind'),
-	each = require('std/each')
+	each = require('std/each'),
+	strip = require('std/strip'),
+	hasClass = require('dom/hasClass')
 
 var currentTestCode, compilerServer
 	
@@ -221,6 +223,20 @@ test('variable in template closure updates the template emission when the variab
 	.click('#output')
 	.textIs('#output', 'cat')
 
+test('multiple class name attributes')
+	.code('<div id="target" class="foo" class="bar" />')
+	.hasClass('#target', 'foo', 'bar')
+
+test('a variable mutation replaces old class name')
+	.code(
+		'foo = "foo"',
+		'<div id="target" class=foo class="cat" onclick=handler() { foo set:"bar" } />'
+	)
+	.hasClass('#target', 'foo', 'cat')
+	.click('#target')
+	.doesntHaveClass('#target', 'foo')
+	.hasClass('#target', 'bar', 'cat')
+
 
 /* Util
  ******/
@@ -308,6 +324,20 @@ function createActionHandlers() {
 		},
 		textIs: function(assert, browser, next, selector, expectedHTML) {
 			assert.deepEqual(expectedHTML, browser.text(selector))
+			next()
+		},
+		hasClass: function(assert, browser, next, selector/*, class1, class2, ... */) {
+			var classNames = slice(arguments, 4)
+			each(classNames, function(expectedClassName) {
+				assert.ok(hasClass(browser.querySelector(selector), expectedClassName))
+			})
+			next()
+		},
+		doesntHaveClass: function(assert, browser, next, selector, expectedClass) {
+			var classNames = slice(arguments, 4)
+			each(classNames, function(expectedClassName) {
+				assert.ok(!hasClass(browser.querySelector(selector), expectedClassName))
+			})
 			next()
 		},
 		positionIs: function(assert, browser, next, selector, x, y) {
