@@ -1,6 +1,6 @@
 // This example is currently broken. Need to make it work :)
 
-var state = 'foo'
+state = 'foo'
 
 "Local.state: " <input data=state /> "(try foo, bar, and others)"
 

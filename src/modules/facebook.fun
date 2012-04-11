@@ -1,6 +1,6 @@
 import Local
 
-let facebook = {
+facebook = {
 	connected: false,
 	connect: javascriptHandler("facebookModule.connect"),
 	user: {

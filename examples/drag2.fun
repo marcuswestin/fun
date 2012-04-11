@@ -4,14 +4,14 @@ import localstorage
 "A draggable square that's sticky between page reloads"
 
 <pre>"
-let drag = {
+drag = {
 	pos:{ x:100, y:100 },
 	offset:{ x:0, y:0 }
 }
 
 localstorage.persist(drag, 'drag')
 
-let dragStyle = {
+dragStyle = {
 	cursor:'move',
 	width:100,
 	height:100,
@@ -36,14 +36,14 @@ let dragStyle = {
 >
 "</pre>
 
-let drag = {
+drag = {
 	pos:{ x:100, y:100 },
 	offset:{ x:0, y:0 }
 }
 
 localstorage.persist(drag, 'drag')
 
-let dragStyle = {
+dragStyle = {
 	cursor:'move',
 	width:100,
 	height:100,

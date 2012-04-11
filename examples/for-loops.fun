@@ -11,13 +11,13 @@ for (number in [1,2,3]) {
 
 
 <pre>"
-var person = { name:'Marcus', likes:'Ice cream' }
+let person = { name:'Marcus', likes:'Ice cream' }
 for (value in person) {
 	<div>value</div>
 }
 "
 </pre>
-var person = { name:'Marcus', likes:'Ice cream' }
+person = { name:'Marcus', likes:'Ice cream' }
 for (value in person) {
 	<div>value</div>
 }

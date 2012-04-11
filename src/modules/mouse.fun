@@ -1,4 +1,4 @@
-let mouse = {
+mouse = {
 	x: 0,
 	y: 0,
 	isDown: false

@@ -1,4 +1,4 @@
-var pictureURL = ""
+pictureURL = ""
 
 <pre>'
 <div style={ margin: 10, padding: 5, border: "2px solid #999", width: 500 }>

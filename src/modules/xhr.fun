@@ -1,4 +1,4 @@
-let xhr = {
+xhr = {
 	post:function(path, args, responseHandler) {
 		return xhr._send('post', path, args, responseHandler)
 	},
@@ -6,7 +6,7 @@ let xhr = {
 		return xhr._send('get',  path, args, responseHandler)
 	},
 	_send: function(method, path, args, responseHandler) {
-		let result = { loading:true, error:null, response:null }
+		result = { loading:true, error:null, response:null }
 		<script method=method path=path args=args responseHandler=responseHandler result=result>
 			if (!__hackFirstExecution) { return }
 			var xhr = require('std/xhr')

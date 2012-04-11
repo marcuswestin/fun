@@ -1,6 +1,6 @@
 import Local
 
-let location = {
+location = {
 	navigate: javascriptHandler("locationModule.navigate"),
 	state: '',
 }
