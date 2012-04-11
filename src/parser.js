@@ -131,22 +131,11 @@ var tryParseControlStatement = function(blockParseFunction) {
 		return _parseDeclaration()
 	}
 	switch(peek().value) {
-		case 'let':      return _parseOldVariableDeclaration() // TODO remove this
 		case 'for':      return _parseForLoopStatement(blockParseFunction)
 		case 'if':       return _parseIfStatement(blockParseFunction)
 		case 'switch':   return _parseSwitchStatement(blockParseFunction)
 		case 'debugger': return _parseDebuggerLiteral()
 	}
-}
-
-var _parseOldVariableDeclaration = function() {
-	advance('keyword', 'let')
-	var declarations = [_parseDeclaration()]
-	while (peek('symbol', ',')) {
-		advance('symbol', ',')
-		declarations.push(_parseDeclaration())
-	}
-	return declarations
 }
 
 var _parseForLoopStatement = astGenerator(function(statementParseFunction) {
