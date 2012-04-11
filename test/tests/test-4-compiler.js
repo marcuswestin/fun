@@ -19,12 +19,12 @@ test('a number and a string').code(
 	.textIs('#output', 'Hello 1')
 
 test('a variable in a div').code(
-	'let foo = "foo"',
+	'foo = "foo"',
 	'<div id="output">foo</div>')
 	.textIs('#output', 'foo')
 
 test('clicking a button updates the UI').code(
-	'let foo = "bar"',
+	'foo = "bar"',
 	'<div id="output">foo</div>',
 	'<button id="button"></button onClick=handler() {',
 	'	foo set: "cat"',
@@ -34,7 +34,7 @@ test('clicking a button updates the UI').code(
 	.textIs('#output', 'cat')
 
 test('object literals').code(
-	'let foo = { nested: { bar:1 } }',
+	'foo = { nested: { bar:1 } }',
 	'<div id="output">foo foo.nested foo.nested.bar</div>'
 	)
 	.textIs('#output', '{ "nested":{ "bar":1 } }{ "bar":1 }1')
@@ -49,7 +49,7 @@ test('divs follow mouse').code(
 	.positionIs('#output2', 150, 150)
 
 test('script tag variable passing').code(
-	'let foo = "foo"',
+	'foo = "foo"',
 	'<script fooVariable=foo>',
 	'	fooVariable.set(null, fun.expressions.Text("bar"))',
 	'</script>',
@@ -58,13 +58,13 @@ test('script tag variable passing').code(
 
 test('variable declaration inside div').code(
 	'<div>',
-	'	let cat = "cat"',
+	'	cat = "cat"',
 	'	<div id="output">cat</div>',
 	'</div>')
 	.textIs('#output', 'cat')
 	
 test('changing object literals - TODO FIX THIS').code(
-	'let foo = { a:1 }',
+	'foo = { a:1 }',
 	'<div id="output">',
 	'	{ foo: { a:foo.a } }',
 	'	{ a:foo.a }',
@@ -76,25 +76,25 @@ test('changing object literals - TODO FIX THIS').code(
 	.textIs('#output', '{ "foo":{ "a":2 } }{ "a":2 }{ "a":2 }')
 
 test('null values').code(
-	'let foo=null',
+	'foo=null',
 	'<div id="output">"null:"foo " null:"null</div>'
 	)
 	.textIs('#output', 'null: null:')
 
 test('function invocation').code(
-	'let fun = function() { return 1 }',
+	'fun = function() { return 1 }',
 	'<div id="output">fun()</div>'
 	)
 	.textIs('#output', '1')
 
 test('function argument').code(
-	'let fun = function(arg) { return arg }',
+	'fun = function(arg) { return arg }',
 	'<div id="output">fun(1) fun("hello")</div>'
 	)
 	.textIs('#output', '1hello')
 
 test('statements after return do not evaluate').code(
-	'let fun = function() {',
+	'fun = function() {',
 	'	return 1',
 	'	return 2',
 	'}',
@@ -104,14 +104,14 @@ test('statements after return do not evaluate').code(
 
 test('if/else in a div -> if branch')
 	.code(
-		'let foo = 120',
+		'foo = 120',
 		'<div id="output"> if foo is >= 100 { "foo is >= 100" }',
 		'else { "foo is < 100" }</div>')
 	.textIs('#output', 'foo is >= 100')
 
 test('if/else in a div -> else branch')
 	.code(
-		'let foo = 120',
+		'foo = 120',
 		'<div id="output">',
 		'	if foo is < 100 { "foo is < 100" }',
 		'	else { "foo is >= 100" }',
@@ -120,7 +120,7 @@ test('if/else in a div -> else branch')
 
 test('if/else in a div -> first if branch, then else branch')
 	.code(
-		'let foo = 120',
+		'foo = 120',
 		'<div id="output">',
 		'	if foo is < 100 { "foo is < 100" }',
 		'	else { "foo is >= 100" }',
@@ -136,33 +136,33 @@ test('if/else in a div -> first if branch, then else branch')
 
 test('returning an argument reference from a function')
 	.code(
-		'let fun = function(arg) { return arg.foo }',
+		'fun = function(arg) { return arg.foo }',
 		'<div id="output">fun({ foo:"bar" })</div>')
 	.textIs('#output', 'bar')
 
 test('function with script that mutates return value 1')
 	.code(
-		'let fun = function() { <script>yieldValue(fun.expressions.Number(1))</script> }',
+		'fun = function() { <script>yieldValue(fun.expressions.Number(1))</script> }',
 		'<div id="output">fun()</div>')
 	.textIs('#output', 1)
 
 test('function with script that mutates return value 2')
 	.code(
-		'let fun = function() { <script>yieldValue(1)</script> }',
+		'fun = function() { <script>yieldValue(1)</script> }',
 		'<div id="output">fun()</div>')
 	.textIs('#output', 1)
 
 test('function returns closure value')
 	.code(
-		"let bar = 'qwe'",
-		"let fun = function() { return bar }",
+		"bar = 'qwe'",
+		"fun = function() { return bar }",
 		"<div id='output'>fun()</div>")
 	.textIs('#output', "qwe")
 
 test('mutation of variable returned from closure propegates')
 	.code(
-		'let foo = "ASD"',
-		'let fun = function() { return foo }',
+		'foo = "ASD"',
+		'fun = function() { return foo }',
 		'<div id="output">fun()</div onclick=handler() { foo set: "QWE" }>'
 	)
 	.textIs('#output', 'ASD')
@@ -171,7 +171,7 @@ test('mutation of variable returned from closure propegates')
 
 test('if, else if, else')
 	.code(
-		'let foo = "qwe"',
+		'foo = "qwe"',
 		'<div id="output">',
 		'if false { "case1" }',
 		'else if foo is = "asd" { "case2" }',
@@ -185,22 +185,22 @@ test('if, else if, else')
 
 test('composite expression with invocation')
 	.code(
-		'let foo = function() { return 2 }',
+		'foo = function() { return 2 }',
 		'<div id="output">1 + foo() + 3</div>'
 	)
 	.textIs('#output', 6)
 
 test('template invocations with arguments')
 	.code(
-		'let greet = template(name) { "hello "+name }',
+		'greet = template(name) { "hello "+name }',
 		'<div id="output">greet("foo") greet("bar") " " greet("cat")</div>'
 	)
 	.textIs('#output', 'hello foohello bar hello cat')
 
 test('template argument mutation mutates emission')
 	.code(
-		'let emit = template(arg) { arg }',
-		'let foo = "bar"',
+		'emit = template(arg) { arg }',
+		'foo = "bar"',
 		'<div id="output">',
 		'	emit(foo)',
 		'</div onclick=handler(){ foo set: "cat" }>'
@@ -211,9 +211,9 @@ test('template argument mutation mutates emission')
 
 test('variable in template closure updates the template emission when the variable mutates')
 	.code(
-		'let foo = "bar"',
+		'foo = "bar"',
 		'<div id="output">',
-		'	let qwe = template() { foo }',
+		'	qwe = template() { foo }',
 		'	qwe()',
 		'</div onclick=handler(){ foo set: "cat" }>'
 	)

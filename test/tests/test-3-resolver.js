@@ -7,7 +7,7 @@ var a = require('../resolver-mocks'),
 
 test("a declared alias for a string")
 	.code(
-		'let guy = "Marcus"',
+		'guy = "Marcus"',
 		'guy'
 	)
 	.expect(
@@ -21,7 +21,7 @@ test("an empty div")
 
 test("nested aliases")
 	.code(
-		'let foo = { bar:1, cat:"cat" }',
+		'foo = { bar:1, cat:"cat" }',
 		'foo foo.bar foo.cat'
 	)
 	.expect(
@@ -52,8 +52,8 @@ test("nested aliases")
 	
 test('clicking a button updates the UI')
 	.code(
-		'let foo = "bar"',
-		'let qwe = "cat"',
+		'foo = "bar"',
+		'qwe = "cat"',
 		'<div id="output">foo</div>',
 		'<button id="button">"Click me"</button onClick=handler() {',
 		'	foo set: "cat"',
@@ -70,15 +70,15 @@ test('clicking a button updates the UI')
 	)
 
 test('variable declaration inside div')
-	.code('<div>let cat="cat"</div>')
-	.expect(a.xml('div', [], [[a.variable('cat', a.literal('cat'))]]))
+	.code('<div>cat="cat"</div>')
+	.expect(a.xml('div', [], [a.variable('cat', a.literal('cat'))]))
 
 test('function invocation')
-	.code('let fun = function() { return 1 }', 'fun()')
+	.code('fun = function() { return 1 }', 'fun()')
 	.expect(a.variable('fun', a.function([], [a.return(a.literal(1))])), a.invocation(a.reference('fun')))
 
 test('function arguments')
-	.code('let fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
+	.code('fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
 	.expect(
 		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
 			a.return(a.composite(a.reference('arg1'), '+', a.reference('arg2')))
@@ -88,7 +88,7 @@ test('function arguments')
 
 test('missing script tag attribute value is caught')
 	.code(
-		'let foo = function(qwe) {',
+		'foo = function(qwe) {',
 		'	<script missing=missing>',
 		'	</script>',
 		'	return 1',
@@ -96,7 +96,7 @@ test('missing script tag attribute value is caught')
 	.expectError(/^Couldn't find a variable called "missing"/)
 
 test('variable names must start with a lowercase letter')
-	.code('let Foo = "qwe"')
+	.code('Foo = "qwe"')
 	.expectError(/^Variable names must start with/)
 
 // Boolean values
@@ -105,8 +105,8 @@ test('variable names must start with a lowercase letter')
 // 
 // test('typed value values')
 // 	.code(
-// 		'let Response = { error:Text, result:Text }',
-// 		'let Response response = { error:"foo", result:"bar" }',
+// 		'Response = { error:Text, result:Text }',
+// 		'Response response = { error:"foo", result:"bar" }',
 // 		'response'
 // 	)
 // 	.expect(
@@ -117,11 +117,11 @@ test('variable names must start with a lowercase letter')
 // 
 // test('typed function declaration and invocation')
 // 	.code(
-// 		'let Response = { error:Text, result:Text }',
-// 		'let Response post = function(Text path, Anything params) {',
+// 		'Response = { error:Text, result:Text }',
+// 		'Response post = function(Text path, Anything params) {',
 // 		'	return { error:"foo", response:"bar" }',
 // 		'}',
-// 		'let response = post("/test", { foo:"bar" })'
+// 		'response = post("/test", { foo:"bar" })'
 // 	)
 // 	.expect(
 // 		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),

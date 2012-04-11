@@ -13,7 +13,7 @@ test('number literal')
 	.expect(a.literal(1))
 
 test('declaration')
-	.code('let greeting = "hello"')
+	.code('greeting = "hello"')
 	.expect(a.variable('greeting', a.literal("hello")))
 
 test('alias single namespace')
@@ -45,11 +45,11 @@ test('simple if statement')
 	.expect(a.ifElse(a.composite(a.literal(1), '<', a.literal(2)), a.literal(1)))
 
 test('has no null statements or expressions')
-	.code('let foo="bar"\n1')
+	.code('foo="bar"\n1')
 	.expect(a.variable("foo",a.literal("bar")), a.literal(1))
 
 test('variable declaration')
-	.code('let foo = "bar"')
+	.code('foo = "bar"')
 	.expect(a.variable('foo', a.literal('bar')))
 
 test('parses empty program')
@@ -81,7 +81,7 @@ test('self-closing xml')
 	.expect(a.xml('div'))
 
 test('inline javascript')
-	.code('let foo = 1\n <script fooVariable=foo> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
+	.code('foo = 1\n <script fooVariable=foo> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
 	.expect(
 		a.variable('foo', a.literal(1)),
 		a.inlineScript({ fooVariable:a.reference('foo') }, ' var i = 1; function a() { alert(i++) }; setInterval(a);')
@@ -97,7 +97,7 @@ test('file import')
 
 test('nested declaration')
 	.code(
-		'let foo = { nested: { cat:"yay" } }',
+		'foo = { nested: { cat:"yay" } }',
 		'foo bar foo.nested'
 	)
 	.expect(
@@ -106,16 +106,16 @@ test('nested declaration')
 	)
 
 test('deep nested declaration')
-	.code('let asd = {a:{b:{c:{d:{e:{f:{}}}}}}}')
+	.code('asd = {a:{b:{c:{d:{e:{f:{}}}}}}}')
 	.expect(a.variable('asd', a.literal({a:{b:{c:{d:{e:{f:{}}}}}}})))
 
 test('just a declaration')
-	.code('let foo = { bar:1 }')
+	.code('foo = { bar:1 }')
 	.expect(a.variable('foo', a.literal({ bar:1 })))
 
 test('a handler')
 	.code(
-		'let aHandler = handler(){}'
+		'aHandler = handler(){}'
 	)
 	.expect(
 		a.variable('aHandler', a.handler())
@@ -123,7 +123,7 @@ test('a handler')
 
 test('a button which mutates state')
 	.code(
-		'let foo="bar"',
+		'foo="bar"',
 		'<button></button onclick=handler(){ foo set: "cat" }>'
 	)
 	.expect(
@@ -135,8 +135,8 @@ test('a button which mutates state')
 
 test('handler with logic')
 	.code(
-		'let cat = "hi"',
-		'let foo = handler() {',
+		'cat = "hi"',
+		'foo = handler() {',
 		'	if cat is == "hi" { cat set: "bye" }',
 		'	else { cat set: foo }',
 		'}'
@@ -154,9 +154,9 @@ test('handler with logic')
 
 test('parse emits then declarations')
 	.code(
-		'let foo="foo"',
+		'foo="foo"',
 		'<div></div>',
-		'let cat="cat"'
+		'cat="cat"'
 	)
 	.expect(
 		a.variable('foo', a.literal('foo')),
@@ -165,15 +165,15 @@ test('parse emits then declarations')
 	)
 
 test('variable declaration inside div')
-	.code('<div>let cat="cat"</div>')
-	.expect(a.xml('div', null, [[a.variable('cat', a.literal('cat'))]]))
+	.code('<div>cat="cat"</div>')
+	.expect(a.xml('div', null, [a.variable('cat', a.literal('cat'))]))
 
 test('null value')
 	.code('null')
 	.expect(a.null())
 
 test('function arguments')
-	.code('let fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
+	.code('fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
 	.expect(
 		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
 			a.return(
@@ -199,7 +199,7 @@ test('if/else in a div')
 
 test('script tag in function parses')
 	.code(
-		'let foo = function(qwe) {',
+		'foo = function(qwe) {',
 		'	<script missing=missing>',
 		'	</script>',
 		'	return 1',
@@ -219,8 +219,8 @@ test('for loop over object literal')
 
 test('double declaration')
 	.code(
-		'let foo = 1,',
-		'	bar = 2'
+		'foo = 1',
+		'bar = 2'
 	).expect(a.variable('foo', a.literal(1)), a.variable('bar', a.literal(2)))
 
 test('if, else if, else')
@@ -271,10 +271,10 @@ function test(name) {
  ******************/
 // test('interface declarations')
 // 	.code(
-// 		'let Thing = { foo:Text, bar:Number }',
-// 		'let ListOfThings=[ Thing ]',
-// 		'let ListOfNumbers = [Number]',
-// 		'let NumberInterface = Number'
+// 		'Thing = { foo:Text, bar:Number }',
+// 		'ListOfThings=[ Thing ]',
+// 		'ListOfNumbers = [Number]',
+// 		'NumberInterface = Number'
 // 	)
 // 	.expect(
 // 		a.declaration('Thing', a.interface({ foo:a.Text, bar:a.Number })),
@@ -285,8 +285,8 @@ function test(name) {
 // 
 // test('typed value declarations')
 // 	.code(
-// 		'let Response = { error:Text, result:Text }',
-// 		'let Response response = { error:"foo", result:"bar" }',
+// 		'Response = { error:Text, result:Text }',
+// 		'Response response = { error:"foo", result:"bar" }',
 // 		'response'
 // 	)
 // 	.expect(
@@ -297,11 +297,11 @@ function test(name) {
 // 
 // test('typed function declaration and invocation')
 // 	.code(
-// 		'let Response = { error:Text, result:Text }',
-// 		'let Response post = function(Text path, Anything params) {',
+// 		'Response = { error:Text, result:Text }',
+// 		'Response post = function(Text path, Anything params) {',
 // 		'	return { error:"foo", response:"bar" }',
 // 		'}',
-// 		'let response = post("/test", { foo:"bar" })'
+// 		'response = post("/test", { foo:"bar" })'
 // 	)
 // 	.expect(
 // 		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),
@@ -313,8 +313,8 @@ function test(name) {
 // 
 // test('explicit interface declarations')
 // 	.code(
-// 		'let Thing = { foo:Text, bar:Number }',
-// 		'let Thing thing = null',
+// 		'Thing = { foo:Text, bar:Number }',
+// 		'Thing thing = null',
 // 		'thing'
 // 	)
 // 	.expect(
@@ -325,11 +325,11 @@ function test(name) {
 // 
 // test('type-inferred function invocation')
 // 	.code(
-// 		'let Response = { error:Text, result:Text }',
-// 		'let post = function(Text path, Anything params) {',
+// 		'Response = { error:Text, result:Text }',
+// 		'post = function(Text path, Anything params) {',
 // 		'	return { error:"foo", response:"bar" }',
 // 		'}',
-// 		'let response = post("/test", { foo:"bar" })'
+// 		'response = post("/test", { foo:"bar" })'
 // 	)
 // 	.expect(
 // 		a.declaration('Response', a.interface({ error:a.Text, result:a.Text })),
@@ -339,14 +339,14 @@ function test(name) {
 // 		a.declaration('response', a.invocation(a.alias('post'), a.literal('/test'), a.object({ foo:a.literal('bar')})))
 // 	)
 // 
-// let Thing = { num:Number, foo:{ bar:[Text] }}
-// let Number five = 5
-// let Thing thing = { num:five, foo:{ bar:"cat" }}
-// let { num:Number, foo:{ bar:Text } } thing = { num:five, foo:{ bar:"cat" }}
-// let fun = function(Thing thing, { num:Number, foo:Text } alt) { ... }
-// let Response post = function(path, params) { return XHR.post(path, params) }
-// let response = post('/path', { foo:'bar' })
+// Thing = { num:Number, foo:{ bar:[Text] }}
+// Number five = 5
+// Thing thing = { num:five, foo:{ bar:"cat" }}
+// { num:Number, foo:{ bar:Text } } thing = { num:five, foo:{ bar:"cat" }}
+// fun = function(Thing thing, { num:Number, foo:Text } alt) { ... }
+// Response post = function(path, params) { return XHR.post(path, params) }
+// response = post('/path', { foo:'bar' })
 // assert response.type == Response
-// let tar = XHR.post("/test", { foo:'bar' })
-// let Response tar = XHR.post("/test", { foo:'bar' })
-// let { error:String, result:String } tar = XHR.post("/test", { foo:'bar' })
+// tar = XHR.post("/test", { foo:'bar' })
+// Response tar = XHR.post("/test", { foo:'bar' })
+// { error:String, result:String } tar = XHR.post("/test", { foo:'bar' })
