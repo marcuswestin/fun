@@ -1,7 +1,7 @@
 import localstorage
 import filter
 
-let tasks = []
+tasks = []
 
 localstorage.persist(tasks, 'todo-fun')
 
@@ -13,7 +13,7 @@ localstorage.persist(tasks, 'todo-fun')
 	</div>
 	<div class="content">
 		<div id="create-todo">
-			let newTaskName = null
+			newTaskName = null
 			<input id="new-todo" data=newTaskName placeholder="What needs to be done?" onkeypress=handler(event) {
 				if event.keyCode is == 13 {
 					tasks push: { name:newTaskName.copy(), done:false }
@@ -33,16 +33,16 @@ localstorage.persist(tasks, 'todo-fun')
 		</div>
 		<div id="todo-stats">
 			if tasks.length is > 0 {
-				let doneTasks = filter(tasks, function(task) { return task.done }),
-					pluralize = function(num) { return num is > 1 ? "items" : "item" }
+				doneTasks = filter(tasks, function(task) { return task.done })
+				pluralize = function(num) { return num is > 1 ? "items" : "item" }
 				<span class="todo-count">
-					let numTasksLeft = tasks.length - doneTasks.length
+					numTasksLeft = tasks.length - doneTasks.length
 					<span class="number">numTasksLeft</span>" "pluralize(numTasksLeft) " left."
 				</span>
 				if doneTasks.length is > 0 {
 					<span class="todo-clear">
 						<a href="#">"Clear "doneTasks.length" completed "pluralize(doneTasks.length)</a onclick=handler() {
-							let remainingTasks = []
+							remainingTasks = []
 							for task in tasks {
 								if !task.done {
 									remainingTasks push: task

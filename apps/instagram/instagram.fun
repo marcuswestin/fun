@@ -1,7 +1,7 @@
 import jsonp
 
-let popularRequest = null,
- 	instagramApiKey = 'YOUR KEY'
+popularRequest = null
+instagramApiKey = 'YOUR KEY'
 
 <button>"fetch"</button onclick=handler() {
 	popularRequest set: jsonp.get("https://api.instagram.com/v1/media/popular?access_token="+instagramApiKey)
