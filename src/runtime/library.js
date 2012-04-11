@@ -97,7 +97,7 @@ var expressions = require('./expressions'),
 							else { e.returnValue = false }
 						})
 					})
-					value.invoke(event)
+					value.evaluate().invoke(event)
 				})
 			} else if (match = key.match(/^style\.(\w+)$/)) {
 				fun.setStyle(hookName, match[1], value)
