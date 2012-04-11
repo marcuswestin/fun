@@ -46,7 +46,6 @@ function _doTokenize (inputString, inputFile) {
         throw new TokenizeError(inputFile, line, col, msg);
     }
 
-    var hadSpace = false;
     var hadNewline = false;
     var hadSpace = false;
     var make = function (type, value, annotations) {
@@ -92,6 +91,7 @@ function _doTokenize (inputString, inputFile) {
 // Keep track of the line number
 
             hadNewline = true;
+            hadSpace = true;
             line += 1;
             i += 1;
             lineStart = i;

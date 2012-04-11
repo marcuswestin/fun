@@ -245,6 +245,11 @@ test('literals and xml with and without semicolons')
 		a.xml('div', { foo:a.literal("bar"), cat:a.literal(1), qwe:a.literal('qwe') })
 	)
 
+test('discern between invocation and parenthesized expression')
+	.code('foo(1) foo (1)')
+	.expect(a.invocation(a.reference('foo'), a.literal(1)), a.reference('foo'), a.literal(1))
+
+
 /* Util
  ******/
 function test(name) {

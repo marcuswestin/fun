@@ -391,10 +391,13 @@ var _parseNumberLiteral = astGenerator(function() {
 
 var _parseReferenceOrInvocation = astGenerator(function() {
 	var reference = parseReference()
-	if (!peek('symbol', L_PAREN)) { return reference }
-	advance('symbol', L_PAREN)
-	var args = parseList(R_PAREN, parseExpression)
-	return { type:'INVOCATION', operand:reference, arguments:args }
+	if (peek('symbol', L_PAREN) && !peekWhitespace()) {
+		advance('symbol', L_PAREN)
+		var args = parseList(R_PAREN, parseExpression)
+		return { type:'INVOCATION', operand:reference, arguments:args }
+	} else {
+		return reference
+	}
 })
 
 var _parseListLiteral = astGenerator(function() {
@@ -540,6 +543,10 @@ var peek = function(type, value, steps) {
 	if (type && findInArray(type, token.type) != token.type) { return false }
 	if (value && findInArray(value, token.value) != token.value) { return false }
 	return token
+}
+
+var peekWhitespace = function(steps) {
+	return gTokens[gIndex + 1].hadSpace
 }
 
 // Find an item in an array and return it
