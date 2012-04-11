@@ -1,3 +1,6 @@
+Intended v0.2.21
++ Hash-expand xml attributes a la <div #{ class:'clickable', onclick:handler() { ... }} />
+
 v0.2.20
 + Add support for automatic less preprocessing of <link ref="stylesheet/less" ... /> elements
 + Add support for stylus

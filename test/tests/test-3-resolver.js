@@ -99,6 +99,10 @@ test('variable names must start with a lowercase letter')
 	.code('Foo = "qwe"')
 	.expectError(/^Variable names must start with/)
 
+test('xml hash-expand attribute')
+	.code('<div #{ class:"cool" } />')
+	.expect(a.xml('div', [{ expand:a.literal({ 'class':'cool' }) }]))
+
 // Boolean values
 // Null values
 // Handlers, Functions and Templates as expressions and being emitted

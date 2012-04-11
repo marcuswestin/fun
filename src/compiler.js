@@ -137,7 +137,11 @@ var _emitXML = function(context, ast) {
 	var attrs = ast.attributes.length == 0 ? 'null' :
 		'[{' +
 			map(ast.attributes, function(attr) {
-				return 'name:'+q(attr.name)+',value:'+compileExpression(context, attr.value)
+				if (attr.expand) {
+					return 'expand:'+compileExpression(context, attr.expand)
+				} else {
+					return 'name:'+q(attr.name)+',value:'+compileExpression(context, attr.value)
+				}
 			}).join('}, {') +
 		'}]'
 	

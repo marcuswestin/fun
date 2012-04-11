@@ -245,9 +245,22 @@ test('literals and xml with and without semicolons')
 		a.xml('div', { foo:a.literal("bar"), cat:a.literal(1), qwe:a.literal('qwe') })
 	)
 
+test('dictionary literals and xml can use both = and : for key/value pairs')
+	.code(
+		'{ foo:1 bar=2, cat:3 }',
+		'<div foo:1 bar=2 />'
+	).expect(
+		a.literal({ foo:1, bar:2, cat:3 }),
+		a.xml('div', { foo:a.literal(1), bar:a.literal(2) })
+	)
+
 test('discern between invocation and parenthesized expression')
 	.code('foo(1) foo (1)')
 	.expect(a.invocation(a.reference('foo'), a.literal(1)), a.reference('foo'), a.literal(1))
+
+test('xml hash-expand attribute')
+	.code('<div #{ class:"cool" } />')
+	.expect(a.xml('div', [{ expand:a.literal({ 'class':'cool' }) }]))
 
 
 /* Util

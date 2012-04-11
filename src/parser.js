@@ -235,7 +235,7 @@ var _parseInlineScript = astGenerator(function() {
 	advance('symbol', '<', 'Script tag open')
 	advance('name', 'script', 'Script tag name')
 	
-	var attributes = _parseXMLAttributes(),
+	var attributes = _parseXMLAttributes(false),
 		js = []
 	advance('symbol', '>', 'end of the script tag')
 	while (!(peek('symbol', '</', 1) && peek('name', 'script', 2) && peek('symbol', '>', 3))) {
@@ -430,7 +430,7 @@ var parseXML= astGenerator(function() {
 	advance('name', null, 'XML tag name')
 	var tagName = gToken.value
 	
-	var attributes = _parseXMLAttributes()
+	var attributes = _parseXMLAttributes(true)
 	
 	advance('symbol', ['/>', '>'], 'end of the XML tag')
 	if (gToken.value == '/>') {
@@ -444,22 +444,25 @@ var parseXML= astGenerator(function() {
 		advance('symbol', '</')
 		advance('name', tagName, 'matching XML tags')
 		// allow for attributes on closing tag, e.g. <button>"Click"</button onClick=handler(){ ... }>
-		attributes = attributes.concat(_parseXMLAttributes())
+		attributes = attributes.concat(_parseXMLAttributes(true))
 		advance('symbol', '>')
 		
 		return { type:'XML', tagName:tagName, attributes:attributes, block:statements }
 	}
 })
-var _parseXMLAttributes = function() {
+var _parseXMLAttributes = function(allowHashExpand) {
 	var XMLAttributes = []
 	while (!peek('symbol', ['/>','>'])) {
-		XMLAttributes.push(_parseXMLAttribute())
+		XMLAttributes.push(_parseXMLAttribute(allowHashExpand))
 		if (peek('symbol', ',')) { advance() } // Allow for <div foo="bar", cat="qwe"/>
 	}
 	return XMLAttributes
 }
-var _parseXMLAttribute = astGenerator(function() {
+var _parseXMLAttribute = astGenerator(function(allowHashExpand) {
 	if (peek('symbol', '#')) {
+		if (!allowHashExpand) {
+			halt(peek(), "Hash expanded attributes are not allowed in script tags - trust me, it would be messy")
+		}
 		advance()
 		return { expand:parseExpression() }
 	} else {

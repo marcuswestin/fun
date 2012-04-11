@@ -155,7 +155,11 @@ var resolveTernaryExpression = function(context, ast) {
  *******/
 var resolveXML = function(context, ast) {
 	each(ast.attributes, function(attribute) {
-		attribute.value = resolve(context, attribute.value)
+		if (attribute.expand) {
+			attribute.expand = resolve(context, attribute.expand)
+		} else {
+			attribute.value = resolve(context, attribute.value)
+		}
 	})
 	ast.block = ast.block && filter(resolve(context, ast.block))
 	

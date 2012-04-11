@@ -237,6 +237,13 @@ test('a variable mutation replaces old class name')
 	.doesntHaveClass('#target', 'foo')
 	.hasClass('#target', 'bar', 'cat')
 
+test('xml attribute hash expansion')
+	.code(
+		'attrs = { id:"foo" class:"bar" } ',
+		'<div #attrs class="cat" />'
+	)
+	.hasClass('#foo', 'bar', 'cat')
+
 
 /* Util
  ******/

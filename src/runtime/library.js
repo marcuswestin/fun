@@ -55,7 +55,8 @@ var expressions = require('./expressions'),
 			hook = _hooks[name] = document.createElement(opts.tagName || 'hook')
 		
 		each(opts.attrs, function(attr) {
-			fun.attr(name, attr.name, attr.value)
+			if (attr.expand) { fun.attrExpand(name, attr.expand) }
+			else { fun.attr(name, attr.name, attr.value) }
 		})
 		
 		if (_hookCallbacks[name]) {
@@ -117,6 +118,13 @@ var expressions = require('./expressions'),
 			} else {
 				hook.setAttribute(key, value.getContent())
 			}
+		})
+	}
+	
+	fun.attrExpand = function(hookName, expandValue) {
+		// TODO Observe the expandValue, and detect keys getting added/removed properly
+		each(expandValue.getContent(), function(value, name) {
+			fun.attr(hookName, name, value)
 		})
 	}
 
