@@ -160,7 +160,7 @@ function test(name) {
 		while (module.exports[testName]) {
 			testName = '"'+name+'" ' + (count++)
 		}
-		module.exports[testName] = function(assert) {
+		module.exports['resolve\t"'+testName+'"'] = function(assert) {
 			try { runTest() }
 			catch(e) { onError(e) }
 			
