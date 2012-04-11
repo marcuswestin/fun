@@ -10,7 +10,7 @@ let xhr = {
 		<script method=method path=path args=args responseHandler=responseHandler result=result>
 			if (!__hackFirstExecution) { return }
 			var xhr = require('std/xhr')
-			xhr[method.asString()](path.asString(), args.asJSONObject(), function(err, response) {
+			xhr[method.asString()](path.asString(), args && args.asJSONObject(), function(err, response) {
 				if (responseHandler && !responseHandler.isNull()) {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
 					responseHandler.invoke(event)
