@@ -346,8 +346,8 @@ var _parseAtomicValue = function() {
 		case 'name':   return _parseReferenceOrInvocation()
 		case 'symbol':
 			switch(peek().value) {
-				case L_ARRAY: return _parseListLiteral(curry(_parseMore, 0))
-				case L_CURLY: return _parseObjectLiteral(curry(_parseMore, 0))
+				case L_ARRAY: return _parseListLiteral()
+				case L_CURLY: return _parseObjectLiteral()
 				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'" while looking for a value')
 			}
 		case 'keyword':
@@ -394,32 +394,30 @@ var _parseReferenceOrInvocation = astGenerator(function() {
 	if (!peek('symbol', L_PAREN)) { return reference }
 	advance('symbol', L_PAREN)
 	var args = parseList(R_PAREN, parseExpression)
-	advance('symbol', R_PAREN, 'end of invocation')
 	return { type:'INVOCATION', operand:reference, arguments:args }
 })
 
-var _parseListLiteral = astGenerator(function(contentExpressionParseFn) {
+var _parseListLiteral = astGenerator(function() {
 	advance('symbol', L_ARRAY)
-	var content = parseList(R_ARRAY, contentExpressionParseFn)
-	advance('symbol', R_ARRAY, 'right bracket at the end of the JSON array')
+	var content = parseList(R_ARRAY, parseExpression)
 	return { type:'LIST_LITERAL', content:content }
 })
 
-var _parseObjectLiteral = astGenerator(function(contentExpressionParseFn) {
+var _parseObjectLiteral = astGenerator(function() {
 	advance('symbol', L_CURLY)
-	var content = []
-	while (true) {
-		if (peek('symbol', R_CURLY)) { break }
-		var key = advance(['name','string']).value
-		advance('symbol', ':')
-		var value = contentExpressionParseFn()
-		content.push(createAST({ name:key, value:value }))
-		if (!peek('symbol', ',')) { break }
-		advance('symbol',',')
-	}
-	advance('symbol', R_CURLY, 'right curly at the end of the JSON object')
+	var content = parseList(R_CURLY, astGenerator(function() {
+		var name = advance(['name','string']).value
+		parseSemiOrEqual()
+		var value = parseExpression()
+		return { name:name, value:value }
+	}))
 	return { type:'DICTIONARY_LITERAL', content:content }
 })
+
+var parseSemiOrEqual = function() {
+	if (peek('symbol', '=')) { advance('symbol', '=') }
+	else { advance('symbol', ':') }
+}
 
 /****************
  * XML literals *
@@ -453,18 +451,19 @@ var _parseXMLAttributes = function() {
 	var XMLAttributes = []
 	while (!peek('symbol', ['/>','>'])) {
 		XMLAttributes.push(_parseXMLAttribute())
-		if (peek('symbol', ',')) {
-			// Allow for <div foo="bar", cat="qwe"/>
-			advance()
-		}
+		if (peek('symbol', ',')) { advance() } // Allow for <div foo="bar", cat="qwe"/>
 	}
 	return XMLAttributes
 }
 var _parseXMLAttribute = astGenerator(function() {
-	var name = advance('name').value
-	advance('symbol', '=')
-	var value = parseExpression()
-	return { name:name, value:value }
+	if (peek('symbol', '#')) {
+		advance()
+		return { expand:parseExpression() }
+	} else {
+		var name = advance('name').value
+		parseSemiOrEqual()
+		return { name:name, value:parseExpression() }
+	}
 })
 
 
@@ -477,9 +476,9 @@ var parseList = function(breakSymbol, statementParseFunction) {
 	while (true) {
 		if (peek('symbol', breakSymbol)) { break }
 		list.push(statementParseFunction())
-		if (!peek('symbol', ',')) { break }
-		advance('symbol', ',')
+		if (peek('symbol', ',')) { advance() } // Allow for both "foo", "bar", "key" and "foo" "bar" "key"
 	}
+	advance('symbol', breakSymbol)
 	return list
 }
 
@@ -501,7 +500,6 @@ function parseSignatureAndBlock(keyword, blockParseFn) {
 	var signature = parseList(R_PAREN, function() {
 		return createAST({ type:'ARGUMENT', name:advance('name').value })
 	})
-	advance('symbol', R_PAREN)
 	var block = parseBlock(blockParseFn, keyword)
 	return [signature, block]
 }

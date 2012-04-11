@@ -232,13 +232,17 @@ test('if, else if, else')
 		a.ifElse(a.literal(false), a.literal("qwe"), a.ifElse(a.literal(true), a.literal("foo"), a.literal("cat")))
 	)
 
-test('declarations without `let`')
+test('literals and xml with and without semicolons')
 	.code(
-		'foo = "qwe"',
-		'bar = handler() { foo = "asd" }'
+		'[1 2 3, 4, "qwe"]',
+		'{ foo:"bar" cat:2, qwe:"qwe" }',
+		'foo(1 2, 3 "qwe")',
+		'<div foo="bar" cat=1, qwe="qwe" />'
 	).expect(
-		a.variable('foo', a.literal('qwe')),
-		a.variable('bar', a.handler([], [ a.variable('foo', a.literal('asd')) ]))
+		a.literal([1, 2, 3, 4, 'qwe']),
+		a.literal({ foo:'bar', cat:2, qwe:'qwe' }),
+		a.invocation(a.reference('foo'), a.literal(1), a.literal(2), a.literal(3), a.literal('qwe')),
+		a.xml('div', { foo:a.literal("bar"), cat:a.literal(1), qwe:a.literal('qwe') })
 	)
 
 /* Util
