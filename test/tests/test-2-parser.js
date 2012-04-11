@@ -232,6 +232,15 @@ test('if, else if, else')
 		a.ifElse(a.literal(false), a.literal("qwe"), a.ifElse(a.literal(true), a.literal("foo"), a.literal("cat")))
 	)
 
+test('declarations without `let`')
+	.code(
+		'foo = "qwe"',
+		'bar = handler() { foo = "asd" }'
+	).expect(
+		a.variable('foo', a.literal('qwe')),
+		a.variable('bar', a.handler([], [ a.variable('foo', a.literal('asd')) ]))
+	)
+
 /* Util
  ******/
 function test(name) {

@@ -127,8 +127,11 @@ var _parseMutationOrInvocation = astGenerator(function() {
  * Control flow statements *
  ***************************/
 var tryParseControlStatement = function(blockParseFunction) {
+	if (peek('name') && peek('symbol', '=', 2)) {
+		return _parseDeclaration()
+	}
 	switch(peek().value) {
-		case 'let':      return _parseVariableDeclaration()
+		case 'let':      return _parseOldVariableDeclaration() // TODO remove this
 		case 'for':      return _parseForLoopStatement(blockParseFunction)
 		case 'if':       return _parseIfStatement(blockParseFunction)
 		case 'switch':   return _parseSwitchStatement(blockParseFunction)
@@ -136,7 +139,7 @@ var tryParseControlStatement = function(blockParseFunction) {
 	}
 }
 
-var _parseVariableDeclaration = function() {
+var _parseOldVariableDeclaration = function() {
 	advance('keyword', 'let')
 	var declarations = [_parseDeclaration()]
 	while (peek('symbol', ',')) {

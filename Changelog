@@ -4,6 +4,7 @@ Intended v0.2.20
 + Automatically detect that less or stylus is required, and install them dynamically at runtime if needed
 + Handler event arguments are now cancelable
 + Allow for commas between XML attributes, e.g. <div foo="bar", cat="qwe"/>
++ Remove need for `let` in front of declarations. Now it's just `foo = "bar"`
 
 v0.2.19
 + Disabled minification for now
