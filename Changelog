@@ -1,4 +1,4 @@
-Intended v0.2.20
+v0.2.20
 + Add support for automatic less preprocessing of <link ref="stylesheet/less" ... /> elements
 + Add support for stylus
 + Automatically detect that less or stylus is required, and install them dynamically at runtime if needed
