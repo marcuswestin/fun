@@ -504,7 +504,6 @@ var List = module.exports.List = proto(collectionBase,
 )
 
 function __interimIterationFunction(yieldFn) {
-	console.log("Figure out how to do iteration properly")
 	each(this._content, yieldFn)
 }
 
