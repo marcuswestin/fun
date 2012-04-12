@@ -1,6 +1,0 @@
-[submodule "node_modules/std"]
-	path = node_modules/std
-	url = git://github.com/marcuswestin/std.js.git
-[submodule "node_modules/dom"]
-	path = node_modules/dom
-	url = git://github.com/marcuswestin/dom.js.git
