@@ -300,7 +300,8 @@ var operators = {
 	'*': multiply,
 	'=': equals,
 	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
-	'!=': notEquals,
+	'!': notEquals,
+	'!=': notEquals, // We may want to just use ! since it's `foo is ! 'hi'` now
 	'>=': greaterThanOrEquals,
 	'<=': lessThanOrEquals,
 	'<': lessThan,
