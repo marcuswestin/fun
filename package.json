@@ -16,7 +16,7 @@
     "optimist": "0.2.8",
     "request": "2.9.153",
     "clean-css": "0.3.2",
-    "require": "0.4.8",
+    "require": "0.4.9",
     "dom": "0.1.2",
     "std": "0.1.34"
   },
