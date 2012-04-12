@@ -491,7 +491,7 @@ var List = module.exports.List = proto(collectionBase,
 			}
 			return Yes
 		},
-		getters:{
+		getters:create(base.getters, {
 			length:function() {
 				var variableLength = variable(NullValue)
 				this.observe(bind(this, function() {
@@ -499,7 +499,7 @@ var List = module.exports.List = proto(collectionBase,
 				}))
 				return variableLength
 			}
-		},
+		}),
 	}
 )
 
