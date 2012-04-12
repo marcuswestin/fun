@@ -144,11 +144,7 @@ var expressions = require('./expressions'),
 			property.observe(function() {
 				input.value = property.evaluate().asString()
 			})
-			on(input, 'keypress', update)
-			on(input, 'keyup', update)
-			on(input, 'keydown', function(e) {
-				if (e.keyCode == 86) { update(e) } // catch paste events
-			})
+			
 			function update(e) {
 				setTimeout(function() {
 					var value = input.value
@@ -157,6 +153,12 @@ var expressions = require('./expressions'),
 					input.value = value
 				}, 0)
 			}
+			
+			on(input, 'keypress', update)
+			on(input, 'keyup', update)
+			on(input, 'keydown', function(e) {
+				if (e.keyCode == 86) { update(e) } // catch paste events
+			})
 		}
 	}
 
