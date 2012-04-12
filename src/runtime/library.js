@@ -3,7 +3,9 @@ var expressions = require('./expressions'),
 	curry = require('std/curry'),
 	throttle = require('std/throttle'),
 	addClass = require('dom/addClass'),
-	removeClass = require('dom/removeClass')
+	removeClass = require('dom/removeClass'),
+	on = require('dom/on'),
+	off = require('dom/off')
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }
@@ -89,23 +91,15 @@ var expressions = require('./expressions'),
 			lastValue
 		value.observe(function() {
 			if (match = key.match(/^on(\w+)$/)) {
-				if (lastValue) { fun.off(hook, eventName, lastValue) }
+				if (lastValue) { off(hook, eventName, lastValue) }
 				
 				var eventName = match[1].toLowerCase()
 				if (value.getType() != 'Handler') {
 					console.warn('Event attribute', eventName, 'value is not a Handler')
 					return
 				}
-				fun.on(hook, eventName, lastValue = function(e) {
-					var event = expressions.fromJsValue({
-						keyCode:e.keyCode,
-						type:e.type,
-						cancel:fun.expressions.Function(function() {
-							if (e.preventDefault) { e.preventDefault() }
-							else { e.returnValue = false }
-						})
-					})
-					value.evaluate().invoke(event)
+				on(hook, eventName, lastValue = function(e) {
+					value.evaluate().invoke(hook, expressions.Event(e))
 				})
 			} else if (key == 'style') {
 				// TODO remove old styles
@@ -135,29 +129,13 @@ var expressions = require('./expressions'),
 		hook.style[key] = rawValue
 	}
 	
-	fun.on = function(element, eventName, handler) {
-		if (element.addEventListener) {
-			element.addEventListener(eventName, handler, false)
-		} else if (element.attachEvent){
-			element.attachEvent("on"+eventName, handler)
-		}
-	}
-	
-	fun.off = function(element, eventName, handler) {
-		if (element.removeEventListener) {
-			element.removeEventListener(eventName, handler, false)
-		} else if (element.dettachEvent){
-			element.dettachEvent("on"+eventName, handler)
-		}
-	}
-	
 	fun.reflectInput = function(hookName, property) {
 		var input = _hooks[hookName]
 		if (input.type == 'checkbox') {
 			property.observe(function() {
 				input.checked = property.getContent() ? true : false
 			})
-			fun.on(input, 'change', function() {
+			on(input, 'change', function() {
 				setTimeout(function() {
 					property.set(null, input.checked ? fun.expressions.Yes : fun.expressions.No)
 				})
@@ -166,9 +144,9 @@ var expressions = require('./expressions'),
 			property.observe(function() {
 				input.value = property.evaluate().asString()
 			})
-			fun.on(input, 'keypress', update)
-			fun.on(input, 'keyup', update)
-			fun.on(input, 'keydown', function(e) {
+			on(input, 'keypress', update)
+			on(input, 'keyup', update)
+			on(input, 'keydown', function(e) {
 				if (e.keyCode == 86) { update(e) } // catch paste events
 			})
 			function update(e) {

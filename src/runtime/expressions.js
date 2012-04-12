@@ -216,8 +216,8 @@ module.exports.Handler = proto(invocableBase,
 		this._content = block
 	}, {
 		_type:'Handler',
-		invoke:function(event) {
-			this._content.call(this, event)
+		invoke:function(element, event) {
+			this._content.call(element, event)
 		}
 	}
 )
@@ -531,4 +531,17 @@ module.exports.fromJSON = function(json) {
 	try { var jsValue = JSON.parse(json) }
 	catch(e) { return NullValue }
 	return fromJsValue(jsValue)
+}
+
+var Event = module.exports.Event = function(jsEvent) {
+	var funEvent = fromJsValue({
+		keyCode:jsEvent.keyCode,
+		type:jsEvent.type,
+		cancel:fun.expressions.Function(function() {
+			if (jsEvent.preventDefault) { jsEvent.preventDefault() }
+			else { jsEvent.returnValue = false }
+		})
+	})
+	funEvent.jsEvent = jsEvent // For JS API
+	return funEvent
 }
