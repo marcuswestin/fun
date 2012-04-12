@@ -1,6 +1,6 @@
 jsonp = {
 	get:function(path, args, responseHandler) {
-		let result = { loading:true, error:null, response:null }
+		result = { loading:true, error:null, response:null }
 		<script path=path args=args responseHandler=responseHandler result=result>
 			var win = window,
 				doc = win.document
