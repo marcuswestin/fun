@@ -11,13 +11,18 @@ var fs = require('fs'),
 
 /* Commandline options
  *********************/
-var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=127.0.0.1 --port=8080]'),
+var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=127.0.0.1 --port=8080 --normalize.css=false --minify=true]'),
 	argv = commandline.argv,
 	filenameRaw = argv.compile || (argv._ && argv._[0]),
 	filename = filenameRaw && filenameRaw[0] == '/' ? filenameRaw : path.join(process.cwd(), filenameRaw)
 
+var opts = {
+	'minify': argv['minify'] == 'true',
+	'normalize.css': argv['normalize.css'] != 'false'
+}
+
 if (argv.compile) {
-	loadCompiler().compileFile(filename, { minify:false }, function(err, htmlFile) {
+	loadCompiler().compileFile(filename, opts, function(err, htmlFile) {
 		if (err) {
 			console.log(err)
 			return process.exit(-1)
@@ -51,9 +56,9 @@ if (argv.compile) {
 	http.createServer(function(req, res) {
 		if (req.url == '/favicon.ico') { return send404(res) }
 		if (req.url == '/develop') { return develop(res) }
-		if (req.url == '/compile') { return compile(req, res, { minify:false }) }
+		if (req.url == '/compile') { return compile(req, res, opts) }
 
-		loadCompiler().compileFile(filename, { minify:false }, function(e, appHtml) {
+		loadCompiler().compileFile(filename, opts, function(e, appHtml) {
 			if (e) {
 				res.writeHead(500)
 				res.end(errorHtmlResponse(e))
@@ -63,7 +68,7 @@ if (argv.compile) {
 			}
 		})
 	}).listen(port, host)
-	console.log('Serving', argv._[0], 'on', (host||'localhost')+':'+port,'\n')
+	console.log('Serving', argv._[0], 'on', (host||'localhost')+':'+port, 'with options:\n', opts)
 }
 
 function send404(res) {

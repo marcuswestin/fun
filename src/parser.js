@@ -260,13 +260,13 @@ var _parseInlineScript = astGenerator(function() {
  *******************************************************************************/
 var prefixOperators = ['-', '!'],
 	compositeOperators = ['+','-','*','/','%','?'],
-	conditionalOperators = ['<', '>', '<=', '>=', '==', '='],
+	conditionalOperators = ['<', '>', '<=', '>=', '==', '=', '!=', '!'],
 	conditionalJoiners = ['and', 'or']
 
 var bindingPowers = {
 	'?':10,
 	'and': 20, 'or': 20,
-	'<':   30, '>':  30, '<=': 30, '>=': 30, '==': 30, '=': 30,
+	'<':   30, '>':  30, '<=': 30, '>=': 30, '==': 30, '=': 30, '!=': 30, '!': 30,
 	'+':   40, '-':  40,
 	'*':   50, '/':  50, '%':  50		
 }
@@ -466,7 +466,7 @@ var _parseXMLAttribute = astGenerator(function(allowHashExpand) {
 		advance()
 		return { expand:parseExpression() }
 	} else {
-		var name = advance('name').value
+		var name = advance(['name', 'keyword']).value
 		parseSemiOrEqual()
 		return { name:name, value:parseExpression() }
 	}

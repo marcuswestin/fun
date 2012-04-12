@@ -1,5 +1,5 @@
 import localstorage
-import filter
+import list
 
 tasks = []
 
@@ -33,7 +33,7 @@ localstorage.persist(tasks, 'todo-fun')
 		</div>
 		<div id="todo-stats">
 			if tasks.length is > 0 {
-				doneTasks = filter(tasks, function(task) { return task.done })
+				doneTasks = list.filter(tasks, function(task) { return task.done })
 				pluralize = function(num) { return num is > 1 ? "items" : "item" }
 				<span class="todo-count">
 					numTasksLeft = tasks.length - doneTasks.length

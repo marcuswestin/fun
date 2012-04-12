@@ -300,6 +300,8 @@ var operators = {
 	'*': multiply,
 	'=': equals,
 	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
+	'!': notEquals,
+	'!=': notEquals, // We may want to just use ! since it's `foo is ! 'hi'` now
 	'>=': greaterThanOrEquals,
 	'<=': lessThanOrEquals,
 	'<': lessThan,
@@ -340,6 +342,10 @@ function multiply(left, right) {
 
 function equals(left, right) {
 	return left.equals(right)
+}
+
+function notEquals(left, right) {
+	return Logic(!left.equals(right).getContent())
 }
 
 function greaterThanOrEquals(left, right) {
@@ -485,7 +491,7 @@ var List = module.exports.List = proto(collectionBase,
 			}
 			return Yes
 		},
-		getters:{
+		getters:create(base.getters, {
 			length:function() {
 				var variableLength = variable(NullValue)
 				this.observe(bind(this, function() {
@@ -493,12 +499,11 @@ var List = module.exports.List = proto(collectionBase,
 				}))
 				return variableLength
 			}
-		},
+		}),
 	}
 )
 
 function __interimIterationFunction(yieldFn) {
-	console.log("Figure out how to do iteration properly")
 	each(this._content, yieldFn)
 }
 
