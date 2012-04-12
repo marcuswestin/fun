@@ -1,6 +1,7 @@
 v0.2.22
 + Allow for keywords to be XML attribute names
 + Add --normalize.css=false and minify=true commandline options
++ text module with text.trim
 + Implement != comparative operator
 
 v0.2.21
