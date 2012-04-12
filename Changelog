@@ -1,5 +1,7 @@
-Intended v0.2.21
+v0.2.21
 + Hash-expand xml attributes a la <div #{ class:'clickable', onclick:handler() { ... }} />
++ New tap modules
++ Back to using npm node modules instead of git...
 
 v0.2.20
 + Add support for automatic less preprocessing of <link ref="stylesheet/less" ... /> elements
