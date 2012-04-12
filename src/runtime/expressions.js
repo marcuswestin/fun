@@ -300,6 +300,7 @@ var operators = {
 	'*': multiply,
 	'=': equals,
 	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
+	'!=': notEquals,
 	'>=': greaterThanOrEquals,
 	'<=': lessThanOrEquals,
 	'<': lessThan,
@@ -340,6 +341,10 @@ function multiply(left, right) {
 
 function equals(left, right) {
 	return left.equals(right)
+}
+
+function notEquals(left, right) {
+	return Logic(!left.equals(right).getContent())
 }
 
 function greaterThanOrEquals(left, right) {
