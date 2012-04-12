@@ -3,6 +3,7 @@ v0.2.22
 + Add --normalize.css=false and minify=true commandline options
 + text module with text.trim
 + Implement != and ! comparative operators
++ Rename filter module to list, and make it list.filter
 
 v0.2.21
 + Hash-expand xml attributes a la <div #{ class:'clickable', onclick:handler() { ... }} />
