@@ -466,7 +466,7 @@ var _parseXMLAttribute = astGenerator(function(allowHashExpand) {
 		advance()
 		return { expand:parseExpression() }
 	} else {
-		var name = advance('name').value
+		var name = advance(['name', 'keyword']).value
 		parseSemiOrEqual()
 		return { name:name, value:parseExpression() }
 	}
