@@ -1,3 +1,6 @@
+v0.2.22
++ Allow for keywords to be XML attribute names
+
 v0.2.21
 + Hash-expand xml attributes a la <div #{ class:'clickable', onclick:handler() { ... }} />
 + New tap modules
