@@ -2,7 +2,7 @@ v0.2.22
 + Allow for keywords to be XML attribute names
 + Add --normalize.css=false and minify=true commandline options
 + text module with text.trim
-+ Implement != comparative operator
++ Implement != and ! comparative operators
 
 v0.2.21
 + Hash-expand xml attributes a la <div #{ class:'clickable', onclick:handler() { ... }} />
