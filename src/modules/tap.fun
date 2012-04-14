@@ -3,29 +3,46 @@ tap = {
 	button:function(selectHandler) {
 		hashAttributes = { class:'tap-button' }
 		<script hashAttributes=hashAttributes selectHandler=selectHandler>
-			var tap = require('fun/node_modules/dom/tap')
-			function setHandler(name) {
-				hashAttributes.set([name], fun.expressions.Handler(function(funEvent) {
-					var event = funEvent.jsEvent,
-						element = this,
-						onButtonTouched = function(e) { selectHandler.evaluate().invoke(element, fun.expressions.Event(e)) }
-					
-					tap.button[name](element, onButtonTouched, event)
-				}))
+			var tap = window.__fun_tap
+			tap.registerTapHandler(hashAttributes, 'button', 'onTouchStart', selectHandler)
+			if (tap.supportClick) {
+				tap.registerTapHandler(hashAttributes, 'button', 'onMouseDown', selectHandler)
 			}
-			setHandler('onTouchStart')
-			setHandler('onMouseDown')
 		</script>
 		return hashAttributes
 	}
 	
 	listItem:function(selectHandler) {
-		<script selectHandler=selectHandler>
-		
+		hashAttributes = { class:'tap-list-item' }
+		<script hashAttributes=hashAttributes selectHandler=selectHandler>
+			var tap = window.__fun_tap
+			tap.registerTapHandler(hashAttributes, 'listItem', 'onTouchStart', selectHandler)
+			if (tap.supportClick) {
+				tap.registerTapHandler(hashAttributes, 'button', 'onMouseDown', selectHandler)
+			}
 		</script>
+		return hashAttributes
 	}
 	
 }
+
+<script>
+	var tap = require('fun/node_modules/dom/tap'),
+		client = require('std/client')
+	
+	window.__fun_tap = {
+		supportClick: !client.isMobile,
+		registerTapHandler: function(hashAttributes, type, name, selectHandler) {
+			hashAttributes.set([name], fun.expressions.Handler(function(funEvent) {
+				var event = funEvent.jsEvent,
+					element = this,
+					handler = function(e) { selectHandler.evaluate().invoke(element, fun.expressions.Event(e)) }
+				
+				tap[type][name](element, handler, event)
+			}))
+		}
+	}
+</script>
 
 
 // TODO inject styles
