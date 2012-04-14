@@ -36,6 +36,9 @@ var _doCompile = function(tokens, opts, callback) {
 	try { var ast = parser.parse(tokens) }
 	catch(e) { return callback(e, null) }
 	
+	if (opts['minify'] == null) { opts['minify'] = false }
+	if (opts['normalize.css'] == null) { opts['normalize.css'] = true }
+	
 	resolver.resolve(ast, opts, function(err, resolved) {
 		if (err) { return callback(err) }
 		try {
