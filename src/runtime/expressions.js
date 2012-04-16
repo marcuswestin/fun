@@ -19,6 +19,9 @@ var base = module.exports.base = {
 			return module.exports.Function(function(yieldValue) {
 				yieldValue(self.getContent())
 			})
+		},
+		type:function() {
+			return Text(this.getType())
 		}
 	}
 }
