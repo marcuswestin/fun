@@ -16,7 +16,7 @@ tap = {
 		hashAttributes = { class:'tap-list-item' }
 		<script hashAttributes=hashAttributes selectHandler=selectHandler>
 			var module = window.__fun_tap
-			module.registerTapHandler(hashAttributes, 'listItem', 'onTouchStart', selectHandler)
+			module.registerTapHandler(hashAttributes, 'listItem', 'onTouchStart', selectHandler, 'tap-scroll-view')
 			if (module.supportClick) {
 				module.registerTapHandler(hashAttributes, 'button', 'onMouseDown', selectHandler)
 			}
@@ -32,13 +32,13 @@ tap = {
 	
 	window.__fun_tap = {
 		supportClick: !client.isMobile,
-		registerTapHandler: function(hashAttributes, type, name, selectHandler) {
+		registerTapHandler: function(hashAttributes, type, name, selectHandler, opts) {
 			hashAttributes.set([name], fun.expressions.Handler(function(funEvent) {
 				var event = funEvent.jsEvent,
 					element = this,
 					handler = function(e) { selectHandler.evaluate().invoke(element, fun.expressions.Event(e)) }
 				
-				tap[type][name](element, handler, event)
+				tap[type][name](element, handler, event, opts)
 			}))
 		}
 	}
