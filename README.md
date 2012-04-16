@@ -44,6 +44,5 @@ If you want to hack on the source:
 
 	git clone https://marcuswestin@github.com/marcuswestin/fun.git
 	cd fun
-	sudo npm install
-	sudo npm link
+	make setup
 	make test
