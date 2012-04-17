@@ -13,6 +13,7 @@ var base = module.exports.base = {
 	asJSONObject:function() { return JSON.parse(this.asJSON()) }, // HACK
 	isTruthy:function() { return true },
 	isNull:function() { return false },
+	iterate:function() {},
 	getters:{
 		copy:function() {
 			var self = this
