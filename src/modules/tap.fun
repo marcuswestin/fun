@@ -31,7 +31,7 @@ tap = {
 		client = require('fun/node_modules/std/client')
 	
 	window.__fun_tap = {
-		supportClick: !client.isMobile,
+		supportClick: !client.isMobile && !client.isTablet,
 		registerTapHandler: function(hashAttributes, type, name, selectHandler, opts) {
 			hashAttributes.set([name], fun.expressions.Handler(function(funEvent) {
 				var event = funEvent.jsEvent,
