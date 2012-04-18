@@ -57,7 +57,7 @@ var _doCompile = function(tokens, opts, callback) {
 var _printHTML = function(headers, opts, compiledJS) {
 	compiledJS = requireCompiler.compileCode(
 		'fun = require("fun-runtime-library"); \n\n' + compiledJS,
-		{ minify:opts.minify, dirname:process.cwd() }
+		{ minify:opts.minify, basePath:opts.dirname }
 	)
 	
 	var compiledHeaders = _compileHeaders(headers)
