@@ -276,7 +276,7 @@ var installNodeModule = function(name, callback) {
  * Imports (imports and files) *
  *******************************/
 var handleModuleImport = function(context, ast) {
-	var filePath = __dirname + '/Modules/' + ast.name + '.fun'
+	var filePath = __dirname + '/modules/' + ast.name + '.fun'
 	_importFile(context, ast, filePath)
 }
 
