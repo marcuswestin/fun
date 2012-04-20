@@ -46,8 +46,7 @@ var resolve = function(context, ast) {
 	if (isArray(ast)) { return map(ast, curry(resolve, context)) }
 	switch (ast.type) {
 		// Setup statements
-		case 'IMPORT_MODULE':        handleModuleImport(context, ast)        ;break
-		case 'IMPORT_FILE':          handleFileImport(context, ast)          ;break
+		case 'IMPORT':               handleImport(context, ast)        ;break
 		
 		case 'TEXT_LITERAL':         return ast
 		case 'NUMBER_LITERAL':       return ast
@@ -275,16 +274,16 @@ var installNodeModule = function(name, callback) {
 /*******************************
  * Imports (imports and files) *
  *******************************/
-var handleModuleImport = function(context, ast) {
-	var filePath = __dirname + '/modules/' + ast.name + '.fun'
-	_importFile(context, ast, filePath)
-}
-
-var handleFileImport = function(context, ast) {
-	var filePath = (ast.path[0] == '.'
-		? path.join(context.opts.dirname, ast.path + '.fun')
-		: path.normalize(ast.path))
-	_importFile(context, ast, filePath)
+var handleImport = function(context, ast) {
+	var importPath = ast.path + '.fun'
+	if (importPath[0] == '/') {
+		importPath = path.normalize(importPath)
+	} else if (importPath[0] == '.') {
+		importPath = path.join(context.opts.dirname, importPath)
+	} else {
+		importPath = path.join(__dirname, 'modules', importPath)
+	}
+	_importFile(context, ast, importPath)
 }
 
 var _importFile = function(context, ast, filePath) {

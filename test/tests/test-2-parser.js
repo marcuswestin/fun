@@ -87,14 +87,6 @@ test('inline javascript')
 		a.inlineScript({ fooVariable:a.reference('foo') }, ' var i = 1; function a() { alert(i++) }; setInterval(a);')
 	)
 
-test('module import')
-	.code('import Test')
-	.expect(a.importModule('Test'))
-
-test('file import')
-	.code('import "test.fun"')
-	.expect(a.importFile('test.fun'))
-
 test('nested declaration')
 	.code(
 		'foo = { nested: { cat:"yay" } }',
@@ -262,6 +254,22 @@ test('xml hash-expand attribute')
 	.code('<div #{ class:"cool" } />')
 	.expect(a.xml('div', [{ expand:a.literal({ 'class':'cool' }) }]))
 
+test('simple import')
+	.code('import foo')
+	.expect(a.import('foo'))
+
+test('path import')
+	.code('import foo/bar/cat')
+	.expect(a.import('foo/bar/cat'))
+
+test('climb dir')
+	.code('import ../../foo')
+	.expect(a.import('../../foo'))
+
+test('absolute import')
+	.code('import /foo/bar')
+	.expect(a.import('/foo/bar'))
+	
 
 /* Util
  ******/

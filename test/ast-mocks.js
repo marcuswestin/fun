@@ -11,8 +11,6 @@ module.exports = {
 	xml: xml,
 	ifElse: ifElse,
 	forLoop: forLoop,
-	importFile: importFile,
-	importModule: importModule,
 	inlineScript:inlineScript,
 	handler:handler,
 	argument:argument,
@@ -20,7 +18,12 @@ module.exports = {
 	'return':ret,
 	mutation:mutation,
 	invocation: invocation,
-	'null':nullValue
+	'null':nullValue,
+	'import':aImport
+}
+
+function aImport(path) {
+	return { type:'IMPORT', path:path }
 }
 
 function reference(namespace) {

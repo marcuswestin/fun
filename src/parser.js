@@ -35,11 +35,38 @@ function parseImports() {
 
 var _parseImportStatement = astGenerator(function() {
 	advance('keyword', 'import')
-	var path = advance(['string','name'])
-	if (path.type == 'string') {
+	if (peek('string')) {
+		// back compat import "./foo/bar"
+		var path = advance('string').value
 		return { type: 'IMPORT_FILE', path: path.value }
 	} else {
-		return { type: 'IMPORT_MODULE', name: path.value }
+		if (peekNewline()) { halt(gToken, 'Expected an import path') }
+		
+		if (!peek('symbol', ['.', '/']) && !peek('name')) {
+			halt(peek(), 'Expected an import path')
+		}
+		
+		var first = advance(['symbol', 'name'])
+		var path = first.value
+		
+		if (first.type == 'name' && peekNoWhitespace('symbol', '/')) {
+			path += advance().value
+		} else if (first.value == '.') {
+			while(peekNoWhitespace('symbol', ['.','/'])) {
+				path += advance().value
+			}
+		}
+		
+		assert(gToken, path[path.length-1] != '.', 'Bad import path')
+		
+		while(peekNoWhitespace('name')) {
+			path += advance().value
+			if (peekNoWhitespace('symbol', '/')) {
+				path += advance().value
+			}
+		}
+		
+		return { type:'IMPORT', path:path }
 	}
 })
 
@@ -548,8 +575,18 @@ var peek = function(type, value, steps) {
 	return token
 }
 
+var peekNoWhitespace = function(type, value, steps) {
+	if (peekWhitespace(steps)) { return null }
+	return peek(type, value)
+}
+
 var peekWhitespace = function(steps) {
-	return gTokens[gIndex + 1].hadSpace
+	var token = gTokens[gIndex + 1]
+	return token && token.hadSpace
+}
+
+var peekNewline = function(steps) {
+	return gTokens[gIndex + 1].hadNewline
 }
 
 // Find an item in an array and return it
