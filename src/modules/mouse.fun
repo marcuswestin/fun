@@ -5,16 +5,18 @@ mouse = {
 }
 
 <script mouse=mouse>
+var on = require('fun/node_modules/dom/on')
+
 // mouse.x, mouse.y
-fun.on(document, 'mousemove', function(e) {
-	mouse.set(['x'], fun.expressions.Number(e.clientX))
-	mouse.set(['y'], fun.expressions.Number(e.clientY))
+on(document, 'mousemove', function(e) {
+	mouse.set(['x'], fun.expressions.Number(e.x))
+	mouse.set(['y'], fun.expressions.Number(e.y))
 })
 // mouse.isDown
-fun.on(document, 'mousedown', function() {
+on(document, 'mousedown', function() {
 	mouse.set(['isDown'], fun.expressions.Logic(true))
 })
-fun.on(document, 'mouseup', function() {
+on(document, 'mouseup', function() {
 	mouse.set(['isDown'], fun.expressions.Logic(false))
 })
 </script>
