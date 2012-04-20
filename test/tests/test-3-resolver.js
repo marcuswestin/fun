@@ -103,6 +103,10 @@ test('xml hash-expand attribute')
 	.code('<div #{ class:"cool" } />')
 	.expect(a.xml('div', [{ expand:a.literal({ 'class':'cool' }) }]))
 
+test('import path')
+	.code('import ui/lists', 'lists')
+	.expect(a.reference('lists'))
+	
 // Boolean values
 // Null values
 // Handlers, Functions and Templates as expressions and being emitted
