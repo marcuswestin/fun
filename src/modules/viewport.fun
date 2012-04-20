@@ -14,14 +14,12 @@ viewport = {
 	function update() {
 		var size = getWindowSize(window)
 		
-		
-		
-		if ('orientation' in window) {
+		if ('orientation' in window && (client.isIPhone || client.isIPod)) {
 			if (window.orientation % 180 === 0) {
 				size.height = screen.height - 64
 				size.width = screen.width
 			} else if (window.orientation % 90 === 0) {
-				size.height = screen.width - 80
+				size.height = screen.width - 52
 				size.width = screen.height
 			}
 		}
