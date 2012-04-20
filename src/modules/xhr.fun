@@ -10,8 +10,14 @@ xhr = {
 	},
 	_send: function(method, path, args, responseHandler, headers) {
 		result = { loading:true, error:null, response:null }
-		<script method=method path=path args=args responseHandler=responseHandler headers=headers result=result>
+		<script method=method path=path args=args responseHandler=responseHandler headers=headers result=result module=xhr>
 			if (!__hackFirstExecution) { return }
+			
+			module.set(['loading'], fun.expressions.Yes)
+			module = module.evaluate()
+			if (module._loadingCount) { module._loadingCount += 1 }
+			else { module._loadingCount = 1 }
+			
 			var xhr = require('fun/node_modules/std/xhr')
 			xhr[method.asString()](path.asString(), args && args.asJSONObject(), function(err, response) {
 				if (err) {
@@ -27,8 +33,13 @@ xhr = {
 				} else {
 					result.set(['response'], fun.expressions.fromJsValue(response))
 				}
+				
+				if (!--module._loadingCount) {
+					module.set(['loading'], fun.expressions.No)
+				}
 			}, headers && headers.asJSONObject())
 		</script>
 		return result
-	}
+	},
+	loading: false
 }
