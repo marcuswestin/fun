@@ -9,7 +9,7 @@ viewport = {
 	
 	var on = require('fun/node_modules/dom/on'),
 		getWindowSize = require('fun/node_modules/dom/getWindowSize'),
-		cleint = require('fun/node_modules/std/client')
+		client = require('fun/node_modules/std/client')
 
 	function update() {
 		var size = getWindowSize(window)
