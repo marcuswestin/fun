@@ -294,7 +294,8 @@ module.exports.unary = proto(variableValueBase,
 	})
 
 var unaryOperators = {
-	'!': function not(value) { return Logic(!value.isTruthy()) }
+	'!': function not(value) { return Logic(!value.isTruthy()) },
+	'-': function negative(value) { return value.getType() == 'Number' ? Number(-value.getContent()) : NullValue }
 }
 
 var operators = {
