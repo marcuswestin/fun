@@ -5,7 +5,8 @@ var expressions = require('./expressions'),
 	addClass = require('fun/node_modules/dom/addClass'),
 	removeClass = require('fun/node_modules/dom/removeClass'),
 	on = require('fun/node_modules/dom/on'),
-	off = require('fun/node_modules/dom/off')
+	off = require('fun/node_modules/dom/off'),
+	arrayToObject = require('fun/node_modules/std/arrayToObject')
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }
@@ -122,9 +123,12 @@ var expressions = require('./expressions'),
 		})
 	}
 
+	var skipPx = arrayToObject(['zIndex', 'z-index'])
 	fun.setStyle = function(hook, key, value) {
 		var rawValue = value.evaluate().asString()
-		if (value.getType() == 'Number' || rawValue.match(/^\d+$/)) { rawValue = rawValue + 'px' }
+		if ((value.getType() == 'Number' || rawValue.match(/^\d+$/)) && !skipPx[key]) {
+			rawValue = rawValue + 'px'
+		}
 		if (key == 'float') { key = 'cssFloat' }
 		hook.style[key] = rawValue
 	}
