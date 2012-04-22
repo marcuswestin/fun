@@ -1,7 +1,7 @@
 lists = {
 	
-	makeScroller = function(viewSize) {
-		headHeight = 45
+	makeScroller = function(viewSize, opts) {
+		headHeight = opts.headSize ? opts.headSize : 45
 		contentSize = {
 			width: viewSize.width
 			height: viewSize.height - headHeight
