@@ -40,7 +40,7 @@ var constantAtomicBase = create(base, {
 })
 
 var invocableBase = create(constantAtomicBase, {
-	asLiteral:function() { return '<block>' }
+	asLiteral:function() { return '"<'+this._type+'>"' }
 })
 
 var variableValueBase = create(base, {
