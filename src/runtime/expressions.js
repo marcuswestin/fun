@@ -175,6 +175,8 @@ module.exports.Function = proto(invocableBase,
 	}, {
 		_type:'Function',
 		invoke:function(args) {
+			var diffArgs = this._content.length - args.length
+			while (diffArgs-- > 0) { args.push(NullValue) }
 			var invocationValue = variable(NullValue)
 			var yieldValue = function(value) { invocationValue.set(null, fromJsValue(value)) }
 			var __hackFirstExecution = true
