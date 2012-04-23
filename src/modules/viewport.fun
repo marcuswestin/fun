@@ -29,7 +29,7 @@ viewport = {
 		
 		if (!client.isSafari) {
 			// We're in a webview and can use the window
-			return { width:window.innerWidth, height:window.innerWidth }
+			return { width:window.innerWidth, height:window.innerHeight }
 		}
 		
 		var width = isPortrait ? screen.width : screen.height,
