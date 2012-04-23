@@ -41,6 +41,7 @@ var expressions = require('./expressions'),
 /* Values
  ********/
 	fun.emit = function(parentHookName, value) {
+		if (!value) { return }
 		var hookName = fun.hook(fun.name(), parentHookName)
 		value.observe(function() {
 			_hooks[hookName].innerHTML = ''
