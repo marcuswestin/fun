@@ -2,7 +2,6 @@ var proto = require('std/proto'),
 	create = require('std/create'),
 	map = require('std/map'),
 	isArray = require('std/isArray'),
-	each = require('std/each'),
 	bind = require('std/bind')
 
 /* Value bases
@@ -57,7 +56,11 @@ var variableValueBase = create(base, {
 
 var mutableBase = create(variableValueBase, {
 	isMutable:function() { return true },
-	notifyObservers:function() { each(this.observers, function(observer) { observer() }) },
+	notifyObservers:function() {
+		for (var key in this.observers) {
+			this.observers[key]()
+		}
+	},
 	observe:function(callback) {
 		var uniqueID = 'u'+_unique++
 		this.observers[uniqueID] = callback
@@ -183,9 +186,10 @@ module.exports.Function = proto(invocableBase,
 			})
 			
 			var waitForSetup = true
-			each(args, function(arg) {
-				arg && arg.observe(executeBlock)
-			})
+			for (var i=0; i<args.length; i++) {
+				var arg = args[i]
+				if (arg) { arg.observe(executeBlock) }
+			}
 			waitForSetup = false
 			executeBlock()
 			
@@ -388,7 +392,6 @@ var variable = module.exports.variable = proto(mutableBase,
 		asLiteral:function() { return this._content.asLiteral() },
 		equals:function(that) { return this._content.equals(that) },
 		push:function(chain, value) { this._content.push(chain, value) },
-		notifyObservers:function() { each(this.observers, function(observer, id) { observer() }) },
 		set:function(chain, value) {
 			if (!chain || !chain.length) {
 				var oldValue = this._content
@@ -443,13 +446,20 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 		this.observers = {}
 		this._observationIDs = {}
 		this._content = {}
-		each(content, bind(this, function(val, key) { this.set([key], val) }))
+		for (var key in content) {
+			this.set([key], content[key])
+		}
 	}, {
 		_type:'Dictionary',
 		asLiteral:function() { return '{ '+map(this._content, function(val, key) { return '"'+key+'":'+val.asLiteral() }).join(', ')+' }' },
 		asString:function() { return this.asLiteral() },
 		inspect:function() { return '<Dictionary { '+map(this._content, function(val, key) { return '"'+key+'":'+val.inspect() }).join(', ')+' }>' },
-		iterate:__interimIterationFunction,
+		iterate:function(yieldFn) {
+			var content = this._content
+			for (var key in content) {
+				yieldFn(content[key])
+			}
+		},
 		equals:function(that) {
 			that = that.evaluate()
 			if (that._type != this._type) {
@@ -474,14 +484,21 @@ var List = module.exports.List = proto(collectionBase,
 		this.observers = {}
 		this._observationIDs = {}
 		this._content = []
-		each(content, bind(this, function(val, key) { this.set([key], val) }))
+		for (var key in content) {
+			this.set([key], content[key])
+		}
 	}, {
 		_type:'List',
 		asLiteral:function() { return '[ '+map(this._content, function(val) { return val.asLiteral() }).join(', ')+' ]' },
 		asString:function() { return this.asLiteral() },
 		inspect:function() { return '<List [ '+map(this._content, function(val) { return val.inspect() }).join(', ')+' ]>' },
 		push:function(chain, value) { this.set([this._content.length], value) },
-		iterate:__interimIterationFunction,
+		iterate:function(yieldFn) {
+			var content = this._content
+			for (var i=0; i<content.length; i++) {
+				yieldFn(content[i])
+			}
+		},
 		equals:function(that) {
 			that = that.evaluate()
 			if (that._type != this._type) {
@@ -508,10 +525,6 @@ var List = module.exports.List = proto(collectionBase,
 	}
 )
 
-function __interimIterationFunction(yieldFn) {
-	each(this._content, yieldFn)
-}
-
 /* Util
  ******/
 var fromJsValue = module.exports.fromJsValue = module.exports.value = function(val) {
@@ -530,9 +543,9 @@ var fromJsValue = module.exports.fromJsValue = module.exports.value = function(v
 				return List(content)
 			}
 			var content = {}
-			each(val, function(contentVal, contentName) {
-				content[contentName] = fromJsValue(contentVal)
-			})
+			for (var key in val) {
+				content[key] = fromJsValue(val[key])
+			}
 			return Dictionary(content)
 	}
 }
