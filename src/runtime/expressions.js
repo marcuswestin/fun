@@ -14,12 +14,9 @@ var base = module.exports.base = {
 	isTruthy:function() { return true },
 	isNull:function() { return false },
 	iterate:function() {},
-	render:function(parentHookName) {
-		var hookName = fun.hook(fun.name(), parentHookName)
-		this.observe(bind(this, function() {
-			fun.hooks[hookName].innerHTML = ''
-			fun.hooks[hookName].appendChild(document.createTextNode(this.asString()))
-		}))
+	render:function(hookName) {
+		fun.hooks[hookName].innerHTML = ''
+		fun.hooks[hookName].appendChild(document.createTextNode(this.asString()))
 	},
 	getters:{
 		copy:function() {
@@ -59,7 +56,14 @@ var variableValueBase = create(base, {
 	equals:function(that) { return this.evaluate().equals(that) },
 	getContent:function() { return this.evaluate().getContent() },
 	isTruthy:function() { return this.evaluate().isTruthy() },
-	hasVariableContent:function() { return true }
+	hasVariableContent:function() { return true },
+	invoke:function(args) { return this.evaluate().invoke(args) },
+	handle:function(args) { return this.evaluate().handle(args) },
+	render:function(hookName, args) {
+		this.observe(bind(this, function() {
+			this.evaluate().render(hookName, args)
+		}))
+	}
 })
 
 var mutableBase = create(variableValueBase, {
@@ -179,9 +183,18 @@ module.exports.Function = proto(invocableBase,
 	}, {
 		_type:'Function',
 		invoke:function(args) {
-			var invocationValue = variable(NullValue)
-			var yieldValue = function(value) { invocationValue.set(null, fromJsValue(value)) }
+			var result = variable(NullValue)
+			var yieldValue = function(value) { result.set(null, fromJsValue(value)) }
+			var isFirstExecution = true
+			this._content.apply(this, [yieldValue, isFirstExecution].concat(args))
+			return result
+		},
+		render:function(hookName, args) {
+			var yieldValue = function(value) {
+				fromJsValue(value).render(hookName)
+			}
 			var __hackFirstExecution = true
+			var waitForSetup = true
 			var executeBlock = bind(this, function() {
 				if (waitForSetup) { return }
 				var isFirstExecution = __hackFirstExecution
@@ -195,8 +208,6 @@ module.exports.Function = proto(invocableBase,
 			})
 			waitForSetup = false
 			executeBlock()
-			
-			return invocationValue
 		}
 	}
 )
@@ -227,8 +238,8 @@ module.exports.Handler = proto(invocableBase,
 		this._content = block
 	}, {
 		_type:'Handler',
-		invoke:function(element, event) {
-			this._content.call(element, event)
+		handle:function(args) {
+			this._content.apply(this, args)
 		}
 	}
 )
