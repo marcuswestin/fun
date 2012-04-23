@@ -19,7 +19,7 @@ xhr = {
 			else { module._loadingCount = 1 }
 			
 			var xhr = require('fun/node_modules/std/xhr')
-			xhr[method.asString()](path.asString(), args && args.asJSONObject(), function(err, response) {
+			xhr[method.asString().toLowerCase()](path.asString(), args && args.asJSONObject(), function(err, response) {
 				if (err) {
 					err = { text:err.message }
 				}
