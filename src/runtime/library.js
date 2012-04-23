@@ -14,7 +14,7 @@ var expressions = require('./expressions'),
 	
 	fun.reset = function() {
 		_unique = 0
-		_hooks = {}
+		_hooks = fun.hooks = {}
 		_hookCallbacks = {}
 	}
 	
@@ -36,16 +36,6 @@ var expressions = require('./expressions'),
 			default:
 				throw new Error('Attempted to invoke a non-invocable: '+operand.inspect())
 		}
-	}
-	
-/* Values
- ********/
-	fun.emit = function(parentHookName, value) {
-		var hookName = fun.hook(fun.name(), parentHookName)
-		value.observe(function() {
-			_hooks[hookName].innerHTML = ''
-			_hooks[hookName].appendChild(document.createTextNode(value.asString()))
-		})
 	}
 	
 /* Hooks

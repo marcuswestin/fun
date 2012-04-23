@@ -117,20 +117,12 @@ var compileTemplateBlock = function(context, ast) {
 		case 'REFERENCE':
 		case 'COMPOSITE':
 		case 'TERNARY':
-		case 'INVOCATION':        return _emitExpression(context, ast)
+		case 'INVOCATION':        return code('{{ value }}.render({{ hookName }})', { hookName:context.hookName, value:compileExpression(context, ast) })
 		
 		case 'XML':               return _emitXML(context, ast)
 		
 		default:                  halt(ast, 'Unknown emit statement type '+ast.type)
 	}
-}
-
-var _emitExpression = function(context, ast) {
-	return code(
-		'fun.emit({{ hookName }}, {{ value }})', {
-		hookName:context.hookName,
-		value:compileExpression(context, ast)
-	})
 }
 
 var _emitXML = function(context, ast) {

@@ -14,6 +14,13 @@ var base = module.exports.base = {
 	isTruthy:function() { return true },
 	isNull:function() { return false },
 	iterate:function() {},
+	render:function(parentHookName) {
+		var hookName = fun.hook(fun.name(), parentHookName)
+		this.observe(bind(this, function() {
+			fun.hooks[hookName].innerHTML = ''
+			fun.hooks[hookName].appendChild(document.createTextNode(this.asString()))
+		}))
+	},
 	getters:{
 		copy:function() {
 			var self = this
