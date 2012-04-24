@@ -53,7 +53,7 @@ test('divs follow mouse').code(
 test('script tag variable passing').code(
 	'foo = "foo"',
 	'<script fooVariable=foo>',
-	'	fooVariable.set(null, fun.expressions.Text("bar"))',
+	'	fun.set(fooVariable, null, fun.expressions.Text("bar"))',
 	'</script>',
 	'<div id="output">foo</div>')
 	.textIs('#output', 'bar')
@@ -71,8 +71,7 @@ test('changing object literals - TODO FIX THIS').code(
 	'	{ foo: { a:foo.a } }',
 	'	{ a:foo.a }',
 	'	foo',
-	'</div onclick=handler(){ foo.a set: 2 }>'
-	)
+	'</div onclick=handler(){ foo.a set: 2 }>')
 	.textIs('#output', '{ "foo":{ "a":1 } }{ "a":1 }{ "a":1 }')
 	.click('#output')
 	.textIs('#output', '{ "foo":{ "a":2 } }{ "a":2 }{ "a":2 }')
@@ -185,11 +184,9 @@ test('if, else if, else')
 	.click('#button')
 	.textIs('#output', 'case2')
 
-test('composite expression with invocation')
-	.code(
-		'foo = function() { return 2 }',
-		'<div id="output">1 + foo() + 3</div>'
-	)
+test('composite expression with invocation').code(
+	'foo = function() { return 2 }',
+	'<div id="output">1 + foo() + 3</div>')
 	.textIs('#output', 6)
 
 test('template invocations with arguments')

@@ -10,10 +10,11 @@ xhr = {
 	},
 	_send: function(method, path, args, responseHandler, headers) {
 		result = { loading:true, error:null, response:null }
+		
 		<script method=method path=path args=args responseHandler=responseHandler headers=headers result=result module=xhr>
 			if (!__hackFirstExecution) { return }
 			
-			module.set(['loading'], fun.expressions.Yes)
+			fun.set(module, 'loading', fun.expressions.Yes)
 			module = module.evaluate()
 			if (module._loadingCount) { module._loadingCount += 1 }
 			else { module._loadingCount = 1 }
@@ -27,15 +28,15 @@ xhr = {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
 					responseHandler.invoke(null, event)
 				}
-				result.set(['loading'], fun.expressions.No)
+				fun.set(result, 'loading', fun.expressions.No)
 				if (err) {
-					result.set(['error'], fun.expressions.fromJsValue(err))
+					fun.set(result, 'error', fun.expressions.fromJsValue(err))
 				} else {
-					result.set(['response'], fun.expressions.fromJsValue(response))
+					fun.set(result, 'response', fun.expressions.fromJsValue(response))
 				}
 				
 				if (!--module._loadingCount) {
-					module.set(['loading'], fun.expressions.No)
+					fun.set(module, 'loading', fun.expressions.No)
 				}
 			}, headers && headers.asJSONObject())
 		</script>

@@ -21,6 +21,8 @@ var expressions = require('./expressions'),
 	
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
 
+	fun.expressions = expressions
+	
 /* Values
  ********/
 	fun.emit = function(parentHookName, value) {
@@ -30,6 +32,10 @@ var expressions = require('./expressions'),
 			_hooks[hookName].innerHTML = ''
 			_hooks[hookName].appendChild(document.createTextNode(value.asString()))
 		})
+	}
+	
+	fun.set = function(expression, chainStr, value) {
+		expression.mutate('set', chainStr && chainStr.split('.'), [value])
 	}
 	
 /* Hooks

@@ -2,6 +2,7 @@ lists = {
 	
 	makeScroller = function(viewSize, opts) {
 		headHeight = opts.headSize ? opts.headSize : 45
+		numViews = opts.numViews ? opts.numViews : 3
 		contentSize = {
 			width: viewSize.width
 			height: viewSize.height - headHeight
@@ -19,18 +20,19 @@ lists = {
 		} }
 		scroller = {
 			
-			view: 0
+			view: null
+			stack: [null]
 			
 			renderHead: template(renderHeadContent) {
-				<div class="lists-head" style={ height:headHeight width:'100%' position:'absolute' top:0 zIndex:1 }>
+				<div class="lists-head" style={ height:headHeight width:'100%' position:'relative' top:0 zIndex:1 }>
 					renderHeadContent()
 				</div>
 			}
 			
-			renderBody: template(views) {
+			renderBody: template(renderBodyContent) {
 				sliderStyle = {
 					height:contentSize.height
-					width:contentSize.width * views.length
+					width:contentSize.width * numViews
 					'-webkit-transform':'translateX('+(-scroller.view * contentSize.width)+'px)'
 					'-webkit-transition':'-webkit-transform 0.70s'
 					position:'relative'
@@ -38,14 +40,24 @@ lists = {
 				<div class="lists-body" style={ position:'absolute' top:headHeight overflowX:'hidden' }>
 					<div #size #crop>
 						<div style=sliderStyle>
-							for renderView in views {
+							for view in scroller.stack {
 								<div class="tap-scroll-view" #size #crop #float #scrollable>
-									renderView()
+									renderBodyContent(view)
 								</div>
 							}
 						</div>
 					</div>
 				</div>
+			}
+			
+			push: handler(view) {
+				scroller.stack push: view
+				scroller.view set: scroller.stack.last
+			}
+			
+			pop: handler() {
+				scroller.stack pop: null
+				scroller.view set: scroller.stack.last
 			}
 		}
 		

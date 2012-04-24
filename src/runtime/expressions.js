@@ -17,6 +17,7 @@ var base = module.exports.base = {
 		fun.hooks[hookName].innerHTML = ''
 		fun.hooks[hookName].appendChild(document.createTextNode(this.asString()))
 	},
+	mutate:function() { BadMutation },
 	getters:{
 		copy:function() {
 			var self = this
@@ -44,7 +45,7 @@ var constantAtomicBase = create(base, {
 })
 
 var invocableBase = create(constantAtomicBase, {
-	asLiteral:function() { return '"<'+this._type+'>"' }
+	asLiteral:function() { return '"'+this._type+'"' }
 })
 
 var variableValueBase = create(base, {
@@ -101,24 +102,7 @@ var collectionBase = create(mutableBase, {
 	getType:function() { return this._type },
 	evaluate:function() { return this },
 	getContent:function() { return this._content },
-	isTruthy:function() { return true },
-	set:function(chain, value) {
-		if (!chain || !chain.length) {
-			throw new Error("Attempted setting collection property without a chain")
-		}
-		var prop = chain[0]
-		if (chain.length == 1) {
-			var oldValue = this._content[prop]
-			this._content[prop] = value
-			this._observationIDs[prop] = this.onNewValue(oldValue, this._observationIDs[prop], value)
-		} else if (!this._content[prop]) {
-			throw new Error('Attempted to set the value of a null property')
-		} else if (!this._content[prop].isMutable()) {
-			throw new Error("Attempted to set the value of a non-mutable property")
-		} else {
-			this._content[prop].set(chain.slice(1), value)
-		}
-	}
+	isTruthy:function() { return true }
 })
 
 /* Atomic, immutable expressions
@@ -187,7 +171,7 @@ module.exports.Function = proto(invocableBase,
 		_type:'Function',
 		invoke:function(args) {
 			var result = variable(NullValue)
-			var yieldValue = function(value) { result.set(null, fromJsValue(value)) }
+			var yieldValue = function(value) { fun.set(result, null, fromJsValue(value)) }
 			var isFirstExecution = true
 
 			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
@@ -409,7 +393,7 @@ var _unique = 1
 var variable = module.exports.variable = proto(mutableBase,
 	function(content) {
 		this.observers = {}
-		this.set(null, content)
+		this.mutate('set', null, [content])
 	}, {
 		_type:'variable',
 		evaluate:function() { return this._content.evaluate() },
@@ -418,15 +402,15 @@ var variable = module.exports.variable = proto(mutableBase,
 		asLiteral:function() { return this._content.asLiteral() },
 		equals:function(that) { return this._content.equals(that) },
 		push:function(chain, value) { this._content.push(chain, value) },
-		set:function(chain, value) {
+		mutate: function(operator, chain, args) {
 			if (!chain || !chain.length) {
-				var oldValue = this._content
+				if (operator != 'set') { UnkownOperator }
+				var value = args[0],
+					oldValue = this._content
 				this._content = value
 				this._observationID = this.onNewValue(oldValue, this._observationID, value)
-			} else if (!this._content.isMutable()) {
-				throw new Error("Attempted to set the value of a non-mutable property")
 			} else {
-				this._content.set(chain, value)
+				this._content.mutate(operator, chain, args)
 			}
 		}
 	}
@@ -443,10 +427,6 @@ var reference = module.exports.reference = proto(variableValueBase,
 		observe:function(callback) { return this._content.observe(callback) },
 		equals:function(that) { return this.evaluate().equals(that) },
 		dismiss:function(observationId) { this._content.dismiss(observationId) },
-		set:function(chain, toValue) {
-			chain = (this._chain && chain) ? (this._chain.concat(chain)) : (this._chain || chain)
-			return this._content.set(chain, toValue)
-		},
 		evaluate:function() {
 			var value = this._content.evaluate()
 			for (var i=0; i<this._chain.length; i++) {
@@ -462,6 +442,10 @@ var reference = module.exports.reference = proto(variableValueBase,
 				}
 			}
 			return value
+		},
+		mutate:function(operator, chain, args) {
+			chain = (this._chain && chain) ? (this._chain.concat(chain)) : (this._chain || chain)
+			this._content.mutate(operator, chain, args)
 		}
 	}
 )
@@ -473,7 +457,7 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 		this._observationIDs = {}
 		this._content = {}
 		for (var key in content) {
-			this.set([key], content[key])
+			this.mutate('set', [key], [content[key]])
 		}
 	}, {
 		_type:'Dictionary',
@@ -500,6 +484,28 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 				return No
 			}
 			return Yes
+		},
+		mutate:function(operator, chain, args) {
+			if (!chain || !chain.length) {
+				throw new Error("Attempted setting collection property without a chain")
+			}
+			var prop = chain[0]
+			if (chain.length == 1) {
+				switch(operator) {
+					case 'set': // TODO This should take two arguments, a key and a value
+						var value = args[0],
+							oldValue = this._content[prop]
+						this._content[prop] = value
+						this._observationIDs[prop] = this.onNewValue(oldValue, this._observationIDs[prop], value)
+						break
+					default:
+						throw new Error('Bad Dictionary operator "'+operator+'"')
+				}
+			} else if (!this._content[prop]) {
+				throw new Error('Attempted to set the value of a null property')
+			} else {
+				this._content[prop].mutate(operator, chain.slice(1), args)
+			}
 		}
 	}
 )
@@ -510,15 +516,15 @@ var List = module.exports.List = proto(collectionBase,
 		this.observers = {}
 		this._observationIDs = {}
 		this._content = []
-		for (var key in content) {
-			this.set([key], content[key])
+		if (!content) { return }
+		for (var i=0; i<content.length; i++) {
+			this.mutate('set', null, [i, content[i]])
 		}
 	}, {
 		_type:'List',
 		asLiteral:function() { return '[ '+map(this._content, function(val) { return val.asLiteral() }).join(', ')+' ]' },
 		asString:function() { return this.asLiteral() },
 		inspect:function() { return '<List [ '+map(this._content, function(val) { return val.inspect() }).join(', ')+' ]>' },
-		push:function(chain, value) { this.set([this._content.length], value) },
 		iterate:function(yieldFn) {
 			var content = this._content
 			for (var i=0; i<content.length; i++) {
@@ -543,11 +549,27 @@ var List = module.exports.List = proto(collectionBase,
 			length:function() {
 				var variableLength = variable(NullValue)
 				this.observe(bind(this, function() {
-					variableLength.set(null, Number(this._content.length))
+					fun.set(variableLength, null, Number(this._content.length))
 				}))
 				return variableLength
 			}
 		}),
+		mutate:function(operator, chain, args) {
+			if (chain && chain.length) {
+				throw new Error("Attempted to index into list. TODO Make this possible")
+			}
+			switch(operator) {
+				case 'push': return this._set(index, args[0])
+				case 'set':  return this._set(args[0], args[1])
+				default:     throw new Error('Bad Dictionary operator "'+operator+'"')
+			}
+		},
+		_set: function(index, value) {
+			var content = this._content,
+				index = content.length,
+				oldValue = content[index]
+			this._observationIDs[index] = this.onNewValue(oldValue, this._observationIDs[index], value)
+		}
 	}
 )
 

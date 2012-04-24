@@ -339,11 +339,11 @@ var _compileHandlerBlock = function(context, ast) {
 }
 
 var _compileMutationStatement = function(context, ast) {
-	return code('{{ operand }}.{{ operator }}({{ chain }}, {{ value }})', {
+	return code('{{ operand }}.mutate({{ operator }}, {{ chain }}, [{{ args }}])', {
 		operand:compileExpression(context, ast.operand),
-		operator:ast.operator,
+		operator:q(ast.operator),
 		chain:null,
-		value:compileExpression(context, ast.arguments[0])
+		args:map(ast.arguments, curry(compileExpression, context)).join(', ')
 	})
 }
 

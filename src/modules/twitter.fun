@@ -19,7 +19,7 @@ twitter = {
 					// 	result.set(['response'], fun.expressions.fromJavascriptValue(response.response))
 					// }
 					// result.set(['loading'], false)
-					__functionReturnValue__.set(null, fun.expressions.Text(JSON.stringify(response)))
+					fun.set(__functionReturnValue__, null, fun.expressions.Text(JSON.stringify(response)))
 					// setTimeout(doQuery, 5000)
 				}
 				script.src = '//search.twitter.com/search.json?'+query.join('&')

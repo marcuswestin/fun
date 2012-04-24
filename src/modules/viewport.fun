@@ -14,8 +14,8 @@ viewport = {
 	function update() {
 		var size = client.isIOS ? getIOSViewportSize() : getWindowSize(window)
 		
-		module.set(['size','width'], fun.expressions.Number(size.width))
-		module.set(['size','height'], fun.expressions.Number(size.height))
+		fun.set(module, 'size.width', fun.expressions.Number(size.width))
+		fun.set(module, 'size.height', fun.expressions.Number(size.height))
 		
 		document.body.scrollLeft = 0
 	}

@@ -13,11 +13,11 @@ jsonp = {
 					handler.invoke(null, event)
 				}
 				if (err) {
-					result.set(['error'], fun.expressions.fromJsValue(err))
+					fun.set(result, 'error', fun.expressions.fromJsValue(err))
 				} else {
-					result.set(['response'], fun.expressions.fromJsValue(response))
+					fun.set(result, 'response', fun.expressions.fromJsValue(response))
 				}
-				result.set(['loading'], fun.expressions.No)
+				fun.set(result, 'loading', fun.expressions.No)
 			}
 			
 			var script = doc.createElement('script')
