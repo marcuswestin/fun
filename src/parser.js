@@ -144,7 +144,7 @@ var _parseMutationOrInvocation = astGenerator(function() {
 	var args = [parseExpression()]
 	while (peek('symbol', ',')) {
 		advance('symbol', ',')
-		values.push(parseExpression())
+		args.push(parseExpression())
 	}
 	
 	return { type:'MUTATION', operand:reference, operator:operator, arguments:args }

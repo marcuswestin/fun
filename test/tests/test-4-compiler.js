@@ -208,6 +208,12 @@ test('xml attribute hash expansion').code(
 	'<div #attrs class="cat" />')
 	.hasClass('#foo', 'bar', 'cat')
 
+test('dictionary set property').code(
+	'foo = 1',
+	'bar = { foo:foo }',
+	'<div id="output">foo bar.foo</div onclick=handler() { bar set:"foo", 2 }>')
+	.click('#output')
+	.textIs('#output','1 2')
 
 /* Util
  ******/
