@@ -1,15 +1,9 @@
-var tokenizer = require('../../src/tokenizer'),
-	parser = require('../../src/parser'),
-	resolver = require('../../src/resolver'),
-	compiler = require('../../src/compiler'),
-	a = require('../ast-mocks'),
+var compiler = require('../../src/compiler'),
 	http = require('http'),
 	zombie = require('zombie'),
 	compilerServerPort = 9797,
 	slice = require('std/slice'),
-	bind = require('std/bind'),
 	each = require('std/each'),
-	strip = require('std/strip'),
 	hasClass = require('dom/hasClass')
 
 var currentTestCode, compilerServer
