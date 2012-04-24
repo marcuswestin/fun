@@ -333,9 +333,16 @@ var _compileHandlerBlock = function(context, ast) {
 	
 	switch(ast.type) {
 		case 'MUTATION':          return _compileMutationStatement(context, ast)
-		case 'INVOCATION':        return compileInvocation('handle', context, ast)
+		case 'INVOCATION':        return _compileHandlerInvocation(context, ast)
 		default:                  halt(ast, 'Unknown handler statement type')
 	}
+}
+
+var _compileHandlerInvocation = function(context, ast) {
+	return code('{{ operand }}.invoke({{ arguments }})', {
+		operand:compileExpression(context, ast.operand),
+		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(context, arg) }).join(',')+']'
+	})
 }
 
 var _compileMutationStatement = function(context, ast) {

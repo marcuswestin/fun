@@ -36,7 +36,7 @@ tap = {
 			fun.set(hashAttributes, name, fun.expressions.Handler(function(funEvent) {
 				var event = funEvent.jsEvent,
 					element = event.hook,
-					handler = function(e) { selectHandler.evaluate().invoke(element, fun.expressions.Event(e)) }
+					handler = function(e) { selectHandler.evaluate().invoke([fun.expressions.Event(e)]) }
 				
 				tap[type][name](element, handler, event, opts)
 			}))

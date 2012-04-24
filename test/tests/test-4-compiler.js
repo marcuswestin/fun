@@ -208,6 +208,11 @@ test('xml attribute hash expansion').code(
 	'<div #attrs class="cat" />')
 	.hasClass('#foo', 'bar', 'cat')
 
+test('null list length').code(
+	'foo = [null]',
+	'<div id="output">foo.length</div>')
+	.textIs("#output", '1')
+
 test('dictionary set property').code(
 	'foo = 1',
 	'bar = { foo:foo }',

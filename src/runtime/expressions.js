@@ -58,7 +58,6 @@ var variableValueBase = create(base, {
 	isTruthy:function() { return this.evaluate().isTruthy() },
 	hasVariableContent:function() { return true },
 	invoke:function(args) { return this.evaluate().invoke(args) },
-	handle:function(args) { return this.evaluate().handle(args) },
 	render:function(hookName, args) {
 		this.observe(bind(this, function() {
 			this.evaluate().render(hookName, args)
@@ -234,7 +233,7 @@ module.exports.Handler = proto(invocableBase,
 		this._content = block
 	}, {
 		_type:'Handler',
-		handle:function(args) {
+		invoke:function(args) {
 			this._content.apply(this, args)
 		}
 	}
@@ -568,6 +567,7 @@ var List = module.exports.List = proto(collectionBase,
 			var content = this._content,
 				index = content.length,
 				oldValue = content[index]
+			content[index] = value
 			this._observationIDs[index] = this.onNewValue(oldValue, this._observationIDs[index], value)
 		}
 	}

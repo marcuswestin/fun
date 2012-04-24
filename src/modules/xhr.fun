@@ -26,7 +26,7 @@ xhr = {
 				}
 				if (responseHandler && !responseHandler.isNull()) {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
-					responseHandler.invoke(null, event)
+					responseHandler.invoke([event])
 				}
 				fun.set(result, 'loading', fun.expressions.No)
 				if (err) {

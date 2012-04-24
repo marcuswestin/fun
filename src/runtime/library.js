@@ -91,7 +91,7 @@ var expressions = require('./expressions'),
 				}
 				on(hook, eventName, lastValue = function(e) {
 					e.hook = hook
-					value.evaluate().handle([expressions.Event(e)])
+					value.evaluate().invoke([expressions.Event(e)])
 				})
 			} else if (key == 'style') {
 				// TODO remove old styles
