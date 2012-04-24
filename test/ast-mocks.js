@@ -5,7 +5,7 @@ var util = require('../src/util'),
 
 module.exports = {
 	literal: literal,
-	variable: variable,
+	declaration: declaration,
 	reference: reference,
 	composite: composite,
 	xml: xml,
@@ -57,7 +57,7 @@ function mutation(operand, operator, args) {
 	return { type:'MUTATION', operand:operand, operator:operator, arguments:args }
 }
 
-function variable(name, initialValue) {
+function declaration(name, initialValue) {
 	return { type:'DECLARATION', name:name, initialValue:initialValue }
 }
 

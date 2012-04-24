@@ -7,8 +7,8 @@ var fun = require('../../src/runtime/library'),
 	deepEqual = require('std/assert/deepEqual')
 
 test('sets and gets', function(assert) {
-	var foo = a.variable(1),
-		bar = a.variable({ cat:{ asd:2 } }),
+	var foo = a.declaration(1),
+		bar = a.declaration({ cat:{ asd:2 } }),
 		error
 	assert.equals(a.value(1), foo)
 	assert.equals(a.value(null), a.reference(foo, 'cat'))
@@ -37,7 +37,7 @@ test('sets and gets', function(assert) {
 })
 
 test('observe value', function(assert) {
-	var v1 = a.variable({ foo:null })
+	var v1 = a.declaration({ foo:null })
 	observeExpect(v1, 'foo', assert, [null, 1, 2, { ned:'teq'}, 'qwe', null])
 	observeExpect(v1, null, assert, [{ foo:null }, { foo:1 }, { foo:2 }, { foo:{ ned:'teq'}, blah:'wab' }, { foo:'qwe', blah:'wab' }, null])
 	observeExpect(v1, 'foo.ned', assert, [null, 'teq', null])
@@ -52,7 +52,7 @@ test('observe value', function(assert) {
 })
 
 test('observe subvalue', function(assert) {
-	var v = a.variable(null)
+	var v = a.declaration(null)
 	observeExpect(v, 'b.c', assert, [null, 1, null, 2, null, 3])
 	fun.set(v, null, a.value({ b:{ c:1 } }))
 	fun.set(v, 'b', a.value(9))
@@ -62,10 +62,10 @@ test('observe subvalue', function(assert) {
 })
 
 test('evaluate composite expressions', function(assert) {
-	var v1 = a.variable(1),
-		v2 = a.variable(2),
-		v3 = a.variable(3),
-		v4 = a.variable('4')
+	var v1 = a.declaration(1),
+		v2 = a.declaration(2),
+		v3 = a.declaration(3),
+		v4 = a.declaration('4')
 	assert.equals(a.composite(v1, '+', v2), a.value(3))
 	assert.equals(a.composite(v1, '+', v2), v3)
 	assert.equals(a.composite(v4, '+', v1), a.value('41'))
@@ -75,7 +75,7 @@ test('evaluate composite expressions', function(assert) {
 })
 
 test('observing and dismissing', function(assert) {
-	var v1 = a.variable(1)
+	var v1 = a.declaration(1)
 	var observationID = observeExpect(v1, null, assert, [1,2], true)
 	fun.set(v1, null, a.value(2))
 	assert.throws(function() {
@@ -86,7 +86,7 @@ test('observing and dismissing', function(assert) {
 	// Should no longer throw, since the observation was dismissed
 	fun.set(v1, null, a.value(4))
 	
-	var v2 = a.variable('a')
+	var v2 = a.declaration('a')
 	var d2 = a.value({ v2:v2 })
 	var expectedCalls = 3
 	d2.observe(function() { if (!(expectedCalls--)) { throw new Error("Expected only three calls") } }) // Call 1

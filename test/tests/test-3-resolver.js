@@ -11,7 +11,7 @@ test("a declared alias for a string")
 		'guy'
 	)
 	.expect(
-		a.variable('guy', a.literal('Marcus')),
+		a.declaration('guy', a.literal('Marcus')),
 		a.reference('guy')
 	)
 
@@ -25,7 +25,7 @@ test("nested aliases")
 		'foo foo.bar foo.cat'
 	)
 	.expect(
-		a.variable('foo', a.literal({ bar:1, cat:'cat' })),
+		a.declaration('foo', a.literal({ bar:1, cat:'cat' })),
 		a.reference('foo'),
 		a.reference('foo.bar'),
 		a.reference('foo.cat')
@@ -39,7 +39,7 @@ test("nested aliases")
 // 		'var cat2 = foo.nested.cat',
 // 		'foo.nested.cat bar.cat cat bar')
 // 	.declarations(
-// 		ref(1, a.variable('foo', a.object({ nested:a.object({ cat:a.literal('yay') }) })))
+// 		ref(1, a.declaration('foo', a.object({ nested:a.object({ cat:a.literal('yay') }) })))
 // 	)
 // 	.expressions(a.reference(), ref(1), ref(1), ref(4))
 // 
@@ -60,8 +60,8 @@ test('clicking a button updates the UI')
 		'	qwe set: foo',
 		'}>')
 	.expect(
-		a.variable('foo', a.literal('bar')),
-		a.variable('qwe', a.literal('cat')),
+		a.declaration('foo', a.literal('bar')),
+		a.declaration('qwe', a.literal('cat')),
 		a.xml('div', { id:a.literal('output') }, [ a.reference('foo') ]),
 		a.xml('button', { id:a.literal('button'), onClick:a.handler([], [
 			a.mutation(a.reference('foo'), 'set', [a.literal('cat')]),
@@ -71,16 +71,16 @@ test('clicking a button updates the UI')
 
 test('variable declaration inside div')
 	.code('<div>cat="cat"</div>')
-	.expect(a.xml('div', [], [a.variable('cat', a.literal('cat'))]))
+	.expect(a.xml('div', [], [a.declaration('cat', a.literal('cat'))]))
 
 test('function invocation')
 	.code('fun = function() { return 1 }', 'fun()')
-	.expect(a.variable('fun', a.function([], [a.return(a.literal(1))])), a.invocation(a.reference('fun')))
+	.expect(a.declaration('fun', a.function([], [a.return(a.literal(1))])), a.invocation(a.reference('fun')))
 
 test('function arguments')
 	.code('fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
 	.expect(
-		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
+		a.declaration('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
 			a.return(a.composite(a.reference('arg1'), '+', a.reference('arg2')))
 		])),
 		a.invocation(a.reference('fun'), a.literal(1), a.literal(2))

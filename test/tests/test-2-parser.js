@@ -14,7 +14,7 @@ test('number literal')
 
 test('declaration')
 	.code('greeting = "hello"')
-	.expect(a.variable('greeting', a.literal("hello")))
+	.expect(a.declaration('greeting', a.literal("hello")))
 
 test('alias single namespace')
 	.code('greeting')
@@ -46,11 +46,11 @@ test('simple if statement')
 
 test('has no null statements or expressions')
 	.code('foo="bar"\n1')
-	.expect(a.variable("foo",a.literal("bar")), a.literal(1))
+	.expect(a.declaration("foo",a.literal("bar")), a.literal(1))
 
 test('variable declaration')
 	.code('foo = "bar"')
-	.expect(a.variable('foo', a.literal('bar')))
+	.expect(a.declaration('foo', a.literal('bar')))
 
 test('parses empty program')
 	.code('')
@@ -83,7 +83,7 @@ test('self-closing xml')
 test('inline javascript')
 	.code('foo = 1\n <script fooVariable=foo> var i = 1; function a() { alert(i++) }; setInterval(a); </script>')
 	.expect(
-		a.variable('foo', a.literal(1)),
+		a.declaration('foo', a.literal(1)),
 		a.inlineScript({ fooVariable:a.reference('foo') }, ' var i = 1; function a() { alert(i++) }; setInterval(a);')
 	)
 
@@ -93,24 +93,24 @@ test('nested declaration')
 		'foo bar foo.nested'
 	)
 	.expect(
-		a.variable('foo', a.literal({ nested:{ cat:'yay' } })),
+		a.declaration('foo', a.literal({ nested:{ cat:'yay' } })),
 		a.reference('foo'), a.reference('bar'), a.reference('foo.nested')
 	)
 
 test('deep nested declaration')
 	.code('asd = {a:{b:{c:{d:{e:{f:{}}}}}}}')
-	.expect(a.variable('asd', a.literal({a:{b:{c:{d:{e:{f:{}}}}}}})))
+	.expect(a.declaration('asd', a.literal({a:{b:{c:{d:{e:{f:{}}}}}}})))
 
 test('just a declaration')
 	.code('foo = { bar:1 }')
-	.expect(a.variable('foo', a.literal({ bar:1 })))
+	.expect(a.declaration('foo', a.literal({ bar:1 })))
 
 test('a handler')
 	.code(
 		'aHandler = handler(){}'
 	)
 	.expect(
-		a.variable('aHandler', a.handler())
+		a.declaration('aHandler', a.handler())
 	)
 
 test('a button which mutates state')
@@ -119,7 +119,7 @@ test('a button which mutates state')
 		'<button></button onclick=handler(){ foo set: "cat" }>'
 	)
 	.expect(
-		a.variable('foo', a.literal("bar")),
+		a.declaration('foo', a.literal("bar")),
 		a.xml('button', { 'onclick':a.handler([],[
 			a.mutation(a.reference('foo'), 'set', [a.literal("cat")])
 		])})
@@ -134,8 +134,8 @@ test('handler with logic')
 		'}'
 	)
 	.expect(
-		a.variable('cat', a.literal('hi')),
-		a.variable('foo', a.handler([], [
+		a.declaration('cat', a.literal('hi')),
+		a.declaration('foo', a.handler([], [
 			a.ifElse(a.composite(a.reference('cat'), '==', a.literal('hi')),[
 				a.mutation(a.reference('cat'), 'set', [a.literal('bye')])
 			], [
@@ -151,14 +151,14 @@ test('parse emits then declarations')
 		'cat="cat"'
 	)
 	.expect(
-		a.variable('foo', a.literal('foo')),
+		a.declaration('foo', a.literal('foo')),
 		a.xml('div'),
-		a.variable('cat', a.literal('cat'))
+		a.declaration('cat', a.literal('cat'))
 	)
 
 test('variable declaration inside div')
 	.code('<div>cat="cat"</div>')
-	.expect(a.xml('div', null, [a.variable('cat', a.literal('cat'))]))
+	.expect(a.xml('div', null, [a.declaration('cat', a.literal('cat'))]))
 
 test('null value')
 	.code('null')
@@ -167,7 +167,7 @@ test('null value')
 test('function arguments')
 	.code('fun = function(arg1, arg2) { return arg1 + arg2 }', 'fun(1, 2)')
 	.expect(
-		a.variable('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
+		a.declaration('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
 			a.return(
 				a.composite(a.reference('arg1'), '+', a.reference('arg2'))
 			)
@@ -197,7 +197,7 @@ test('script tag in function parses')
 		'	return 1',
 		'}')
 	.expect(
-		a.variable('foo', a.function(['qwe'], [
+		a.declaration('foo', a.function(['qwe'], [
 			a.inlineScript({ missing:'missing' }),
 			a.return(a.literal(1))
 		]))
@@ -213,7 +213,7 @@ test('double declaration')
 	.code(
 		'foo = 1',
 		'bar = 2'
-	).expect(a.variable('foo', a.literal(1)), a.variable('bar', a.literal(2)))
+	).expect(a.declaration('foo', a.literal(1)), a.declaration('bar', a.literal(2)))
 
 test('if, else if, else')
 	.code(
