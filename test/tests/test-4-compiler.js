@@ -37,15 +37,13 @@ test('clicking a button updates the UI').code(
 
 test('object literals').code(
 	'foo = { nested: { bar:1 } }',
-	'<div id="output">foo foo.nested foo.nested.bar</div>'
-	)
+	'<div id="output">foo foo.nested foo.nested.bar</div>')
 	.textIs('#output', '{ "nested":{ "bar":1 } }{ "bar":1 }1')
 
 test('divs follow mouse').code(
 	'import mouse',
 	'<div id="output1" style={ position:"absolute", top:mouse.y, left:mouse.x }/>',
-	'<div id="output2" style={ position:"absolute", top:mouse.y + 50, left:mouse.x + 50 }/>'
-	)
+	'<div id="output2" style={ position:"absolute", top:mouse.y + 50, left:mouse.x + 50 }/>')
 	.moveMouse(100, 100)
 	.positionIs('#output1', 100, 100)
 	.positionIs('#output2', 150, 150)
@@ -65,7 +63,7 @@ test('variable declaration inside div').code(
 	'</div>')
 	.textIs('#output', 'cat')
 	
-test('changing object literals - TODO FIX THIS').code(
+test('changing object literals').code(
 	'foo = { a:1 }',
 	'<div id="output">',
 	'	{ foo: { a:foo.a } }',
@@ -78,20 +76,17 @@ test('changing object literals - TODO FIX THIS').code(
 
 test('null values').code(
 	'foo=null',
-	'<div id="output">"null:"foo " null:"null</div>'
-	)
+	'<div id="output">"null:"foo " null:"null</div>')
 	.textIs('#output', 'null: null:')
 
 test('function invocation').code(
 	'fun = function() { return 1 }',
-	'<div id="output">fun()</div>'
-	)
+	'<div id="output">fun()</div>')
 	.textIs('#output', '1')
 
 test('function argument').code(
 	'fun = function(arg) { return arg }',
-	'<div id="output">fun(1) fun("hello")</div>'
-	)
+	'<div id="output">fun(1) fun("hello")</div>')
 	.textIs('#output', '1hello')
 
 test('statements after return do not evaluate').code(
@@ -99,35 +94,31 @@ test('statements after return do not evaluate').code(
 	'	return 1',
 	'	return 2',
 	'}',
-	'<div id="output">fun()</div>'
-	)
+	'<div id="output">fun()</div>')
 	.textIs('#output', '1')
 
-test('if/else in a div -> if branch')
-	.code(
-		'foo = 120',
-		'<div id="output"> if foo is >= 100 { "foo is >= 100" }',
-		'else { "foo is < 100" }</div>')
+test('if/else in a div -> if branch').code(
+	'foo = 120',
+	'<div id="output"> if foo is >= 100 { "foo is >= 100" }',
+	'else { "foo is < 100" }</div>')
 	.textIs('#output', 'foo is >= 100')
 
-test('if/else in a div -> else branch')
-	.code(
-		'foo = 120',
-		'<div id="output">',
-		'	if foo is < 100 { "foo is < 100" }',
-		'	else { "foo is >= 100" }',
-		'</div>')
+test('if/else in a div -> else branch').code(
+	'foo = 120',
+	'<div id="output">',
+	'	if foo is < 100 { "foo is < 100" }',
+	'	else { "foo is >= 100" }',
+	'</div>')
 	.textIs('#output', 'foo is >= 100')
 
-test('if/else in a div -> first if branch, then else branch')
-	.code(
-		'foo = 120',
-		'<div id="output">',
-		'	if foo is < 100 { "foo is < 100" }',
-		'	else { "foo is >= 100" }',
-		'</div>',
-		'<button id="lower" onclick=handler(){ foo set: 80 } />',
-		'<button id="higher" onclick=handler(){ foo set: 120 } />')
+test('if/else in a div -> first if branch, then else branch').code(
+	'foo = 120',
+	'<div id="output">',
+	'	if foo is < 100 { "foo is < 100" }',
+	'	else { "foo is >= 100" }',
+	'</div>',
+	'<button id="lower" onclick=handler(){ foo set: 80 } />',
+	'<button id="higher" onclick=handler(){ foo set: 120 } />')
 	.textIs('#output', 'foo is >= 100')
 	.click('#lower')
 	.textIs('#output', 'foo is < 100')
@@ -135,51 +126,43 @@ test('if/else in a div -> first if branch, then else branch')
 	.textIs('#output', 'foo is >= 100')
 
 
-test('returning an argument reference from a function')
-	.code(
-		'fun = function(arg) { return arg.foo }',
-		'<div id="output">fun({ foo:"bar" })</div>')
+test('returning an argument reference from a function').code(
+	'fun = function(arg) { return arg.foo }',
+	'<div id="output">fun({ foo:"bar" })</div>')
 	.textIs('#output', 'bar')
 
-test('function with script that mutates return value 1')
-	.code(
-		'fun = function() { <script>yieldValue(fun.expressions.Number(1))</script> }',
-		'<div id="output">fun()</div>')
+test('function with script that mutates return value 1').code(
+	'fun = function() { <script>yieldValue(fun.expressions.Number(1))</script> }',
+	'<div id="output">fun()</div>')
 	.textIs('#output', 1)
 
-test('function with script that mutates return value 2')
-	.code(
-		'fun = function() { <script>yieldValue(1)</script> }',
-		'<div id="output">fun()</div>')
+test('function with script that mutates return value 2').code(
+	'fun = function() { <script>yieldValue(1)</script> }',
+	'<div id="output">fun()</div>')
 	.textIs('#output', 1)
 
-test('function returns closure value')
-	.code(
-		"bar = 'qwe'",
-		"fun = function() { return bar }",
-		"<div id='output'>fun()</div>")
+test('function returns closure value').code(
+	"bar = 'qwe'",
+	"fun = function() { return bar }",
+	"<div id='output'>fun()</div>")
 	.textIs('#output', "qwe")
 
-test('mutation of variable returned from closure propegates')
-	.code(
-		'foo = "ASD"',
-		'fun = function() { return foo }',
-		'<div id="output">fun()</div onclick=handler() { foo set: "QWE" }>'
-	)
+test('mutation of variable returned from closure propegates').code(
+	'foo = "ASD"',
+	'fun = function() { return foo }',
+	'<div id="output">fun()</div onclick=handler() { foo set: "QWE" }>')
 	.textIs('#output', 'ASD')
 	.click('#output')
 	.textIs('#output', 'QWE')
 
-test('if, else if, else')
-	.code(
-		'foo = "qwe"',
-		'<div id="output">',
-		'if false { "case1" }',
-		'else if foo is = "asd" { "case2" }',
-		'else { "case3" }',
-		'</div>',
-		'<button id="button" onclick=handler(){ foo set: "asd" }/>'
-	)
+test('if, else if, else').code(
+	'foo = "qwe"',
+	'<div id="output">',
+	'if false { "case1" }',
+	'else if foo is = "asd" { "case2" }',
+	'else { "case3" }',
+	'</div>',
+	'<button id="button" onclick=handler(){ foo set: "asd" }/>')
 	.textIs('#output', 'case3')
 	.click('#button')
 	.textIs('#output', 'case2')
@@ -189,56 +172,46 @@ test('composite expression with invocation').code(
 	'<div id="output">1 + foo() + 3</div>')
 	.textIs('#output', 6)
 
-test('template invocations with arguments')
-	.code(
-		'greet = template(name) { "hello "+name }',
-		'<div id="output">greet("foo") greet("bar") " " greet("cat")</div>'
-	)
+test('template invocations with arguments').code(
+	'greet = template(name) { "hello "+name }',
+	'<div id="output">greet("foo") greet("bar") " " greet("cat")</div>')
 	.textIs('#output', 'hello foohello bar hello cat')
 
-test('template argument mutation mutates emission')
-	.code(
-		'emit = template(arg) { arg }',
-		'foo = "bar"',
-		'<div id="output">',
-		'	emit(foo)',
-		'</div onclick=handler(){ foo set: "cat" }>'
-	)
+test('template argument mutation mutates emission').code(
+	'emit = template(arg) { arg }',
+	'foo = "bar"',
+	'<div id="output">',
+	'	emit(foo)',
+	'</div onclick=handler(){ foo set: "cat" }>')
 	.textIs('#output', 'bar')
 	.click('#output')
 	.textIs('#output', 'cat')
 
-test('variable in template closure updates the template emission when the variable mutates')
-	.code(
-		'foo = "bar"',
-		'<div id="output">',
-		'	qwe = template() { foo }',
-		'	qwe()',
-		'</div onclick=handler(){ foo set: "cat" }>'
-	)
+test('variable in template closure updates the template emission when the variable mutates').code(
+	'foo = "bar"',
+	'<div id="output">',
+	'	qwe = template() { foo }',
+	'	qwe()',
+	'</div onclick=handler(){ foo set: "cat" }>')
 	.textIs('#output', 'bar')
 	.click('#output')
 	.textIs('#output', 'cat')
 
-test('multiple class name attributes')
-	.code('<div id="target" class="foo" class="bar" />')
+test('multiple class name attributes').code(
+	'<div id="target" class="foo" class="bar" />')
 	.hasClass('#target', 'foo', 'bar')
 
-test('a variable mutation replaces old class name')
-	.code(
-		'foo = "foo"',
-		'<div id="target" class=foo class="cat" onclick=handler() { foo set:"bar" } />'
-	)
+test('a variable mutation replaces old class name').code(
+	'foo = "foo"',
+	'<div id="target" class=foo class="cat" onclick=handler() { foo set:"bar" } />')
 	.hasClass('#target', 'foo', 'cat')
 	.click('#target')
 	.doesntHaveClass('#target', 'foo')
 	.hasClass('#target', 'bar', 'cat')
 
-test('xml attribute hash expansion')
-	.code(
-		'attrs = { id:"foo" class:"bar" } ',
-		'<div #attrs class="cat" />'
-	)
+test('xml attribute hash expansion').code(
+	'attrs = { id:"foo" class:"bar" } ',
+	'<div #attrs class="cat" />')
 	.hasClass('#foo', 'bar', 'cat')
 
 
