@@ -7,7 +7,8 @@ setup:
 	git submodule init
 	git submodule sync
 	git submodule update
-	ln -snf .. node_modules/fun
+	# if [ ! -f node_modules/fun ]; then ln -snf .. node_modules/fun; fi
 	cd node_modules/dom; npm install .
 	cd node_modules/require; npm install .
+	npm install .
 	make test
