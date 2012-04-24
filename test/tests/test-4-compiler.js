@@ -364,7 +364,7 @@ function startCompilerServer() {
 		function runTest() {
 			compiler.compileCode(currentTestCode, { minify:false }, function(err, appHtml) {
 				if (err) { return onError(err) }
-				res.writeHead(200, { 'Content-Length':appHtml.length })
+				res.writeHead(200)
 				res.end(appHtml)
 			})
 		}
