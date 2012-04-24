@@ -13,6 +13,10 @@ var base = module.exports.base = {
 	isTruthy:function() { return true },
 	isNull:function() { return false },
 	iterate:function() {},
+	render:function(hookName) {
+		fun.hooks[hookName].innerHTML = ''
+		fun.hooks[hookName].appendChild(document.createTextNode(this.asString()))
+	},
 	getters:{
 		copy:function() {
 			var self = this
@@ -51,7 +55,14 @@ var variableValueBase = create(base, {
 	equals:function(that) { return this.evaluate().equals(that) },
 	getContent:function() { return this.evaluate().getContent() },
 	isTruthy:function() { return this.evaluate().isTruthy() },
-	hasVariableContent:function() { return true }
+	hasVariableContent:function() { return true },
+	invoke:function(args) { return this.evaluate().invoke(args) },
+	handle:function(args) { return this.evaluate().handle(args) },
+	render:function(hookName, args) {
+		this.observe(bind(this, function() {
+			this.evaluate().render(hookName, args)
+		}))
+	}
 })
 
 var mutableBase = create(variableValueBase, {
@@ -175,16 +186,24 @@ module.exports.Function = proto(invocableBase,
 	}, {
 		_type:'Function',
 		invoke:function(args) {
-			var diffArgs = this._content.length - args.length
-			while (diffArgs-- > 0) { args.push(NullValue) }
-			var invocationValue = variable(NullValue)
-			var yieldValue = function(value) { invocationValue.set(null, fromJsValue(value)) }
-			var __hackFirstExecution = true
+			var result = variable(NullValue)
+			var yieldValue = function(value) { result.set(null, fromJsValue(value)) }
+			var isFirstExecution = true
+
+			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
+			
+			this._content.apply(this, args)
+			return result
+		},
+		render:function(hookName, args) {
+			var yieldValue = function(value) { fromJsValue(value).render(hookName) }
+			var isFirstExecution = true
+			
+			var waitForSetup = true
 			var executeBlock = bind(this, function() {
 				if (waitForSetup) { return }
-				var isFirstExecution = __hackFirstExecution
-				__hackFirstExecution = false
-				this._content.apply(this, [yieldValue, isFirstExecution].concat(args))
+				this._content.apply(this, args)
+				args[1] = false // hack: isFirstExecution
 			})
 			
 			var waitForSetup = true
@@ -193,12 +212,17 @@ module.exports.Function = proto(invocableBase,
 				if (arg) { arg.observe(executeBlock) }
 			}
 			waitForSetup = false
+			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
 			executeBlock()
-			
-			return invocationValue
 		}
 	}
 )
+
+function _cleanArgs(args, fn) {
+	var diffArgs = fn.length - args.length
+	while (diffArgs-- > 0) { args.push(NullValue) }
+	return args
+}
 
 function waitFor(fn) {
 	var waitingFor = 0
@@ -226,8 +250,8 @@ module.exports.Handler = proto(invocableBase,
 		this._content = block
 	}, {
 		_type:'Handler',
-		invoke:function(element, event) {
-			this._content.call(element, event)
+		handle:function(args) {
+			this._content.apply(this, args)
 		}
 	}
 )
@@ -239,7 +263,8 @@ module.exports.Template = proto(invocableBase,
 	}, {
 		_type:'Template',
 		render:function(hookName, args) {
-			this._content.apply(this, [hookName].concat(args))
+			args = _cleanArgs([hookName].concat(args), this._content)
+			this._content.apply(this, args)
 		}
 	}
 )

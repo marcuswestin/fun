@@ -108,28 +108,24 @@ var compileTemplateBlock = function(context, ast) {
 	if (controlStatementCode) { return controlStatementCode }
 	
 	switch(ast.type) {
-		case 'NUMBER_LITERAL':
-		case 'TEXT_LITERAL':
-		case 'LOGIC_LITERAL':
-		case 'NULL_LITERAL':
-		case 'DICTIONARY_LITERAL':
-		case 'LIST_LITERAL':
-		case 'REFERENCE':
-		case 'COMPOSITE':
-		case 'TERNARY':
-		case 'INVOCATION':        return _emitExpression(context, ast)
-		
-		case 'XML':               return _emitXML(context, ast)
-		
-		default:                  halt(ast, 'Unknown emit statement type '+ast.type)
+		case 'INVOCATION': return _compileTemplateInvocation(context, ast)
+		case 'XML':        return _emitXML(context, ast)
+		default:           return _emit(context, ast)
 	}
 }
 
-var _emitExpression = function(context, ast) {
-	return code(
-		'fun.emit({{ hookName }}, {{ value }})', {
+var _emit = function(context, ast) {
+	return code('fun.emit({{ hookName }}, {{ value }})', {
 		hookName:context.hookName,
 		value:compileExpression(context, ast)
+	})
+}
+
+var _compileTemplateInvocation = function(context, ast) {
+	return code('{{ operand }}.render(fun.hook(fun.name(), {{ hookName }}), {{ args }})', {
+		hookName:context.hookName,
+		operand:compileExpression(context, ast.operand),
+		args:'['+map(ast.arguments, curry(compileExpression, context)).join(',')+']'
 	})
 }
 
@@ -283,10 +279,8 @@ var _observeExpression = function(context, ast /*, line1, line2, ..., lineN, val
 /* Functions and Handlers - procedural code where expressions are not observed
  *****************************************************************************/
 var compileFunctionDefinition = function(context, ast) {
-	return code(
-		'fun.expressions.Function(function block({{ arguments }}) {',
-		'	{{ block }}',
-		'})',
+	return _inlineCode(
+		'fun.expressions.Function(function block({{ arguments }}) { {{ block }} })',
 		{
 			arguments:['yieldValue', '__hackFirstExecution'].concat(map(ast.signature, function(argument, i) {
 				return variableName(argument.name)
@@ -315,7 +309,7 @@ var _compileFunctionReturn = function(context, ast) {
 }
 
 var compileHandlerDefinition = function(context, ast) {
-	return code(
+	return _inlineCode(
 		'fun.expressions.Handler(function block({{ signature }}) {',
 		'	{{ block }}',
 		'})',
@@ -339,7 +333,7 @@ var _compileHandlerBlock = function(context, ast) {
 	
 	switch(ast.type) {
 		case 'MUTATION':          return _compileMutationStatement(context, ast)
-		case 'INVOCATION':        return compileInvocation(context, ast)
+		case 'INVOCATION':        return compileInvocation('handle', context, ast)
 		default:                  halt(ast, 'Unknown handler statement type')
 	}
 }
@@ -356,7 +350,7 @@ var _compileMutationStatement = function(context, ast) {
 var compileTemplateDefinition = function(context, ast) {
 	var hookName = name('TEMPLATE_HOOK'),
 		templateBlockContext = copyContext(ast.closure, { hookName:variableName(hookName) })
-	return code(
+	return _inlineCode(
 		'fun.expressions.Template(function block({{ signature }}) {',
 		'	{{ block }}',
 		'})',
@@ -507,7 +501,7 @@ var compileExpression = function(context, ast) {
 				value:compileExpression(context, ast.value)
 			})
 		case 'INVOCATION':
-			return compileInvocation(context, ast)
+			return compileInvocation('invoke', context, ast)
 		case 'FUNCTION':
 			return compileFunctionDefinition(context, ast)
 		case 'HANDLER':
@@ -519,8 +513,9 @@ var compileExpression = function(context, ast) {
 	}
 }
 
-var compileInvocation = function(context, ast) {
-	return _inlineCode('fun.invoke({{ operand }}, {{ arguments }}, {{ hookName }})', {
+var compileInvocation = function(method, context, ast) {
+	return _inlineCode('{{ operand }}.{{ method }}({{ arguments }}, {{ hookName }})', {
+		method:method,
 		operand:compileExpression(context, ast.operand),
 		arguments:'['+map(ast.arguments, function(arg) { return compileExpression(context, arg) }).join(',')+']',
 		hookName:context.hookName || q('')

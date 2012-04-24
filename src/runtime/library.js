@@ -14,30 +14,13 @@ var expressions = require('./expressions'),
 	
 	fun.reset = function() {
 		_unique = 0
-		_hooks = {}
+		fun.expressions = expressions
+		_hooks = fun.hooks = {}
 		_hookCallbacks = {}
 	}
 	
 	fun.name = function(readable) { return '_' + (readable || '') + '_' + (_unique++) }
 
-	fun.expressions = expressions
-	
-	fun.invoke = function(operand, args, parentHookName) {
-		operand = operand.evaluate()
-		// TODO Observe operand
-		// TODO Observe arguments
-		switch (operand.getType()) {
-			case 'Handler':
-				return operand.invoke(args)
-			case 'Function':
-				return operand.invoke(args)
-			case 'Template':
-				return operand.render(fun.hook(fun.name(), parentHookName), args)
-			default:
-				throw new Error('Attempted to invoke a non-invocable: '+operand.inspect())
-		}
-	}
-	
 /* Values
  ********/
 	fun.emit = function(parentHookName, value) {
@@ -101,7 +84,8 @@ var expressions = require('./expressions'),
 					return
 				}
 				on(hook, eventName, lastValue = function(e) {
-					value.evaluate().invoke(hook, expressions.Event(e))
+					e.hook = hook
+					value.evaluate().handle([expressions.Event(e)])
 				})
 			} else if (key == 'style') {
 				// TODO remove old styles
