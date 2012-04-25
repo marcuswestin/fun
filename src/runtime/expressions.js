@@ -444,7 +444,7 @@ var dispatch = module.exports.dispatch = proto(variableValueBase,
 			var getterValue = value.evaluate(),
 				getter = key.getType() == 'Text' && getterValue.getters[key.asString()]
 			
-			if (getter) { return getter.call(value) }
+			if (getter) { return getter.call(getterValue) }
 			
 			if (value.isAtomic()) { return NullValue }
 			
