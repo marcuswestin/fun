@@ -429,10 +429,10 @@ var _addTightOperators = astGenerator(function(expression) {
 	switch (advance().value) {
 		case '.':
 			var key = { type:'TEXT_LITERAL', value:advance('name').value }
-			return _addTightOperators({ type:'DISPATCH', key:key, value:expression })
+			return _addTightOperators({ type:'DEREFERENCE', key:key, value:expression })
 		case L_BRACKET:
 			var key = parseExpression(),
-				value = _addTightOperators({ type:'DISPATCH', key:key, value:expression })
+				value = _addTightOperators({ type:'DEREFERENCE', key:key, value:expression })
 			advance('symbol', R_BRACKET)
 			return value
 		case L_PAREN:

@@ -11,7 +11,7 @@ viewport = {
 		getWindowSize = require('fun/node_modules/dom/getWindowSize'),
 		client = require('fun/node_modules/std/client')
 	
-	viewportSize = fun.expressions.dispatch(module, fun.expressions.Text('size')).evaluate()
+	viewportSize = fun.expressions.dereference(module, fun.expressions.Text('size')).evaluate()
 	
 	function update() {
 		var size = client.isIOS ? getIOSViewportSize() : getWindowSize(window)

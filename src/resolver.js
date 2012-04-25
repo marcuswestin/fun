@@ -74,7 +74,7 @@ var resolve = function(context, ast) {
 		
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 		case 'REFERENCE':            return lookup(context, ast)
-		case 'DISPATCH':             return resolveDispatch(context, ast)
+		case 'DEREFERENCE':          return resolveDereference(context, ast)
 		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
 		case 'UNARY':                return resolveUnaryExpression(context, ast)
 		case 'TERNARY':              return resolveTernaryExpression(context, ast)
@@ -112,7 +112,7 @@ var lookup = function(context, ast) {
 	return ast
 }
 
-var resolveDispatch = function(context, ast) {
+var resolveDereference = function(context, ast) {
 	ast.key = resolve(context, ast.key)
 	ast.value = resolve(context, ast.value)
 	return ast

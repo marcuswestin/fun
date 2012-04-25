@@ -37,7 +37,7 @@ var expressions = require('./expressions'),
 	fun.set = function(value, chainStr, setValue) {
 		var chain = chainStr.split('.')
 		while (chain.length) {
-			value = expressions.dispatch(value, expressions.Text(chain.shift()))
+			value = expressions.dereference(value, expressions.Text(chain.shift()))
 		}
 		value.mutate('set', [setValue])
 	}

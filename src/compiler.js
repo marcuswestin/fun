@@ -474,8 +474,8 @@ var compileExpression = function(context, ast) {
 				value:q(ast.value)
 			})
 		case 'REFERENCE': return variableName(ast.name)
-		case 'DISPATCH':
-			return _inlineCode('fun.expressions.dispatch({{ value }}, {{ key }})', {
+		case 'DEREFERENCE':
+			return _inlineCode('fun.expressions.dereference({{ value }}, {{ key }})', {
 				value:compileExpression(context, ast.value),
 				key:compileExpression(context, ast.key)
 			})

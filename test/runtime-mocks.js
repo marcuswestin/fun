@@ -12,7 +12,7 @@ module.exports = {
 	reference:function(value, chainStr) {
 		var chain = chainStr.split('.')
 		while (chain.length) {
-			value = expressions.dispatch(value, expressions.Text(chain.shift()))
+			value = expressions.dereference(value, expressions.Text(chain.shift()))
 		}
 		return value
 	},

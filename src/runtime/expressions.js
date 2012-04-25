@@ -415,15 +415,15 @@ var _checkArgs = function(args, num) {
 	if (!isArray(args) || args.length != num) { BAD_ARGS }
 }
 
-var dispatch = module.exports.dispatch = proto(variableValueBase,
+var dereference = module.exports.dereference = proto(variableValueBase,
 	function(value, key) {
 		if (!value || !key) { TYPE_MISMATCH }
 		this._value = value
 		this._key = key
 	}, {
-		_type:'dispatch',
+		_type:'dereference',
 		getType:function() { return this.evaluate().getType() },
-		inspect:function() { return '<dispatch '+this._value.inspect()+'['+this._key.inspect()+']>' },
+		inspect:function() { return '<dereference '+this._value.inspect()+'['+this._key.inspect()+']>' },
 		onChange:function(callback) {
 			this._keyId = this._key.onChange(callback)
 			this._valueId = this._value.onChange(callback)

@@ -7,7 +7,7 @@ module.exports = {
 	literal: literal,
 	declaration: declaration,
 	reference: reference,
-	dispatch: dispatch,
+	dereference: dereference,
 	composite: composite,
 	xml: xml,
 	ifElse: ifElse,
@@ -31,14 +31,14 @@ function reference(name) {
 	var chain = name.split('.'),
 		value = { type:'REFERENCE', name:chain.shift() }
 	while (chain.length) {
-		value = dispatch(value, chain.shift())
+		value = dereference(value, chain.shift())
 	}
 	return value
 }
 
-function dispatch(value, key) {
+function dereference(value, key) {
 	if (typeof key == 'string') { key = { type:'TEXT_LITERAL', value:key } }
-	return { type:'DISPATCH', key:key, value:value }
+	return { type:'DEREFERENCE', key:key, value:value }
 }
 
 function nullValue() {

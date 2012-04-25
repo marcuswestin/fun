@@ -220,22 +220,22 @@ test('dictionary set property').code(
 	.click('#output')
 	.textIs('#output','12')
 
-test('dynamic dispatch').code(
+test('dynamic dereference').code(
 	'foo = "a" bar={ a:1, b:2 }',
 	'<div id="output">bar[foo]</div onclick=handler() { foo set: "b" }>')
 	.textIs('#output', 1)
 	.click('#output')
 	.textIs('#output', 2)
 
-test('dispatch on grouped expression').code(
+test('dereference on grouped expression').code(
 	'<div id="output">({ foo:"bar" }).foo</div>')
 	.textIs('#output', 'bar')
 
-test('dispatch on inline function invocation').code(
+test('dereference on inline function invocation').code(
 	'<div id="output">function() { return { foo:"bar" } }().foo</div>')
 	.textIs('#output', 'bar')
 
-test('dispatch on inline function invocation #2').code(
+test('dereference on inline function invocation #2').code(
 	'<div id="output">function() { return { foo:function(arg) { return arg } } }().foo("bar")</div>')
 	.textIs('#output', 'bar')
 
