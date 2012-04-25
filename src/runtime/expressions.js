@@ -4,8 +4,8 @@ var proto = require('std/proto'),
 	isArray = require('std/isArray'),
 	bind = require('std/bind')
 
-/* Value bases
- *************/
+// All values inherit from base
+///////////////////////////////
 var base = module.exports.base = {
 	observe:function(callback) {
 		var id = this._onChange(callback)
@@ -29,6 +29,8 @@ var base = module.exports.base = {
 	}
 }
 
+// Simple values
+////////////////
 var constantAtomicBase = create(base, {
 	isAtomic:function() { return true },
 	inspect:function() { return '<'+this._type+' ' + this.asLiteral() + '>' },
@@ -45,6 +47,123 @@ var constantAtomicBase = create(base, {
 	}
 })
 
+var Number = module.exports.Number = proto(constantAtomicBase,
+	function Number(content) {
+		if (typeof content != 'number') { typeMismatch() }
+		this._content = content
+	}, {
+		_type:'Number',
+		asLiteral:function() { return this._content },
+		isTruthy: function() { return this._content != 0 }
+	}
+)
+
+var Text = module.exports.Text = proto(constantAtomicBase,
+	function Text(content) {
+		if (typeof content != 'string') { typeMismatch() }
+		this._content = content
+	}, {
+		_type:'Text',
+		asLiteral:function() { return '"'+this._content+'"' }
+	}
+)
+
+var Logic = module.exports.Logic = function(content) {
+	if (typeof content != 'boolean') { typeMismatch() }
+	return content ? Yes : No
+}
+var LogicProto = proto(constantAtomicBase,
+	function Logic(content) {
+		this._content = content
+	}, {
+		_type:'Logic',
+		toString:function() { return this._content ? 'yes' : 'no' },
+		asLiteral:function() { return this._content ? 'true' : 'false' },
+		isTruthy:function() { return this._content }
+	}
+)
+var Yes = module.exports.Yes = LogicProto(true),
+	No = module.exports.No = LogicProto(false)
+
+module.exports.Null = function() { return Null }
+var Null = (proto(constantAtomicBase,
+	function Null() {
+		if (arguments.length) { typeMismatch() }
+	}, {
+		_type:'Null',
+		inspect:function() { return '<Null>' },
+		toString:function() { return '' },
+		equals:function(that) { return that.getType() == 'Null' ? Yes : No },
+		asLiteral:function() { return 'null' },
+		isTruthy:function() { return false },
+		isNull:function() { return true }
+	}
+))();
+
+// Invocable values
+///////////////////
+module.exports.Function = proto(constantAtomicBase,
+	function Function(block) {
+		if (typeof block != 'function') { typeMismatch() }
+		this._content = block
+	}, {
+		_type:'Function',
+		invoke:function(args) {
+			var result = variable(Null)
+			var yieldValue = function(value) { result.mutate('set', [fromJsValue(value)]) }
+			var isFirstExecution = true
+
+			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
+			
+			this._content.apply(this, args)
+			return result
+		},
+		render:function(hookName, args) {
+			var yieldValue = function(value) { fromJsValue(value).render(hookName) }
+			
+			var executeBlock = bind(this, function() {
+				this._content.apply(this, args)
+				args[1] = false // hack: isFirstExecution
+			})
+			
+			for (var i=0; i<args.length; i++) {
+				if (args[i]) { args[i]._onChange(executeBlock) }
+			}
+			
+			var isFirstExecution = true
+			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
+			executeBlock()
+		}
+	}
+)
+
+module.exports.Handler = proto(constantAtomicBase,
+	function Handler(block) {
+		if (typeof block != 'function') { typeMismatch() }
+		this._content = block
+	}, {
+		_type:'Handler',
+		invoke:function(args) {
+			this._content.apply(this, args)
+		}
+	}
+)
+
+module.exports.Template = proto(constantAtomicBase,
+	function Template(block) {
+		if (typeof block != 'function') { typeMismatch() }
+		this._content = block
+	}, {
+		_type:'Template',
+		render:function(hookName, args) {
+			args = _cleanArgs([hookName].concat(args), this._content)
+			this._content.apply(this, args)
+		}
+	}
+)
+
+// Variables and dereference
+////////////////////////////
 var variableValueBase = create(base, {
 	isAtomic:function() { return this.evaluate().isAtomic() },
 	getType:function() { return this.evaluate().getType() },
@@ -84,295 +203,6 @@ var mutableBase = create(variableValueBase, {
 	}
 })
 
-var collectionBase = create(mutableBase, {
-	isAtomic:function() { return false },
-	getType:function() { return this._type },
-	evaluate:function() { return this },
-	getContent:function() { return this._content },
-	isTruthy:function() { return true }
-})
-
-/* Atomic, immutable expressions
- *******************************/
-var Number = module.exports.Number = proto(constantAtomicBase,
-	function Number(content) {
-		if (typeof content != 'number') { typeMismatch() }
-		this._content = content
-	}, {
-		_type:'Number',
-		asLiteral:function() { return this._content },
-		isTruthy: function() { return this._content != 0 }
-	}
-)
-
-var Text = module.exports.Text = proto(constantAtomicBase,
-	function Text(content) {
-		if (typeof content != 'string') { typeMismatch() }
-		this._content = content
-	}, {
-		_type:'Text',
-		asLiteral:function() { return '"'+this._content+'"' }
-	}
-)
-
-var Logic = module.exports.Logic = function(content) {
-	if (typeof content != 'boolean') { typeMismatch() }
-	return content ? Yes : No
-}
-
-var LogicProto = proto(constantAtomicBase,
-	function Logic(content) {
-		this._content = content
-	}, {
-		_type:'Logic',
-		toString:function() { return this._content ? 'yes' : 'no' },
-		asLiteral:function() { return this._content ? 'true' : 'false' },
-		isTruthy:function() { return this._content }
-	}
-)
-
-var Yes = module.exports.Yes = LogicProto(true),
-	No = module.exports.No = LogicProto(false)
-
-module.exports.Null = function() { return Null }
-var Null = (proto(constantAtomicBase,
-	function Null() {
-		if (arguments.length) { typeMismatch() }
-	}, {
-		_type:'Null',
-		inspect:function() { return '<Null>' },
-		toString:function() { return '' },
-		equals:function(that) { return that.getType() == 'Null' ? Yes : No },
-		asLiteral:function() { return 'null' },
-		isTruthy:function() { return false },
-		isNull:function() { return true }
-	}
-))();
-
-module.exports.Function = proto(constantAtomicBase,
-	function Function(block) {
-		if (typeof block != 'function') { typeMismatch() }
-		this._content = block
-	}, {
-		_type:'Function',
-		invoke:function(args) {
-			var result = variable(Null)
-			var yieldValue = function(value) { result.mutate('set', [fromJsValue(value)]) }
-			var isFirstExecution = true
-
-			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
-			
-			this._content.apply(this, args)
-			return result
-		},
-		render:function(hookName, args) {
-			var yieldValue = function(value) { fromJsValue(value).render(hookName) }
-			
-			var executeBlock = bind(this, function() {
-				this._content.apply(this, args)
-				args[1] = false // hack: isFirstExecution
-			})
-			
-			for (var i=0; i<args.length; i++) {
-				var arg = args[i]
-				if (arg) { arg._onChange(executeBlock) }
-			}
-
-			var isFirstExecution = true
-			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
-			executeBlock()
-		}
-	}
-)
-
-function _cleanArgs(args, fn) {
-	var diffArgs = fn.length - args.length
-	while (diffArgs-- > 0) { args.push(Null) }
-	return args
-}
-
-function waitFor(fn) {
-	var waitingFor = 0
-	return {
-		addWaiter:function() {
-			var responded = false
-			waitingFor++
-			return function() {
-				if (!responded) {
-					responded = true
-					waitingFor--
-				}
-				if (!waitingFor) { fn() }
-			}
-		},
-		tryNow:function() {
-			if (!waitingFor) { fn() }
-		}
-	}
-}
-
-module.exports.Handler = proto(constantAtomicBase,
-	function Handler(block) {
-		if (typeof block != 'function') { typeMismatch() }
-		this._content = block
-	}, {
-		_type:'Handler',
-		invoke:function(args) {
-			this._content.apply(this, args)
-		}
-	}
-)
-
-module.exports.Template = proto(constantAtomicBase,
-	function Template(block) {
-		if (typeof block != 'function') { typeMismatch() }
-		this._content = block
-	}, {
-		_type:'Template',
-		render:function(hookName, args) {
-			args = _cleanArgs([hookName].concat(args), this._content)
-			this._content.apply(this, args)
-		}
-	}
-)
-
-/* Variable value expressions
- ****************************/
-var composite = module.exports.composite = proto(variableValueBase,
-	function composite(left, operator, right) {
-		if (typeof operator != 'string') { typeMismatch() }
-		// TODO typecheck left and right
-		this.left = left
-		this.right = right
-		this.operator = operator
-	}, {
-		_type:'composite',
-		evaluate:function() { return operators[this.operator](this.left, this.right) },
-		_onChange:function(callback) {
-			this._leftId = this.left._onChange(callback)
-			this._rightId = this.right._onChange(callback)
-		},
-		dismiss:function() {
-			this.left.dismiss(this._leftId)
-			this.right.dismiss(this._rightId)
-		}
-	}
-)
-
-module.exports.ternary = proto(variableValueBase,
-	function ternary(condition, ifValue, elseValue) {
-		this.condition = condition
-		this.ifValue = ifValue
-		this.elseValue = elseValue
-	}, {
-		_type:'ternary',
-		evaluate:function() { return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate() },
-		_onChange:function(callback) {
-			this._conditionId = this.condition._onChange(callback)
-			this._ifValueId = this.ifValue._onChange(callback)
-			this._elseValueId = this.elseValue._onChange(callback)
-		},
-		dismiss:function() {
-			this.condition.dismiss(this._conditionID)
-			this.ifValue.dismiss(this._ifValueId)
-			this.elseValue.dismiss(this._elseValueId)
-		}
-	})
-
-module.exports.unary = proto(variableValueBase,
-	function unary(operator, value) {
-		this.operator = operator
-		this.value = value
-	}, {
-		_type:'unary',
-		evaluate:function() { return unaryOperators[this.operator](this.value.evaluate()) },
-		_onChange:function(callback) { this._valueId = this.value._onChange(callback) },
-		dismiss:function() { this.value.dismiss(this._valueId) }
-	})
-
-var unaryOperators = {
-	'!': function not(value) { return Logic(!value.isTruthy()) },
-	'-': function negative(value) { return value.getType() == 'Number' ? Number(-value.getContent()) : Null }
-}
-
-var operators = {
-	'+': add,
-	'-': subtract,
-	'/': divide,
-	'*': multiply,
-	'=': equals,
-	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
-	'!': notEquals,
-	'!=': notEquals, // We may want to just use ! since it's `foo is ! 'hi'` now
-	'>=': greaterThanOrEquals,
-	'<=': lessThanOrEquals,
-	'<': lessThan,
-	'>': greaterThan
-}
-
-function add(left, right) {
-	if (left.getType() == 'Number' && right.getType() == 'Number') {
-		return Number(left.getContent() + right.getContent())
-	}
-	return Text(left.toString() + right.toString())
-}
-
-function subtract(left, right) {
-	if (left.getType() == 'Number' && right.getType() == 'Number') {
-		return Number(left.getContent() - right.getContent())
-	} else {
-		return Null
-	}
-}
-
-function divide(left, right) {
-	if (left.getType() == 'Number' && right.getType() == 'Number') {
-		return Number(left.getContent() / right.getContent())
-	} else {
-		return Null
-	}
-}
-
-function multiply(left, right) {
-	if (left.getType() == 'Number' && right.getType() == 'Number') {
-		return Number(left.getContent() * right.getContent())
-	} else {
-		return Null
-	}
-}
-
-
-function equals(left, right) {
-	return left.equals(right)
-}
-
-function notEquals(left, right) {
-	return Logic(!left.equals(right).getContent())
-}
-
-function greaterThanOrEquals(left, right) {
-	// TODO Typecheck?
-	return Logic(left.getContent() >= right.getContent())
-}
-
-function lessThanOrEquals(left, right) {
-	// TODO Typecheck?
-	return Logic(left.getContent() <= right.getContent())
-}
-
-function lessThan(left, right) {
-	// TODO Typecheck?
-	return Logic(left.getContent() < right.getContent())
-}
-
-function greaterThan(left, right) {
-	// TODO Typecheck?
-	return Logic(left.getContent() > right.getContent())
-}
-
-/* Variable and mutable value expressions
- ****************************************/
-var _unique = 1
 var variable = module.exports.variable = proto(mutableBase,
 	function variable(content) {
 		this.observers = {}
@@ -397,10 +227,6 @@ var variable = module.exports.variable = proto(mutableBase,
 		}
 	}
 )
-
-var _checkArgs = function(args, num) {
-	if (!isArray(args) || args.length != num) { BAD_ARGS }
-}
 
 var dereference = module.exports.dereference = proto(variableValueBase,
 	function dereference(value, key) {
@@ -439,6 +265,16 @@ var dereference = module.exports.dereference = proto(variableValueBase,
 		}
 	}
 )
+
+// Collection values
+////////////////////
+var collectionBase = create(mutableBase, {
+	isAtomic:function() { return false },
+	getType:function() { return this._type },
+	evaluate:function() { return this },
+	getContent:function() { return this._content },
+	isTruthy:function() { return true }
+})
 
 var Dictionary = module.exports.Dictionary = proto(collectionBase,
 	function Dictionary(content) {
@@ -583,8 +419,153 @@ var List = module.exports.List = proto(collectionBase,
 	}
 )
 
-/* Util
- ******/
+// Operator expressions
+///////////////////////
+var composite = module.exports.composite = proto(variableValueBase,
+	function composite(left, operator, right) {
+		if (typeof operator != 'string') { typeMismatch() }
+		// TODO typecheck left and right
+		this.left = left
+		this.right = right
+		this.operator = operator
+	}, {
+		_type:'composite',
+		evaluate:function() { return operators[this.operator](this.left, this.right) },
+		_onChange:function(callback) {
+			this._leftId = this.left._onChange(callback)
+			this._rightId = this.right._onChange(callback)
+		},
+		dismiss:function() {
+			this.left.dismiss(this._leftId)
+			this.right.dismiss(this._rightId)
+		}
+	}
+)
+
+module.exports.ternary = proto(variableValueBase,
+	function ternary(condition, ifValue, elseValue) {
+		this.condition = condition
+		this.ifValue = ifValue
+		this.elseValue = elseValue
+	}, {
+		_type:'ternary',
+		evaluate:function() { return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate() },
+		_onChange:function(callback) {
+			this._conditionId = this.condition._onChange(callback)
+			this._ifValueId = this.ifValue._onChange(callback)
+			this._elseValueId = this.elseValue._onChange(callback)
+		},
+		dismiss:function() {
+			this.condition.dismiss(this._conditionID)
+			this.ifValue.dismiss(this._ifValueId)
+			this.elseValue.dismiss(this._elseValueId)
+		}
+	})
+
+module.exports.unary = proto(variableValueBase,
+	function unary(operator, value) {
+		this.operator = operator
+		this.value = value
+	}, {
+		_type:'unary',
+		evaluate:function() { return unaryOperators[this.operator](this.value.evaluate()) },
+		_onChange:function(callback) { this._valueId = this.value._onChange(callback) },
+		dismiss:function() { this.value.dismiss(this._valueId) }
+	})
+
+var unaryOperators = {
+	'!': not,
+	'-': negative
+}
+
+var operators = {
+	'+': add,
+	'-': subtract,
+	'/': divide,
+	'*': multiply,
+	'=': equals,
+	'==': equals, // I wonder if we should make this just = in the fun source, since we don't allow for assignment in mutating statements...
+	'!': notEquals,
+	'!=': notEquals, // We may want to just use ! since it's `foo is ! 'hi'` now
+	'>=': greaterThanOrEquals,
+	'<=': lessThanOrEquals,
+	'<': lessThan,
+	'>': greaterThan
+}
+
+function negative(value) {
+	if (value.getType() != 'Number') { return Null }
+	return Number(-value.getContent())
+}
+
+function not(value) {
+	return Logic(!value.isTruthy())
+}
+
+function add(left, right) {
+	if (left.getType() == 'Number' && right.getType() == 'Number') {
+		return Number(left.getContent() + right.getContent())
+	}
+	return Text(left.toString() + right.toString())
+}
+
+function subtract(left, right) {
+	if (left.getType() == 'Number' && right.getType() == 'Number') {
+		return Number(left.getContent() - right.getContent())
+	} else {
+		return Null
+	}
+}
+
+function divide(left, right) {
+	if (left.getType() == 'Number' && right.getType() == 'Number') {
+		return Number(left.getContent() / right.getContent())
+	} else {
+		return Null
+	}
+}
+
+function multiply(left, right) {
+	if (left.getType() == 'Number' && right.getType() == 'Number') {
+		return Number(left.getContent() * right.getContent())
+	} else {
+		return Null
+	}
+}
+
+
+function equals(left, right) {
+	return left.equals(right)
+}
+
+function notEquals(left, right) {
+	return Logic(!left.equals(right).getContent())
+}
+
+function greaterThanOrEquals(left, right) {
+	// TODO Typecheck?
+	return Logic(left.getContent() >= right.getContent())
+}
+
+function lessThanOrEquals(left, right) {
+	// TODO Typecheck?
+	return Logic(left.getContent() <= right.getContent())
+}
+
+function lessThan(left, right) {
+	// TODO Typecheck?
+	return Logic(left.getContent() < right.getContent())
+}
+
+function greaterThan(left, right) {
+	// TODO Typecheck?
+	return Logic(left.getContent() > right.getContent())
+}
+
+// Util
+///////
+var _unique = 1
+
 var fromJsValue = module.exports.fromJsValue = module.exports.value = function(val) {
 	switch (typeof val) {
 		case 'string': return Text(val)
@@ -625,6 +606,16 @@ var Event = module.exports.Event = function(jsEvent) {
 	})
 	funEvent.jsEvent = jsEvent // For JS API
 	return funEvent
+}
+
+function _cleanArgs(args, fn) {
+	var diffArgs = fn.length - args.length
+	while (diffArgs-- > 0) { args.push(Null) }
+	return args
+}
+
+var _checkArgs = function(args, num) {
+	if (!isArray(args) || args.length != num) { BAD_ARGS }
 }
 
 function typeMismatch() { throw new Error('Type mismatch') }
