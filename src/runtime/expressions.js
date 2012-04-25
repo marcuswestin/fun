@@ -558,6 +558,20 @@ var List = module.exports.List = proto(collectionBase,
 					variableLength.mutate('set', [Number(this._content.length)])
 				}))
 				return variableLength
+			},
+			last:function() {
+				var last = variable(NullValue)
+				this.observe(bind(this, function() {
+					last.mutate('set', [this._content[this._content.length - 1] || NullValue])
+				}))
+				return last
+			},
+			first:function() {
+				var first = variable(NullValue)
+				this.observe(bind(this, function() {
+					first.mutate('set', [this._content[0] || NullValue])
+				}))
+				return first
 			}
 		}),
 		mutate:function(operator, args) {

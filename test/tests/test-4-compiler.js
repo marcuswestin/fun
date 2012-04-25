@@ -239,6 +239,13 @@ test('dispatch on inline function invocation #2').code(
 	'<div id="output">function() { return { foo:function(arg) { return arg } } }().foo("bar")</div>')
 	.textIs('#output', 'bar')
 
+test('list.first/last properties').code(
+	'foo = ["a","b","c"]',
+	'<div id="output">foo.first foo.last</div onclick=handler() { foo push: "d" }>')
+	.textIs('#output', 'ac')
+	.click('#output')
+	.textIs('#output', 'ad')
+
 /* Util
  ******/
 var isFirstTest = true
