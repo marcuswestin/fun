@@ -7,6 +7,7 @@ module.exports = {
 	literal: literal,
 	declaration: declaration,
 	reference: reference,
+	dispatch: dispatch,
 	composite: composite,
 	xml: xml,
 	ifElse: ifElse,
@@ -26,9 +27,18 @@ function aImport(path) {
 	return { type:'IMPORT', path:path }
 }
 
-function reference(namespace) {
-	namespace = namespace.split('.')
-	return { type:'REFERENCE', name:namespace.shift(), chain:namespace }
+function reference(name) {
+	var chain = name.split('.'),
+		value = { type:'REFERENCE', name:chain.shift() }
+	while (chain.length) {
+		value = dispatch(value, chain.shift())
+	}
+	return value
+}
+
+function dispatch(value, key) {
+	if (typeof key == 'string') { key = { type:'TEXT_LITERAL', value:key } }
+	return { type:'DISPATCH', key:key, value:value }
 }
 
 function nullValue() {
@@ -82,7 +92,7 @@ function ifElse(condition, ifBranch, elseBranch) {
 }
 
 function forLoop(iteratorName, iterable, block) {
-	var iterator = { type:'REFERENCE', name:iteratorName, chain:null }
+	var iterator = { type:'REFERENCE', name:iteratorName }
 	return { type:'FOR_LOOP', iterable:iterable, iterator:iterator, block:block }
 }
 

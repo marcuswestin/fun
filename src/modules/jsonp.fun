@@ -2,6 +2,7 @@ jsonp = {
 	get:function(path, args, responseHandler) {
 		result = { loading:true, error:null, response:null }
 		<script path=path args=args responseHandler=responseHandler result=result>
+			result = result.evaluate()
 			var win = window,
 				doc = win.document
 			if (!win.__jsonpId) { win.__jsonpId = 1 }
@@ -13,11 +14,11 @@ jsonp = {
 					handler.invoke([event])
 				}
 				if (err) {
-					fun.set(result, 'error', fun.expressions.fromJsValue(err))
+					fun.dictSet(result, 'error', err)
 				} else {
-					fun.set(result, 'response', fun.expressions.fromJsValue(response))
+					fun.dictSet(result, 'response', response)
 				}
-				fun.set(result, 'loading', fun.expressions.No)
+				fun.dictSet(result, 'loading', false)
 			}
 			
 			var script = doc.createElement('script')

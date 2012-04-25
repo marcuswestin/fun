@@ -34,8 +34,16 @@ var expressions = require('./expressions'),
 		})
 	}
 	
-	fun.set = function(expression, chainStr, value) {
-		expression.mutate('set', chainStr && chainStr.split('.'), [value])
+	fun.set = function(value, chainStr, setValue) {
+		var chain = chainStr.split('.')
+		while (chain.length) {
+			value = expressions.dispatch(value, expressions.Text(chain.shift()))
+		}
+		value.mutate('set', [setValue])
+	}
+	
+	fun.dictSet = function(dict, prop, setValue) {
+		dict.mutate('set', [expressions.fromJsValue(prop), expressions.fromJsValue(setValue)])
 	}
 	
 /* Hooks
@@ -110,13 +118,25 @@ var expressions = require('./expressions'),
 	fun.attrExpand = function(hookName, expandValue) {
 		// TODO Observe the expandValue, and detect keys getting added/removed properly
 		each(expandValue.getContent(), function(value, name) {
+			name = _getDictionaryKeyString(name)
 			fun.attr(hookName, name, value)
 		})
+	}
+	
+	var _getDictionaryKeyString = function(key) {
+		key = fun.expressions.fromLiteral(key)
+		if (key.getType() != 'Text') { return }
+		return key.getContent()
 	}
 
 	var skipPx = arrayToObject(['zIndex', 'z-index'])
 	fun.setStyle = function(hook, key, value) {
-		var rawValue = value.evaluate().asString()
+		key = _getDictionaryKeyString(key)
+		if (!key) { return }
+		
+		value = value.evaluate()
+		var rawValue = value.asString()
+		
 		if ((value.getType() == 'Number' || rawValue.match(/^\d+$/)) && !skipPx[key]) {
 			rawValue = rawValue + 'px'
 		}

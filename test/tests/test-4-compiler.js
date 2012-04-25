@@ -45,7 +45,7 @@ test('divs follow mouse').code(
 test('script tag variable passing').code(
 	'foo = "foo"',
 	'<script fooVariable=foo>',
-	'	fun.set(fooVariable, null, fun.expressions.Text("bar"))',
+	'	fooVariable.mutate("set", [fun.expressions.Text("bar")])',
 	'</script>',
 	'<div id="output">foo</div>')
 	.textIs('#output', 'bar')
@@ -63,7 +63,7 @@ test('changing object literals').code(
 	'	{ foo: { a:foo.a } }',
 	'	{ a:foo.a }',
 	'	foo',
-	'</div onclick=handler(){ foo.a set: 2 }>')
+	'</div onclick=handler(){ foo set: "a", 2 }>')
 	.textIs('#output', '{ "foo":{ "a":1 } }{ "a":1 }{ "a":1 }')
 	.click('#output')
 	.textIs('#output', '{ "foo":{ "a":2 } }{ "a":2 }{ "a":2 }')
@@ -218,7 +218,18 @@ test('dictionary set property').code(
 	'bar = { foo:foo }',
 	'<div id="output">foo bar.foo</div onclick=handler() { bar set:"foo", 2 }>')
 	.click('#output')
-	.textIs('#output','1 2')
+	.textIs('#output','12')
+
+test('dynamic dispatch').code(
+	'foo = "a" bar={ a:1, b:2 }',
+	'<div id="output">bar[foo]</div onclick=handler() { foo set: "b" }>')
+	.textIs('#output', 1)
+	.click('#output')
+	.textIs('#output', 2)
+
+test('dispatch on grouped expression').code(
+	'<div id="output">({ foo:"bar" }).foo</div>')
+	.textIs('#output', 'bar')
 
 /* Util
  ******/

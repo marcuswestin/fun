@@ -10,7 +10,11 @@ module.exports = {
 		return expressions.composite(expressions.fromJsValue(left), operator, expressions.fromJsValue(right))
 	},
 	reference:function(value, chainStr) {
-		return expressions.reference(value, chainStr.split('.'))
+		var chain = chainStr.split('.')
+		while (chain.length) {
+			value = expressions.dispatch(value, expressions.Text(chain.shift()))
+		}
+		return value
 	},
 	null:expressions.Null
 }

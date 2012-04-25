@@ -22,7 +22,7 @@ test('alias single namespace')
 
 test('alias double namespace')
 	.code('user.name')
-	.expect(a.reference('user.name'))
+	.expect(a.dispatch(a.reference('user'), 'name'))
 
 test('parenthesized expression')
 	.code('(1)')
@@ -94,7 +94,7 @@ test('nested declaration')
 	)
 	.expect(
 		a.declaration('foo', a.literal({ nested:{ cat:'yay' } })),
-		a.reference('foo'), a.reference('bar'), a.reference('foo.nested')
+		a.reference('foo'), a.reference('bar'), a.dispatch(a.reference('foo'), 'nested')
 	)
 
 test('deep nested declaration')
@@ -181,7 +181,7 @@ test('if/else in a div')
 		'else { "mouse.x is < 100" }</div>')
 	.expect(
 		a.xml('div', null, [
-			a.ifElse(a.composite(a.reference('Mouse.x'), '>=', a.literal(100)), [
+			a.ifElse(a.composite(a.dispatch(a.reference('Mouse'), 'x'), '>=', a.literal(100)), [
 				a.literal('mouse.x is >= 100')
 			], [
 				a.literal('mouse.x is < 100')
@@ -269,7 +269,18 @@ test('climb dir')
 test('absolute import')
 	.code('import /foo/bar')
 	.expect(a.import('/foo/bar'))
-	
+
+test('double dispatch')
+	.code('foo.bar.cat')
+	.expect(a.reference('foo.bar.cat'))
+
+test('dynamic dispatch with static value')
+	.code('foo["bar"] foo.bar')
+	.expect(a.reference('foo.bar'), a.reference('foo.bar'))
+
+test('dynamic dispatch')
+	.code('foo[bar] cat[qwe.tag()]')
+	.expect(a.dispatch(a.reference('foo'), a.reference('bar')), a.dispatch(a.reference('cat'), a.invocation(a.dispatch(a.reference('qwe'), 'tag'))))
 
 /* Util
  ******/

@@ -74,6 +74,7 @@ var resolve = function(context, ast) {
 		
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 		case 'REFERENCE':            return lookup(context, ast)
+		case 'DISPATCH':             return resolveDispatch(context, ast)
 		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
 		case 'UNARY':                return resolveUnaryExpression(context, ast)
 		case 'TERNARY':              return resolveTernaryExpression(context, ast)
@@ -110,6 +111,13 @@ var lookup = function(context, ast) {
 	assert(ast, context.names[ast.name], 'Couldn\'t find a variable called "'+ast.name+'"')
 	return ast
 }
+
+var resolveDispatch = function(context, ast) {
+	ast.key = resolve(context, ast.key)
+	ast.value = resolve(context, ast.value)
+	return ast
+}
+
 
 /****************************
  * Object and List literals *

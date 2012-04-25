@@ -7,7 +7,7 @@ var util = require('./util'),
 
 var L_PAREN = '(', R_PAREN = ')',
 	L_CURLY = '{', R_CURLY = '}',
-	L_ARRAY = '[', R_ARRAY = ']'
+	L_BRACKET = '[', R_BRACKET = ']'
 	
 var gToken, gIndex, gTokens, gState
 
@@ -135,8 +135,11 @@ var _parseHandlerBlock = function() {
 }
 
 var _parseMutationOrInvocation = astGenerator(function() {
-	var reference = _parseReferenceOrInvocation()
-	if (reference.type == 'INVOCATION') { return reference }
+	var expression = parseExpression()
+	
+	if (!(peek('name') && peek('symbol', ':', 2))) {
+		return expression
+	}
 	
 	var operator = advance('name').value
 	advance('symbol', ':')
@@ -147,7 +150,7 @@ var _parseMutationOrInvocation = astGenerator(function() {
 		args.push(parseExpression())
 	}
 	
-	return { type:'MUTATION', operand:reference, operator:operator, arguments:args }
+	return { type:'MUTATION', operand:expression, operator:operator, arguments:args }
 })
 
 /***************************
@@ -171,7 +174,7 @@ var _parseForLoopStatement = astGenerator(function(statementParseFunction) {
 	var iteratorName, iterator
 	_allowParens(function() {
 		iteratorName = advance('name', null, 'for_loop\'s iterator reference').value
-		iterator = createAST({ type:'REFERENCE', name:iteratorName, chain:null })
+		iterator = createAST({ type:'REFERENCE', name:iteratorName })
 	})
 	
 	advance('keyword', 'in', 'for_loop\'s "in" keyword')
@@ -295,7 +298,7 @@ var bindingPowers = {
 	'and': 20, 'or': 20,
 	'<':   30, '>':  30, '<=': 30, '>=': 30, '==': 30, '=': 30, '!=': 30, '!': 30,
 	'+':   40, '-':  40,
-	'*':   50, '/':  50, '%':  50		
+	'*':   50, '/':  50, '%':  50
 }
 
 var parseExpression = function() {
@@ -304,26 +307,26 @@ var parseExpression = function() {
 
 var _parseMore = astGenerator(function(leftOperatorBinding) {
 	if (leftOperatorBinding == null) {
-		// leftOperatorBinding = 0
 		throw new Error("leftOperatorBinding should be defined: ")
 	}
 	
 	if (peek('symbol', prefixOperators)) {
 		// Prefix operators simply apply to the next expression
 		// and does not modify the left operator binding
-		var prefixOperator = advance('symbol').value,
-			value = _parseMore(leftOperatorBinding)
-		return { type:'UNARY', operator:prefixOperator, value:value }
+		var prefixOperator = advance('symbol').value
+		return { type:'UNARY', operator:prefixOperator, value:_parseMore(leftOperatorBinding) }
 	}
 	
 	if (peek('symbol', L_PAREN)) {
+		// There are no value literals with parentheseseses.
+		// If wee see a paren, group the inside expression.
 		advance('symbol', L_PAREN)
 		var expression = _parseMore(0)
 		advance('symbol', R_PAREN)
-		return expression
+		return _addTightOperators(expression)
 	}
 	
-	var expression = _parseAtomicValue()
+	var expression = _addTightOperators(_parseAtomicExpressions())
 	
 	var rightOperatorToken, impliedEqualityOp
 	while (true) {
@@ -351,8 +354,7 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 			advance()
 			var ifValue = _parseMore(0)
 			advance('symbol',':')
-			var elseValue = _parseMore(0)
-			return { type:'TERNARY', condition:expression, ifValue:ifValue, elseValue:elseValue }
+			return { type:'TERNARY', condition:expression, ifValue:ifValue, elseValue:_parseMore(0) }
 		}
 		
 		if (peek('keyword', 'is')) {
@@ -366,14 +368,15 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 	}
 })
 
-var _parseAtomicValue = function() {
+var _parseAtomicExpressions = function() {
+	// references, literals
 	switch (peek().type) {
 		case 'string': return _parseTextLiteral()
 		case 'number': return _parseNumberLiteral()
-		case 'name':   return _parseReferenceOrInvocation()
+		case 'name':   return _parseReference()
 		case 'symbol':
 			switch(peek().value) {
-				case L_ARRAY: return _parseListLiteral()
+				case L_BRACKET: return _parseListLiteral()
 				case L_CURLY: return _parseObjectLiteral()
 				default:      halt(peek(), 'Unexpected symbol "'+peek().value+'" while looking for a value')
 			}
@@ -391,6 +394,11 @@ var _parseAtomicValue = function() {
 	}
 }
 
+var _parseReference = astGenerator(function() {
+	var name = advance('name').value
+	return { type:'REFERENCE', name:name }
+})
+
 var _parseNullLiteral = astGenerator(function() {
 	advance('keyword', 'null')
 	return { type:'NULL_LITERAL', value:null }
@@ -407,29 +415,37 @@ var _parseFalseLiteral = astGenerator(function() {
 })
 
 var _parseTextLiteral = astGenerator(function() {
-	advance('string')
-	return { type:'TEXT_LITERAL', value:gToken.value }
+	return { type:'TEXT_LITERAL', value:advance('string').value }
 })
 
 var _parseNumberLiteral = astGenerator(function() {
-	advance('number')
-	return { type:'NUMBER_LITERAL', value:gToken.value }
+	return { type:'NUMBER_LITERAL', value:advance('number').value }
 })
 
-var _parseReferenceOrInvocation = astGenerator(function() {
-	var reference = parseReference()
-	if (peek('symbol', L_PAREN) && !peekWhitespace()) {
-		advance('symbol', L_PAREN)
-		var args = parseList(R_PAREN, parseExpression)
-		return { type:'INVOCATION', operand:reference, arguments:args }
-	} else {
-		return reference
+
+var tightOperators = ['.', L_BRACKET, L_PAREN]
+var _addTightOperators = astGenerator(function(expression) {
+	if (!peekNoWhitespace('symbol', tightOperators)) { return expression }
+	switch (advance().value) {
+		case '.':
+			var key = { type:'TEXT_LITERAL', value:advance('name').value }
+			return _addTightOperators({ type:'DISPATCH', key:key, value:expression })
+		case L_BRACKET:
+			var key = parseExpression(),
+				value = _addTightOperators({ type:'DISPATCH', key:key, value:expression })
+			advance('symbol', R_BRACKET)
+			return value
+		case L_PAREN:
+			var args = parseList(R_PAREN, parseExpression)
+			return _addTightOperators({ type:'INVOCATION', operand:expression, arguments:args })
+		default:
+			throw new Error("Bad tight operator")
 	}
 })
 
 var _parseListLiteral = astGenerator(function() {
-	advance('symbol', L_ARRAY)
-	var content = parseList(R_ARRAY, parseExpression)
+	advance('symbol', L_BRACKET)
+	var content = parseList(R_BRACKET, parseExpression)
 	return { type:'LIST_LITERAL', content:content }
 })
 
@@ -503,7 +519,7 @@ var _parseXMLAttribute = astGenerator(function(allowHashExpand) {
 /****************************
  * Shared parsing functions *
  ****************************/
-// parses comma-seperated statements until <breakSymbol> is encounteded (e.g. R_PAREN or R_ARRAY)
+// parses comma-seperated statements until <breakSymbol> is encounteded (e.g. R_PAREN or R_BRACKET)
 var parseList = function(breakSymbol, statementParseFunction) {
 	var list = []
 	while (true) {
@@ -536,16 +552,6 @@ function parseSignatureAndBlock(keyword, blockParseFn) {
 	var block = parseBlock(blockParseFn, keyword)
 	return [signature, block]
 }
-
-var parseReference = astGenerator(function() {
-	var name = advance('name').value
-	var chain = []
-	while(peek('symbol', '.')) {
-		advance('symbol', '.')
-		chain.push(advance('name').value)
-	}
-	return { type:'REFERENCE', name:name, chain:chain }
-})
 
 /****************
  * Token stream *

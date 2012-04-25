@@ -346,10 +346,9 @@ var _compileHandlerInvocation = function(context, ast) {
 }
 
 var _compileMutationStatement = function(context, ast) {
-	return code('{{ operand }}.mutate({{ operator }}, {{ chain }}, [{{ args }}])', {
+	return code('{{ operand }}.mutate({{ operator }}, [{{ args }}])', {
 		operand:compileExpression(context, ast.operand),
 		operator:q(ast.operator),
-		chain:null,
 		args:map(ast.arguments, curry(compileExpression, context)).join(', ')
 	})
 }
@@ -474,12 +473,12 @@ var compileExpression = function(context, ast) {
 				expressionType:_getType(ast),
 				value:q(ast.value)
 			})
-		case 'REFERENCE':
-			return ast.chain.length
-				? _inlineCode('fun.expressions.reference({{ name }}, {{ chain }})', {
-					name:variableName(ast.name),
-					chain:q(ast.chain)
-				}) : variableName(ast.name)
+		case 'REFERENCE': return variableName(ast.name)
+		case 'DISPATCH':
+			return _inlineCode('fun.expressions.dispatch({{ value }}, {{ key }})', {
+				value:compileExpression(context, ast.value),
+				key:compileExpression(context, ast.key)
+			})
 		case 'ARGUMENT':
 			return ast.runtimeName
 		case 'DICTIONARY_LITERAL':

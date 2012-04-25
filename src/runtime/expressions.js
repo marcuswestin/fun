@@ -7,7 +7,12 @@ var proto = require('std/proto'),
 /* Value bases
  *************/
 var base = module.exports.base = {
-	observe:function(callback) { callback() },
+	observe:function(callback) {
+		var id = this.onChange(callback)
+		callback()
+		return id
+	},
+	onChange:function(callback) {},
 	asJSON:function() { return this.asLiteral() },
 	asJSONObject:function() { return JSON.parse(this.asJSON()) }, // HACK
 	isTruthy:function() { return true },
@@ -44,10 +49,6 @@ var constantAtomicBase = create(base, {
 	dismiss:function(id) { /* This function intentionally left blank */  }
 })
 
-var invocableBase = create(constantAtomicBase, {
-	asLiteral:function() { return '"'+this._type+'"' }
-})
-
 var variableValueBase = create(base, {
 	isAtomic:function() { return this.evaluate().isAtomic() },
 	getType:function() { return this.evaluate().getType() },
@@ -72,10 +73,9 @@ var mutableBase = create(variableValueBase, {
 			this.observers[key]()
 		}
 	},
-	observe:function(callback) {
+	onChange:function(callback) {
 		var uniqueID = 'u'+_unique++
 		this.observers[uniqueID] = callback
-		callback()
 		return uniqueID
 	},
 	dismiss:function(uniqueID) {
@@ -162,7 +162,7 @@ var NullValue = (proto(constantAtomicBase,
 
 module.exports.Null = function() { return NullValue }
 
-module.exports.Function = proto(invocableBase,
+module.exports.Function = proto(constantAtomicBase,
 	function(block) {
 		if (typeof block != 'function') { TypeMismatch }
 		this._content = block
@@ -170,7 +170,7 @@ module.exports.Function = proto(invocableBase,
 		_type:'Function',
 		invoke:function(args) {
 			var result = variable(NullValue)
-			var yieldValue = function(value) { fun.set(result, null, fromJsValue(value)) }
+			var yieldValue = function(value) { result.mutate('set', [fromJsValue(value)]) }
 			var isFirstExecution = true
 
 			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
@@ -180,21 +180,18 @@ module.exports.Function = proto(invocableBase,
 		},
 		render:function(hookName, args) {
 			var yieldValue = function(value) { fromJsValue(value).render(hookName) }
-			var isFirstExecution = true
 			
-			var waitForSetup = true
 			var executeBlock = bind(this, function() {
-				if (waitForSetup) { return }
 				this._content.apply(this, args)
 				args[1] = false // hack: isFirstExecution
 			})
 			
-			var waitForSetup = true
 			for (var i=0; i<args.length; i++) {
 				var arg = args[i]
-				if (arg) { arg.observe(executeBlock) }
+				if (arg) { arg.onChange(executeBlock) }
 			}
-			waitForSetup = false
+
+			var isFirstExecution = true
 			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
 			executeBlock()
 		}
@@ -227,7 +224,7 @@ function waitFor(fn) {
 	}
 }
 
-module.exports.Handler = proto(invocableBase,
+module.exports.Handler = proto(constantAtomicBase,
 	function(block) {
 		if (typeof block != 'function') { TypeMismatch }
 		this._content = block
@@ -239,7 +236,7 @@ module.exports.Handler = proto(invocableBase,
 	}
 )
 
-module.exports.Template = proto(invocableBase,
+module.exports.Template = proto(constantAtomicBase,
 	function(block) {
 		if (typeof block != 'function') { TypeMismatch }
 		this._content = block
@@ -264,9 +261,9 @@ var composite = module.exports.composite = proto(variableValueBase,
 	}, {
 		_type:'composite',
 		evaluate:function() { return operators[this.operator](this.left, this.right) },
-		observe:function(callback) {
-			this._leftId = this.left.observe(callback)
-			this._rightId = this.right.observe(callback)
+		onChange:function(callback) {
+			this._leftId = this.left.onChange(callback)
+			this._rightId = this.right.onChange(callback)
 		},
 		dismiss:function() {
 			this.left.dismiss(this._leftId)
@@ -283,10 +280,10 @@ module.exports.ternary = proto(variableValueBase,
 	}, {
 		_type:'ternary',
 		evaluate:function() { return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate() },
-		observe:function(callback) {
-			this._conditionId = this.condition.observe(callback)
-			this._ifValueId = this.ifValue.observe(callback)
-			this._elseValueId = this.elseValue.observe(callback)
+		onChange:function(callback) {
+			this._conditionId = this.condition.onChange(callback)
+			this._ifValueId = this.ifValue.onChange(callback)
+			this._elseValueId = this.elseValue.onChange(callback)
 		},
 		dismiss:function() {
 			this.condition.dismiss(this._conditionID)
@@ -302,7 +299,7 @@ module.exports.unary = proto(variableValueBase,
 	}, {
 		_type:'unary',
 		evaluate:function() { return unaryOperators[this.operator](this.value.evaluate()) },
-		observe:function(callback) { this._valueId = this.value.observe(callback) },
+		onChange:function(callback) { this._valueId = this.value.onChange(callback) },
 		dismiss:function() { this.value.dismiss(this._valueId) }
 	})
 
@@ -392,7 +389,7 @@ var _unique = 1
 var variable = module.exports.variable = proto(mutableBase,
 	function(content) {
 		this.observers = {}
-		this.mutate('set', null, [content])
+		this.mutate('set', [content])
 	}, {
 		_type:'variable',
 		evaluate:function() { return this._content.evaluate() },
@@ -400,51 +397,57 @@ var variable = module.exports.variable = proto(mutableBase,
 		asString:function() { return this._content.asString() },
 		asLiteral:function() { return this._content.asLiteral() },
 		equals:function(that) { return this._content.equals(that) },
-		push:function(chain, value) { this._content.push(chain, value) },
-		mutate: function(operator, chain, args) {
-			if (!chain || !chain.length) {
-				if (operator != 'set') { UnkownOperator }
-				var value = args[0],
-					oldValue = this._content
-				this._content = value
-				this._observationID = this.onNewValue(oldValue, this._observationID, value)
-			} else {
-				this._content.mutate(operator, chain, args)
+		lookup:function(key) { return this._content.lookup(key) },
+		mutate: function(operator, args) {
+			if (operator != 'set') { UnkownOperator }
+			if (args.length == 2) {
+				return this._content.mutate(operator, args)
 			}
+			_checkArgs(args, 1)
+			var value = args[0],
+				oldValue = this._content
+			this._content = value
+			this._observationID = this.onNewValue(oldValue, this._observationID, value)
 		}
 	}
 )
 
-var reference = module.exports.reference = proto(variableValueBase,
-	function(content, chain) {
-		this._content = content
-		this._chain = chain
+var _checkArgs = function(args, num) {
+	if (!isArray(args) || args.length != num) { BAD_ARGS }
+}
+
+var dispatch = module.exports.dispatch = proto(variableValueBase,
+	function(value, key) {
+		if (!value || !key) { TYPE_MISMATCH }
+		this._value = value
+		this._key = key
 	}, {
-		_type:'reference',
+		_type:'dispatch',
 		getType:function() { return this.evaluate().getType() },
-		inspect:function() { return '<Reference '+this._chain.join('.')+' '+this._content.inspect()+'>' },
-		observe:function(callback) { return this._content.observe(callback) },
-		equals:function(that) { return this.evaluate().equals(that) },
-		dismiss:function(observationId) { this._content.dismiss(observationId) },
-		evaluate:function() {
-			var value = this._content.evaluate()
-			for (var i=0; i<this._chain.length; i++) {
-				var prop = this._chain[i]
-				if (value.getters[prop]) {
-					value = value.getters[prop].call(value)
-				} else if (value.isAtomic()) {
-					return NullValue
-				} else if (!value._content[prop]) {
-					return NullValue
-				} else {
-					value = value._content[prop].evaluate()
-				}
-			}
-			return value
+		inspect:function() { return '<dispatch '+this._value.inspect()+'['+this._key.inspect()+']>' },
+		onChange:function(callback) {
+			this._keyId = this._key.onChange(callback)
+			this._valueId = this._value.onChange(callback)
 		},
-		mutate:function(operator, chain, args) {
-			chain = (this._chain && chain) ? (this._chain.concat(chain)) : (this._chain || chain)
-			this._content.mutate(operator, chain, args)
+		equals:function(that) { return this.evaluate().equals(that) },
+		dismiss:function(observationId) {
+			// TODO Lookup the keyId/valueId for this observationId
+			this._key.dismiss(this._keyId)
+			this._value.dismiss(this._valueId)
+		},
+		lookup:function(key) { return this._getCurrentValue().lookup(key) },
+		evaluate:function() { return this._getCurrentValue().evaluate() },
+		mutate:function(operator, args) { this._getCurrentValue().mutate(operator, args) },
+		_getCurrentValue:function() {
+			var key = this._key.evaluate(),
+				value = this._value.evaluate(),
+				getter = key.getType() == 'Text' && value.getters[key.asString()]
+			
+			if (getter) { return getter.call(value) }
+			
+			if (value.isAtomic()) { return NullValue }
+			
+			return value.lookup(key) || NullValue
 		}
 	}
 )
@@ -456,13 +459,17 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 		this._observationIDs = {}
 		this._content = {}
 		for (var key in content) {
-			this.mutate('set', [key], [content[key]])
+			this.mutate('set', [Text(key), content[key]])
 		}
 	}, {
 		_type:'Dictionary',
-		asLiteral:function() { return '{ '+map(this._content, function(val, key) { return '"'+key+'":'+val.asLiteral() }).join(', ')+' }' },
+		asLiteral:function() { return '{ '+map(this._content, function(val, key) { return fromLiteral(key).asLiteral()+':'+val.asLiteral() }).join(', ')+' }' },
 		asString:function() { return this.asLiteral() },
-		inspect:function() { return '<Dictionary { '+map(this._content, function(val, key) { return '"'+key+'":'+val.inspect() }).join(', ')+' }>' },
+		inspect:function() { return '<Dictionary { '+map(this._content, function(val, key) { return fromLiteral(key).inspect()+':'+val.inspect() }).join(', ')+' }>' },
+		lookup:function(key) {
+			var value = this._content[key.asLiteral()]
+			return value
+		},
 		iterate:function(yieldFn) {
 			var content = this._content
 			for (var key in content) {
@@ -484,26 +491,20 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 			}
 			return Yes
 		},
-		mutate:function(operator, chain, args) {
-			if (!chain || !chain.length) {
-				throw new Error("Attempted setting collection property without a chain")
-			}
-			var prop = chain[0]
-			if (chain.length == 1) {
-				switch(operator) {
-					case 'set': // TODO This should take two arguments, a key and a value
-						var value = args[0],
-							oldValue = this._content[prop]
-						this._content[prop] = value
-						this._observationIDs[prop] = this.onNewValue(oldValue, this._observationIDs[prop], value)
-						break
-					default:
-						throw new Error('Bad Dictionary operator "'+operator+'"')
-				}
-			} else if (!this._content[prop]) {
-				throw new Error('Attempted to set the value of a null property')
-			} else {
-				this._content[prop].mutate(operator, chain.slice(1), args)
+		mutate:function(operator, args) {
+			switch(operator) {
+				case 'set':
+					_checkArgs(args, 2)
+					var key = args[0],
+						value = args[1]
+					if (!key || key.isNull() || !value) { BAD_ARGS }
+					var prop = key.asLiteral(),
+						oldValue = this._content[prop]
+					this._content[prop] = value
+					this._observationIDs[prop] = this.onNewValue(oldValue, this._observationIDs[prop], value)
+					break
+				default:
+					throw new Error('Bad Dictionary operator "'+operator+'"')
 			}
 		}
 	}
@@ -517,13 +518,18 @@ var List = module.exports.List = proto(collectionBase,
 		this._content = []
 		if (!content) { return }
 		for (var i=0; i<content.length; i++) {
-			this.mutate('set', null, [i, content[i]])
+			this.mutate('push', [content[i]])
 		}
 	}, {
 		_type:'List',
 		asLiteral:function() { return '[ '+map(this._content, function(val) { return val.asLiteral() }).join(', ')+' ]' },
 		asString:function() { return this.asLiteral() },
 		inspect:function() { return '<List [ '+map(this._content, function(val) { return val.inspect() }).join(', ')+' ]>' },
+		lookup:function(index) {
+			if (index.getType() == 'Number') { TypeMismatch }
+			var value = this._content[index.getContent()]
+			return value
+		},
 		iterate:function(yieldFn) {
 			var content = this._content
 			for (var i=0; i<content.length; i++) {
@@ -548,26 +554,28 @@ var List = module.exports.List = proto(collectionBase,
 			length:function() {
 				var variableLength = variable(NullValue)
 				this.observe(bind(this, function() {
-					fun.set(variableLength, null, Number(this._content.length))
+					variableLength.mutate('set', [Number(this._content.length)])
 				}))
 				return variableLength
 			}
 		}),
-		mutate:function(operator, chain, args) {
-			if (chain && chain.length) {
-				throw new Error("Attempted to index into list. TODO Make this possible")
-			}
+		mutate:function(operator, args) {
 			switch(operator) {
-				case 'push': return this._set(index, args[0])
-				case 'set':  return this._set(args[0], args[1])
-				default:     throw new Error('Bad Dictionary operator "'+operator+'"')
+				case 'push':
+					_checkArgs(args, 1)
+					return this._set(Number(this._content.length), args[0])
+				case 'set':
+					_checkArgs(args, 2)
+					return this._set(args[0], args[1])
+				default:
+					throw new Error('Bad Dictionary operator "'+operator+'"')
 			}
 		},
 		_set: function(index, value) {
-			var content = this._content,
-				index = content.length,
-				oldValue = content[index]
-			content[index] = value
+			if (index.getType() != 'Number') { TypeMismatch }
+			index = index.getContent()
+			var oldValue = this._content[index]
+			this._content[index] = value
 			this._observationIDs[index] = this.onNewValue(oldValue, this._observationIDs[index], value)
 		}
 	}
@@ -598,7 +606,7 @@ var fromJsValue = module.exports.fromJsValue = module.exports.value = function(v
 	}
 }
 
-module.exports.fromJSON = function(json) {
+var fromLiteral = module.exports.fromLiteral = module.exports.fromJSON = function(json) {
 	try { var jsValue = JSON.parse(json) }
 	catch(e) { return NullValue }
 	return fromJsValue(jsValue)
