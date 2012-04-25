@@ -95,8 +95,8 @@ var collectionBase = create(mutableBase, {
 /* Atomic, immutable expressions
  *******************************/
 var Number = module.exports.Number = proto(constantAtomicBase,
-	function(content) {
-		if (typeof content != 'number') { TypeMismatch }
+	function Number(content) {
+		if (typeof content != 'number') { typeMismatch() }
 		this._content = content
 	}, {
 		_type:'Number',
@@ -106,8 +106,8 @@ var Number = module.exports.Number = proto(constantAtomicBase,
 )
 
 var Text = module.exports.Text = proto(constantAtomicBase,
-	function(content) {
-		if (typeof content != 'string') { TypeMismatch }
+	function Text(content) {
+		if (typeof content != 'string') { typeMismatch() }
 		this._content = content
 	}, {
 		_type:'Text',
@@ -116,12 +116,12 @@ var Text = module.exports.Text = proto(constantAtomicBase,
 )
 
 var Logic = module.exports.Logic = function(content) {
-	if (typeof content != 'boolean') { TypeMismatch }
+	if (typeof content != 'boolean') { typeMismatch() }
 	return content ? Yes : No
 }
 
 var LogicProto = proto(constantAtomicBase,
-	function(content) {
+	function Logic(content) {
 		this._content = content
 	}, {
 		_type:'Logic',
@@ -135,8 +135,8 @@ var Yes = module.exports.Yes = LogicProto(true),
 	No = module.exports.No = LogicProto(false)
 
 var NullValue = (proto(constantAtomicBase,
-	function() {
-		if (arguments.length) { TypeMismatch }
+	function Null() {
+		if (arguments.length) { typeMismatch() }
 	}, {
 		_type:'Null',
 		inspect:function() { return '<Null>' },
@@ -151,8 +151,8 @@ var NullValue = (proto(constantAtomicBase,
 module.exports.Null = function() { return NullValue }
 
 module.exports.Function = proto(constantAtomicBase,
-	function(block) {
-		if (typeof block != 'function') { TypeMismatch }
+	function Function(block) {
+		if (typeof block != 'function') { typeMismatch() }
 		this._content = block
 	}, {
 		_type:'Function',
@@ -213,8 +213,8 @@ function waitFor(fn) {
 }
 
 module.exports.Handler = proto(constantAtomicBase,
-	function(block) {
-		if (typeof block != 'function') { TypeMismatch }
+	function Handler(block) {
+		if (typeof block != 'function') { typeMismatch() }
 		this._content = block
 	}, {
 		_type:'Handler',
@@ -225,8 +225,8 @@ module.exports.Handler = proto(constantAtomicBase,
 )
 
 module.exports.Template = proto(constantAtomicBase,
-	function(block) {
-		if (typeof block != 'function') { TypeMismatch }
+	function Template(block) {
+		if (typeof block != 'function') { typeMismatch() }
 		this._content = block
 	}, {
 		_type:'Template',
@@ -240,8 +240,8 @@ module.exports.Template = proto(constantAtomicBase,
 /* Variable value expressions
  ****************************/
 var composite = module.exports.composite = proto(variableValueBase,
-	function(left, operator, right) {
-		if (typeof operator != 'string') { TypeMismatch }
+	function composite(left, operator, right) {
+		if (typeof operator != 'string') { typeMismatch() }
 		// TODO typecheck left and right
 		this.left = left
 		this.right = right
@@ -261,7 +261,7 @@ var composite = module.exports.composite = proto(variableValueBase,
 )
 
 module.exports.ternary = proto(variableValueBase,
-	function(condition, ifValue, elseValue) {
+	function ternary(condition, ifValue, elseValue) {
 		this.condition = condition
 		this.ifValue = ifValue
 		this.elseValue = elseValue
@@ -281,7 +281,7 @@ module.exports.ternary = proto(variableValueBase,
 	})
 
 module.exports.unary = proto(variableValueBase,
-	function(operator, value) {
+	function unary(operator, value) {
 		this.operator = operator
 		this.value = value
 	}, {
@@ -375,7 +375,7 @@ function greaterThan(left, right) {
  ****************************************/
 var _unique = 1
 var variable = module.exports.variable = proto(mutableBase,
-	function(content) {
+	function variable(content) {
 		this.observers = {}
 		this.mutate('set', [content])
 	}, {
@@ -404,8 +404,8 @@ var _checkArgs = function(args, num) {
 }
 
 var dereference = module.exports.dereference = proto(variableValueBase,
-	function(value, key) {
-		if (!value || !key) { TYPE_MISMATCH }
+	function dereference(value, key) {
+		if (!value || !key) { typeMismatch() }
 		this._value = value
 		this._key = key
 	}, {
@@ -442,8 +442,8 @@ var dereference = module.exports.dereference = proto(variableValueBase,
 )
 
 var Dictionary = module.exports.Dictionary = proto(collectionBase,
-	function(content) {
-		if (typeof content != 'object' || isArray(content) || content == null) { TypeMismatch }
+	function Dictionary(content) {
+		if (typeof content != 'object' || isArray(content) || content == null) { typeMismatch() }
 		this.observers = {}
 		this._observationIDs = {}
 		this._content = {}
@@ -500,8 +500,8 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 )
 
 var List = module.exports.List = proto(collectionBase,
-	function(content) {
-		if (!isArray(content)) { TypeMismatch }
+	function List(content) {
+		if (!isArray(content)) { typeMismatch() }
 		this.observers = {}
 		this._observationIDs = {}
 		this._content = []
@@ -515,7 +515,7 @@ var List = module.exports.List = proto(collectionBase,
 		toString:function() { return this.asLiteral() },
 		inspect:function() { return '<List [ '+map(this._content, function(val) { return val.inspect() }).join(', ')+' ]>' },
 		lookup:function(index) {
-			if (index.getType() == 'Number') { TypeMismatch }
+			if (index.getType() == 'Number') { typeMismatch() }
 			var value = this._content[index.getContent()]
 			return value
 		},
@@ -575,7 +575,7 @@ var List = module.exports.List = proto(collectionBase,
 			}
 		},
 		_set: function(index, value) {
-			if (index.getType() != 'Number') { TypeMismatch }
+			if (index.getType() != 'Number') { typeMismatch() }
 			index = index.getContent()
 			var oldValue = this._content[index]
 			this._content[index] = value
@@ -627,3 +627,5 @@ var Event = module.exports.Event = function(jsEvent) {
 	funEvent.jsEvent = jsEvent // For JS API
 	return funEvent
 }
+
+function typeMismatch() { throw new Error('Type mismatch') }
