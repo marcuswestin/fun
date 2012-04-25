@@ -89,12 +89,31 @@ test('observing and dismissing', function(assert) {
 	
 	var v2 = a.variable('a')
 	var d2 = a.value({ v2:v2 })
-	var expectedCalls = 3
-	d2.observe(function() { console.log("notified", expectedCalls); if (!(expectedCalls--)) { throw new Error("Expected only three calls") } }) // Call 1
+	d2.observe(expectCalls(assert, 3)) // Call 1
 	v2.mutate('set', [a.value('b')]) // Call 2
 	d2.mutate('set', [a.value('v2'), a.value('new value that should automatically dismiss v2 observation')]) // Call 3
 	v2.mutate('set', [a.value('c')]) // Should not result in call 4
 })
+
+test('FAILING observing a sub-property', function(assert) {
+	var v1 = a.variable({ foo:'bar', cat:'tag' })
+	var d1_1 = a.reference(v1, 'foo')
+	var d1_2 = a.reference(v1, 'cat')
+	d1_1.observe(expectCalls(assert, 1)) // Call 1.1
+	d1_2.observe(expectCalls(assert, 2)) // Call 2.1
+	fun.dictSet(v1, 'cat', 'qwe') // Call 2.2
+})
+
+var expectCalls = function(assert, expectedCalls) {
+	var count = 0
+	assert.blocks.add(expectedCalls)
+	return function() {
+		assert.blocks.subtract()
+		if (++count > expectedCalls) {
+			throw new Error("Expected only "+expectedCalls+" call"+(expectedCalls == 1 ? '' : 's'))
+		}
+	}
+}
 
 var q = function(val) { return JSON.stringify(val) }
 
