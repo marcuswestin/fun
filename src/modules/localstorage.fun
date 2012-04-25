@@ -11,7 +11,7 @@ localstorage = {
 			}
 			
 			variable.observe(function() {
-				localStorage.setItem(key, variable.asJSON())
+				localStorage.setItem(key, variable.asLiteral())
 			})
 		</script>
 	}

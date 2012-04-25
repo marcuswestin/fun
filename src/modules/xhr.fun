@@ -21,7 +21,7 @@ xhr = {
 			else { module._loadingCount = 1 }
 			
 			var xhr = require('fun/node_modules/std/xhr')
-			xhr[method.asString().toLowerCase()](path.asString(), args && args.asJSONObject(), function(err, response) {
+			xhr[method.toString().toLowerCase()](path.toString(), args && args.toJSON(), function(err, response) {
 				if (err) {
 					err = { text:err.message }
 				}
@@ -39,7 +39,7 @@ xhr = {
 				if (!--module._loadingCount) {
 					fun.dictSet(module, 'loading', fun.expressions.No)
 				}
-			}, headers && headers.asJSONObject())
+			}, headers && headers.toJSON())
 		</script>
 		return result
 	},

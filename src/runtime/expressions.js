@@ -8,21 +8,20 @@ var proto = require('std/proto'),
  *************/
 var base = module.exports.base = {
 	observe:function(callback) {
-		var id = this.onChange(callback)
+		var id = this._onChange(callback)
 		callback()
 		return id
 	},
-	onChange:function(callback) {},
-	asJSON:function() { return this.asLiteral() },
-	asJSONObject:function() { return JSON.parse(this.asJSON()) }, // HACK
+	_onChange:function(callback) {},
+	toJSON:function() { return this.asLiteral() },
 	isTruthy:function() { return true },
 	isNull:function() { return false },
 	iterate:function() {},
 	render:function(hookName) {
 		fun.hooks[hookName].innerHTML = ''
-		fun.hooks[hookName].appendChild(document.createTextNode(this.asString()))
+		fun.hooks[hookName].appendChild(document.createTextNode(this.toString()))
 	},
-	mutate:function() { BadMutation },
+	mutate:function() { throw new Error("Called mutate on non-mutable value "+this.asLiteral() )},
 	getters:{
 		copy:function() {
 			var self = this
@@ -41,7 +40,7 @@ var constantAtomicBase = create(base, {
 	getType:function() { return this._type },
 	evaluate:function() { return this },
 	isAtomic:function() { return true },
-	asString:function() { return this._content.toString() },
+	toString:function() { return this._content.toString() },
 	equals:function(that) { return (this.getType() == that.getType() && this.getContent() == that.getContent()) ? Yes : No },
 	getContent:function() { return this._content },
 	hasVariableContent:function() { return false },
@@ -51,7 +50,7 @@ var constantAtomicBase = create(base, {
 var variableValueBase = create(base, {
 	isAtomic:function() { return this.evaluate().isAtomic() },
 	getType:function() { return this.evaluate().getType() },
-	asString:function() { return this.evaluate().asString() },
+	toString:function() { return this.evaluate().toString() },
 	asLiteral:function() { return this.evaluate().asLiteral() },
 	equals:function(that) { return this.evaluate().equals(that) },
 	getContent:function() { return this.evaluate().getContent() },
@@ -71,7 +70,7 @@ var mutableBase = create(variableValueBase, {
 			this.observers[key]()
 		}
 	},
-	onChange:function(callback) {
+	_onChange:function(callback) {
 		var uniqueID = 'u'+_unique++
 		this.observers[uniqueID] = callback
 		return uniqueID
@@ -135,7 +134,7 @@ var LogicProto = proto(constantAtomicBase,
 		this._content = content
 	}, {
 		_type:'Logic',
-		asString:function() { return this._content ? 'yes' : 'no' },
+		toString:function() { return this._content ? 'yes' : 'no' },
 		asLiteral:function() { return this._content ? 'true' : 'false' },
 		isTruthy:function() { return this._content }
 	}
@@ -150,7 +149,7 @@ var NullValue = (proto(constantAtomicBase,
 	}, {
 		_type:'Null',
 		inspect:function() { return '<Null>' },
-		asString:function() { return '' },
+		toString:function() { return '' },
 		equals:function(that) { return that.getType() == 'Null' ? Yes : No },
 		asLiteral:function() { return 'null' },
 		isTruthy:function() { return false },
@@ -186,7 +185,7 @@ module.exports.Function = proto(constantAtomicBase,
 			
 			for (var i=0; i<args.length; i++) {
 				var arg = args[i]
-				if (arg) { arg.onChange(executeBlock) }
+				if (arg) { arg._onChange(executeBlock) }
 			}
 
 			var isFirstExecution = true
@@ -259,9 +258,9 @@ var composite = module.exports.composite = proto(variableValueBase,
 	}, {
 		_type:'composite',
 		evaluate:function() { return operators[this.operator](this.left, this.right) },
-		onChange:function(callback) {
-			this._leftId = this.left.onChange(callback)
-			this._rightId = this.right.onChange(callback)
+		_onChange:function(callback) {
+			this._leftId = this.left._onChange(callback)
+			this._rightId = this.right._onChange(callback)
 		},
 		dismiss:function() {
 			this.left.dismiss(this._leftId)
@@ -278,10 +277,10 @@ module.exports.ternary = proto(variableValueBase,
 	}, {
 		_type:'ternary',
 		evaluate:function() { return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate() },
-		onChange:function(callback) {
-			this._conditionId = this.condition.onChange(callback)
-			this._ifValueId = this.ifValue.onChange(callback)
-			this._elseValueId = this.elseValue.onChange(callback)
+		_onChange:function(callback) {
+			this._conditionId = this.condition._onChange(callback)
+			this._ifValueId = this.ifValue._onChange(callback)
+			this._elseValueId = this.elseValue._onChange(callback)
 		},
 		dismiss:function() {
 			this.condition.dismiss(this._conditionID)
@@ -297,7 +296,7 @@ module.exports.unary = proto(variableValueBase,
 	}, {
 		_type:'unary',
 		evaluate:function() { return unaryOperators[this.operator](this.value.evaluate()) },
-		onChange:function(callback) { this._valueId = this.value.onChange(callback) },
+		_onChange:function(callback) { this._valueId = this.value._onChange(callback) },
 		dismiss:function() { this.value.dismiss(this._valueId) }
 	})
 
@@ -325,7 +324,7 @@ function add(left, right) {
 	if (left.getType() == 'Number' && right.getType() == 'Number') {
 		return Number(left.getContent() + right.getContent())
 	}
-	return Text(left.asString() + right.asString())
+	return Text(left.toString() + right.toString())
 }
 
 function subtract(left, right) {
@@ -392,7 +391,7 @@ var variable = module.exports.variable = proto(mutableBase,
 		_type:'variable',
 		evaluate:function() { return this._content.evaluate() },
 		inspect:function() { return '<variable '+this._content.inspect()+'>' },
-		asString:function() { return this._content.asString() },
+		toString:function() { return this._content.toString() },
 		asLiteral:function() { return this._content.asLiteral() },
 		equals:function(that) { return this._content.equals(that) },
 		lookup:function(key) { return this._content.lookup(key) },
@@ -422,9 +421,9 @@ var dereference = module.exports.dereference = proto(variableValueBase,
 		_type:'dereference',
 		getType:function() { return this.evaluate().getType() },
 		inspect:function() { return '<dereference '+this._value.inspect()+'['+this._key.inspect()+']>' },
-		onChange:function(callback) {
-			this._keyId = this._key.onChange(callback)
-			this._valueId = this._value.onChange(callback)
+		_onChange:function(callback) {
+			this._keyId = this._key._onChange(callback)
+			this._valueId = this._value._onChange(callback)
 		},
 		equals:function(that) { return this.evaluate().equals(that) },
 		dismiss:function(observationId) {
@@ -440,7 +439,7 @@ var dereference = module.exports.dereference = proto(variableValueBase,
 				value = this._value
 			
 			var getterValue = value.evaluate(),
-				getter = key.getType() == 'Text' && getterValue.getters[key.asString()]
+				getter = key.getType() == 'Text' && getterValue.getters[key.toString()]
 			
 			if (getter) { return getter.call(getterValue) }
 			
@@ -463,7 +462,7 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 	}, {
 		_type:'Dictionary',
 		asLiteral:function() { return '{ '+map(this._content, function(val, key) { return fromLiteral(key).asLiteral()+':'+val.asLiteral() }).join(', ')+' }' },
-		asString:function() { return this.asLiteral() },
+		toString:function() { return this.asLiteral() },
 		inspect:function() { return '<Dictionary { '+map(this._content, function(val, key) { return fromLiteral(key).inspect()+':'+val.inspect() }).join(', ')+' }>' },
 		lookup:function(key) {
 			var value = this._content[key.asLiteral()]
@@ -522,7 +521,7 @@ var List = module.exports.List = proto(collectionBase,
 	}, {
 		_type:'List',
 		asLiteral:function() { return '[ '+map(this._content, function(val) { return val.asLiteral() }).join(', ')+' ]' },
-		asString:function() { return this.asLiteral() },
+		toString:function() { return this.asLiteral() },
 		inspect:function() { return '<List [ '+map(this._content, function(val) { return val.inspect() }).join(', ')+' ]>' },
 		lookup:function(index) {
 			if (index.getType() == 'Number') { TypeMismatch }

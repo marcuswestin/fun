@@ -30,7 +30,7 @@ var expressions = require('./expressions'),
 		var hookName = fun.hook(fun.name(), parentHookName)
 		value.observe(function() {
 			_hooks[hookName].innerHTML = ''
-			_hooks[hookName].appendChild(document.createTextNode(value.asString()))
+			_hooks[hookName].appendChild(document.createTextNode(value))
 		})
 	}
 	
@@ -135,7 +135,7 @@ var expressions = require('./expressions'),
 		if (!key) { return }
 		
 		value = value.evaluate()
-		var rawValue = value.asString()
+		var rawValue = value.toString()
 		
 		if ((value.getType() == 'Number' || rawValue.match(/^\d+$/)) && !skipPx[key]) {
 			rawValue = rawValue + 'px'
@@ -157,7 +157,7 @@ var expressions = require('./expressions'),
 			})
 		} else {
 			property.observe(function() {
-				input.value = property.evaluate().asString()
+				input.value = property.evaluate().toString()
 			})
 			
 			function update(e) {

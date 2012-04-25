@@ -22,7 +22,7 @@ jsonp = {
 			}
 			
 			var script = doc.createElement('script')
-			script.src = path.asString()+'&callback='+id
+			script.src = path.toString()+'&callback='+id
 			doc.getElementsByTagName('head')[0].appendChild(script)
 		</script>
 		return result

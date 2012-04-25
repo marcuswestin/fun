@@ -5,7 +5,7 @@ twitter = {
 		<script searchQuery=searchQuery result=result>
 			function doQuery() {
 				var script = document.createElement('script'),
-					params = { callback: 'callback_'+new Date().getTime(), q: searchQuery.evaluate().asString() }
+					params = { callback: 'callback_'+new Date().getTime(), q: searchQuery.evaluate().toString() }
 
 				var query = []
 				for (var key in params) {
