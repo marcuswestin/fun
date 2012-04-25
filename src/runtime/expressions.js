@@ -17,11 +17,6 @@ var base = module.exports.base = {
 	isTruthy:function() { return true },
 	isNull:function() { return false },
 	iterate:function() {},
-	render:function(hookName) {
-		fun.hooks[hookName].innerHTML = ''
-		fun.hooks[hookName].appendChild(document.createTextNode(this.toString()))
-	},
-	mutate:function() { throw new Error("Called mutate on non-mutable value "+this.asLiteral() )},
 	getters:{
 		copy:function() {
 			return module.exports.Function(bind(this, function(yieldValue) {
@@ -35,15 +30,19 @@ var base = module.exports.base = {
 }
 
 var constantAtomicBase = create(base, {
+	isAtomic:function() { return true },
 	inspect:function() { return '<'+this._type+' ' + this.asLiteral() + '>' },
 	getType:function() { return this._type },
 	evaluate:function() { return this },
-	isAtomic:function() { return true },
 	toString:function() { return this._content.toString() },
 	equals:function(that) { return (this.getType() == that.getType() && this.getContent() == that.getContent()) ? Yes : No },
 	getContent:function() { return this._content },
-	hasVariableContent:function() { return false },
-	dismiss:function(id) { /* This function intentionally left blank */  }
+	mutate:function() { throw new Error("Called mutate on non-mutable value "+this.asLiteral() )},
+	dismiss:function(id) { /* This function intentionally left blank */  },
+	render:function(hookName) {
+		fun.hooks[hookName].innerHTML = ''
+		fun.hooks[hookName].appendChild(document.createTextNode(this.toString()))
+	}
 })
 
 var variableValueBase = create(base, {
@@ -54,7 +53,6 @@ var variableValueBase = create(base, {
 	equals:function(that) { return this.evaluate().equals(that) },
 	getContent:function() { return this.evaluate().getContent() },
 	isTruthy:function() { return this.evaluate().isTruthy() },
-	hasVariableContent:function() { return true },
 	invoke:function(args) { return this.evaluate().invoke(args) },
 	render:function(hookName, args) {
 		this.observe(bind(this, function() {
@@ -81,14 +79,8 @@ var mutableBase = create(variableValueBase, {
 		delete this.observers[uniqueID]
 	},
 	onNewValue:function(oldValue, observationId, newValue) {
-		if (oldValue && oldValue.hasVariableContent()) {
-			oldValue.dismiss(observationId)
-		}
-		if (newValue.hasVariableContent()) {
-			return newValue.observe(bind(this, this.notifyObservers))
-		} else {
-			this.notifyObservers()
-		}
+		if (oldValue) { oldValue.dismiss(observationId) }
+		return newValue.observe(bind(this, this.notifyObservers))
 	}
 })
 
