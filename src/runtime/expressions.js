@@ -440,8 +440,10 @@ var dispatch = module.exports.dispatch = proto(variableValueBase,
 		mutate:function(operator, args) { this._getCurrentValue().mutate(operator, args) },
 		_getCurrentValue:function() {
 			var key = this._key.evaluate(),
-				value = this._value.evaluate(),
-				getter = key.getType() == 'Text' && value.getters[key.asString()]
+				value = this._value
+			
+			var getterValue = value.evaluate(),
+				getter = key.getType() == 'Text' && getterValue.getters[key.asString()]
 			
 			if (getter) { return getter.call(value) }
 			

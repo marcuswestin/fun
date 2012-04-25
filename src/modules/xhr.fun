@@ -14,8 +14,9 @@ xhr = {
 		<script method=method path=path args=args responseHandler=responseHandler headers=headers result=result module=xhr>
 			if (!__hackFirstExecution) { return }
 			
-			fun.set(module, 'loading', fun.expressions.Yes)
 			module = module.evaluate()
+			
+			fun.dictSet(module, 'loading', fun.expressions.Yes)
 			if (module._loadingCount) { module._loadingCount += 1 }
 			else { module._loadingCount = 1 }
 			
@@ -28,15 +29,15 @@ xhr = {
 					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
 					responseHandler.invoke([event])
 				}
-				fun.set(result, 'loading', fun.expressions.No)
+				fun.dictSet(result, 'loading', fun.expressions.No)
 				if (err) {
-					fun.set(result, 'error', fun.expressions.fromJsValue(err))
+					fun.dictSet(result, 'error', fun.expressions.fromJsValue(err))
 				} else {
-					fun.set(result, 'response', fun.expressions.fromJsValue(response))
+					fun.dictSet(result, 'response', fun.expressions.fromJsValue(response))
 				}
 				
 				if (!--module._loadingCount) {
-					fun.set(module, 'loading', fun.expressions.No)
+					fun.dictSet(module, 'loading', fun.expressions.No)
 				}
 			}, headers && headers.asJSONObject())
 		</script>

@@ -7,7 +7,7 @@ localstorage = {
 				persistedJSON = localStorage.getItem(key)
 			
 			if (persistedJSON && persistedJSON != 'null') {
-				fun.set(variable, null, fun.expressions.fromJSON(persistedJSON))
+				variable.mutate('set', [fun.expressions.fromJSON(persistedJSON)])
 			}
 			
 			variable.observe(function() {

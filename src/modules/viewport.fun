@@ -10,12 +10,14 @@ viewport = {
 	var on = require('fun/node_modules/dom/on'),
 		getWindowSize = require('fun/node_modules/dom/getWindowSize'),
 		client = require('fun/node_modules/std/client')
-
+	
+	viewportSize = fun.expressions.dispatch(module, fun.expressions.Text('size')).evaluate()
+	
 	function update() {
 		var size = client.isIOS ? getIOSViewportSize() : getWindowSize(window)
 		
-		fun.set(module, 'size.width', fun.expressions.Number(size.width))
-		fun.set(module, 'size.height', fun.expressions.Number(size.height))
+		fun.dictSet(viewportSize, 'width', fun.expressions.Number(size.width))
+		fun.dictSet(viewportSize, 'height', fun.expressions.Number(size.height))
 		
 		document.body.scrollLeft = 0
 	}
