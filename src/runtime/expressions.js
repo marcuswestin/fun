@@ -38,7 +38,7 @@ var constantAtomicBase = create(base, {
 	equals:function(that) { return (this.getType() == that.getType() && this.getContent() == that.getContent()) ? Yes : No },
 	getContent:function() { return this._content },
 	mutate:function() { throw new Error("Called mutate on non-mutable value "+this.asLiteral() )},
-	dismiss:function(id) { /* This function intentionally left blank */  },
+	dismiss:function(id) {},
 	render:function(hookName) {
 		fun.hooks[hookName].innerHTML = ''
 		fun.hooks[hookName].appendChild(document.createTextNode(this.toString()))
