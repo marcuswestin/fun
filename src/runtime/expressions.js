@@ -24,10 +24,9 @@ var base = module.exports.base = {
 	mutate:function() { throw new Error("Called mutate on non-mutable value "+this.asLiteral() )},
 	getters:{
 		copy:function() {
-			var self = this
-			return module.exports.Function(function(yieldValue) {
-				yieldValue(self.getContent())
-			})
+			return module.exports.Function(bind(this, function(yieldValue) {
+				yieldValue(this.getContent())
+			}))
 		},
 		type:function() {
 			return Text(this.getType())
