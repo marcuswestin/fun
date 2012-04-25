@@ -309,7 +309,7 @@ var _importFile = function(context, ast, filePath) {
  * Invocations *
  ***************/
 var resolveInvocation = function(context, ast) {
-	ast.operand = lookup(context, ast.operand)
+	ast.operand = (ast.operand.type == 'REFERENCE' ? lookup(context, ast.operand) : resolve(context, ast.operand))
 	ast.arguments = resolve(context, ast.arguments)
 	return ast
 }

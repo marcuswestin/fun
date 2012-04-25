@@ -231,6 +231,14 @@ test('dispatch on grouped expression').code(
 	'<div id="output">({ foo:"bar" }).foo</div>')
 	.textIs('#output', 'bar')
 
+test('dispatch on inline function invocation').code(
+	'<div id="output">function() { return { foo:"bar" } }().foo</div>')
+	.textIs('#output', 'bar')
+
+test('dispatch on inline function invocation #2').code(
+	'<div id="output">function() { return { foo:function(arg) { return arg } } }().foo("bar")</div>')
+	.textIs('#output', 'bar')
+
 /* Util
  ******/
 var isFirstTest = true
