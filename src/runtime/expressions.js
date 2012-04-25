@@ -41,7 +41,6 @@ var constantAtomicBase = create(base, {
 	getType:function() { return this._type },
 	evaluate:function() { return this },
 	isAtomic:function() { return true },
-	isMutable:function() { return false },
 	asString:function() { return this._content.toString() },
 	equals:function(that) { return (this.getType() == that.getType() && this.getContent() == that.getContent()) ? Yes : No },
 	getContent:function() { return this._content },
@@ -67,7 +66,6 @@ var variableValueBase = create(base, {
 })
 
 var mutableBase = create(variableValueBase, {
-	isMutable:function() { return true },
 	notifyObservers:function() {
 		for (var key in this.observers) {
 			this.observers[key]()
