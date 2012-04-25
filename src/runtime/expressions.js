@@ -399,8 +399,7 @@ var variable = module.exports.variable = proto(mutableBase,
 		equals:function(that) { return this._content.equals(that) },
 		lookup:function(key) { return this._content.lookup(key) },
 		mutate: function(operator, args) {
-			if (operator != 'set') { UnkownOperator }
-			if (args.length == 2) {
+			if (operator != 'set' || args.length == 2) {
 				return this._content.mutate(operator, args)
 			}
 			_checkArgs(args, 1)
