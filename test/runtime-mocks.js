@@ -16,5 +16,5 @@ module.exports = {
 		}
 		return value
 	},
-	null:expressions.Null
+	null:function() { return expressions.Null }
 }

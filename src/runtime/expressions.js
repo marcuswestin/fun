@@ -134,7 +134,8 @@ var LogicProto = proto(constantAtomicBase,
 var Yes = module.exports.Yes = LogicProto(true),
 	No = module.exports.No = LogicProto(false)
 
-var NullValue = (proto(constantAtomicBase,
+module.exports.Null = function() { return Null }
+var Null = (proto(constantAtomicBase,
 	function Null() {
 		if (arguments.length) { typeMismatch() }
 	}, {
@@ -148,8 +149,6 @@ var NullValue = (proto(constantAtomicBase,
 	}
 ))();
 
-module.exports.Null = function() { return NullValue }
-
 module.exports.Function = proto(constantAtomicBase,
 	function Function(block) {
 		if (typeof block != 'function') { typeMismatch() }
@@ -157,7 +156,7 @@ module.exports.Function = proto(constantAtomicBase,
 	}, {
 		_type:'Function',
 		invoke:function(args) {
-			var result = variable(NullValue)
+			var result = variable(Null)
 			var yieldValue = function(value) { result.mutate('set', [fromJsValue(value)]) }
 			var isFirstExecution = true
 
@@ -188,7 +187,7 @@ module.exports.Function = proto(constantAtomicBase,
 
 function _cleanArgs(args, fn) {
 	var diffArgs = fn.length - args.length
-	while (diffArgs-- > 0) { args.push(NullValue) }
+	while (diffArgs-- > 0) { args.push(Null) }
 	return args
 }
 
@@ -293,7 +292,7 @@ module.exports.unary = proto(variableValueBase,
 
 var unaryOperators = {
 	'!': function not(value) { return Logic(!value.isTruthy()) },
-	'-': function negative(value) { return value.getType() == 'Number' ? Number(-value.getContent()) : NullValue }
+	'-': function negative(value) { return value.getType() == 'Number' ? Number(-value.getContent()) : Null }
 }
 
 var operators = {
@@ -322,7 +321,7 @@ function subtract(left, right) {
 	if (left.getType() == 'Number' && right.getType() == 'Number') {
 		return Number(left.getContent() - right.getContent())
 	} else {
-		return NullValue
+		return Null
 	}
 }
 
@@ -330,7 +329,7 @@ function divide(left, right) {
 	if (left.getType() == 'Number' && right.getType() == 'Number') {
 		return Number(left.getContent() / right.getContent())
 	} else {
-		return NullValue
+		return Null
 	}
 }
 
@@ -338,7 +337,7 @@ function multiply(left, right) {
 	if (left.getType() == 'Number' && right.getType() == 'Number') {
 		return Number(left.getContent() * right.getContent())
 	} else {
-		return NullValue
+		return Null
 	}
 }
 
@@ -434,9 +433,9 @@ var dereference = module.exports.dereference = proto(variableValueBase,
 			
 			if (getter) { return getter.call(getterValue) }
 			
-			if (value.isAtomic()) { return NullValue }
+			if (value.isAtomic()) { return Null }
 			
-			return value.lookup(key) || NullValue
+			return value.lookup(key) || Null
 		}
 	}
 )
@@ -541,23 +540,23 @@ var List = module.exports.List = proto(collectionBase,
 		},
 		getters:create(base.getters, {
 			length:function() {
-				var variableLength = variable(NullValue)
+				var variableLength = variable(Null)
 				this.observe(bind(this, function() {
 					variableLength.mutate('set', [Number(this._content.length)])
 				}))
 				return variableLength
 			},
 			last:function() {
-				var last = variable(NullValue)
+				var last = variable(Null)
 				this.observe(bind(this, function() {
-					last.mutate('set', [this._content[this._content.length - 1] || NullValue])
+					last.mutate('set', [this._content[this._content.length - 1] || Null])
 				}))
 				return last
 			},
 			first:function() {
-				var first = variable(NullValue)
+				var first = variable(Null)
 				this.observe(bind(this, function() {
-					first.mutate('set', [this._content[0] || NullValue])
+					first.mutate('set', [this._content[0] || Null])
 				}))
 				return first
 			}
@@ -591,11 +590,11 @@ var fromJsValue = module.exports.fromJsValue = module.exports.value = function(v
 		case 'string': return Text(val)
 		case 'number': return Number(val)
 		case 'boolean': return Logic(val)
-		case 'undefined': return NullValue
+		case 'undefined': return Null
 		case 'object':
 			if (base.isPrototypeOf(val)) { return val }
 			if (val == null) {
-				return NullValue
+				return Null
 			}
 			if (isArray(val)) {
 				var content = map(val, fromJsValue)
@@ -611,7 +610,7 @@ var fromJsValue = module.exports.fromJsValue = module.exports.value = function(v
 
 var fromLiteral = module.exports.fromLiteral = module.exports.fromJSON = function(json) {
 	try { var jsValue = JSON.parse(json) }
-	catch(e) { return NullValue }
+	catch(e) { return Null }
 	return fromJsValue(jsValue)
 }
 
