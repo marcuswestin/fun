@@ -30,10 +30,11 @@ lists = {
 			}
 			
 			renderBody: template(renderBodyContent) {
+				offset = scroller.stack.length - 1
 				sliderStyle = {
 					height:contentSize.height
 					width:contentSize.width * numViews
-					'-webkit-transform':'translateX('+(-scroller.view * contentSize.width)+'px)'
+					'-webkit-transform':'translateX('+(-offset * contentSize.width)+'px)'
 					'-webkit-transition':'-webkit-transform 0.70s'
 					position:'relative'
 				}
