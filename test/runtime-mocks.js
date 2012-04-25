@@ -6,8 +6,8 @@ module.exports = {
 		return expressions.variable(expressions.fromJsValue(initialContent))
 	},
 	value:expressions.fromJsValue,
-	composite:function(left, operator, right) {
-		return expressions.composite(expressions.fromJsValue(left), operator, expressions.fromJsValue(right))
+	binaryOp:function(left, operator, right) {
+		return expressions.binaryOp(expressions.fromJsValue(left), operator, expressions.fromJsValue(right))
 	},
 	reference:function(value, chainStr) {
 		var chain = chainStr.split('.')

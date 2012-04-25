@@ -285,11 +285,11 @@ var _parseInlineScript = astGenerator(function() {
 	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js.join('') }
 })	
 
-/*******************************************************************************
- * Expressions (literals, references, invocations, composites, ternaries, ...) *
- *******************************************************************************/
+/******************************************************************
+ * Expressions (literals, references, invocations, operators ...) *
+ ******************************************************************/
 var prefixOperators = ['-', '!'],
-	compositeOperators = ['+','-','*','/','%','?'],
+	binaryOperators = ['+','-','*','/','%','?'],
 	conditionalOperators = ['<', '>', '<=', '>=', '==', '=', '!=', '!'],
 	conditionalJoiners = ['and', 'or']
 
@@ -314,7 +314,7 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 		// Prefix operators simply apply to the next expression
 		// and does not modify the left operator binding
 		var prefixOperator = advance('symbol').value
-		return { type:'UNARY', operator:prefixOperator, value:_parseMore(leftOperatorBinding) }
+		return { type:'UNARY_OP', operator:prefixOperator, value:_parseMore(leftOperatorBinding) }
 	}
 	
 	if (peek('symbol', L_PAREN)) {
@@ -340,7 +340,7 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 				impliedEqualityOp = true
 			}
 		} else {
-			rightOperatorToken = peek('symbol', compositeOperators)
+			rightOperatorToken = peek('symbol', binaryOperators)
 		}
 		
 		var rightOperator = rightOperatorToken && rightOperatorToken.value,
@@ -354,7 +354,7 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 			advance()
 			var ifValue = _parseMore(0)
 			advance('symbol',':')
-			return { type:'TERNARY', condition:expression, ifValue:ifValue, elseValue:_parseMore(0) }
+			return { type:'TERNARY_OP', condition:expression, ifValue:ifValue, elseValue:_parseMore(0) }
 		}
 		
 		if (peek('keyword', 'is')) {
@@ -364,7 +364,7 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 			advance() // the operator
 		}
 		
-		expression = { type:'COMPOSITE', left:expression, operator:rightOperator, right:_parseMore(rightOperatorBinding) }
+		expression = { type:'BINARY_OP', left:expression, operator:rightOperator, right:_parseMore(rightOperatorBinding) }
 	}
 })
 

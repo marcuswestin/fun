@@ -161,7 +161,7 @@ test('if, else if, else').code(
 	.click('#button')
 	.textIs('#output', 'case2')
 
-test('composite expression with invocation').code(
+test('binary operator expression with invocation').code(
 	'foo = function() { return 2 }',
 	'<div id="output">1 + foo() + 3</div>')
 	.textIs('#output', 6)

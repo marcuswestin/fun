@@ -34,15 +34,15 @@ test('double parenthesized expression')
 
 test('addition')
 	.code('1+1')
-	.expect(a.composite(a.literal(1), '+', a.literal(1)))
+	.expect(a.binaryOp(a.literal(1), '+', a.literal(1)))
 
 test('parenthesized subtraction')
 	.code('(((1-1)))')
-	.expect(a.composite(a.literal(1), '-', a.literal(1)))
+	.expect(a.binaryOp(a.literal(1), '-', a.literal(1)))
 
 test('simple if statement')
 	.code('if 1 is < 2 { 1 }')
-	.expect(a.ifElse(a.composite(a.literal(1), '<', a.literal(2)), a.literal(1)))
+	.expect(a.ifElse(a.binaryOp(a.literal(1), '<', a.literal(2)), a.literal(1)))
 
 test('has no null statements or expressions')
 	.code('foo="bar"\n1')
@@ -58,15 +58,15 @@ test('parses empty program')
 
 test('* operator precedence 1')
 	.code('1 + 2 * 3')
-	.expect(a.composite(a.literal(1), '+', a.composite(a.literal(2), '*', a.literal(3))))
+	.expect(a.binaryOp(a.literal(1), '+', a.binaryOp(a.literal(2), '*', a.literal(3))))
 
 test('* operator precedence 2')
 	.code('1 * 2 + 3')
-	.expect(a.composite(a.composite(a.literal(1), '*', a.literal(2)), '+', a.literal(3)))
+	.expect(a.binaryOp(a.binaryOp(a.literal(1), '*', a.literal(2)), '+', a.literal(3)))
 
 test('triple nested operators')
 	.code('1 + 2 + 3 + 4')
-	.expect(a.composite(a.literal(1), '+', a.composite(a.literal(2), '+', a.composite(a.literal(3), '+', a.literal(4)))))
+	.expect(a.binaryOp(a.literal(1), '+', a.binaryOp(a.literal(2), '+', a.binaryOp(a.literal(3), '+', a.literal(4)))))
 
 test('list literal')
 	.code('["foo", 1, null]')
@@ -136,7 +136,7 @@ test('handler with logic')
 	.expect(
 		a.declaration('cat', a.literal('hi')),
 		a.declaration('foo', a.handler([], [
-			a.ifElse(a.composite(a.reference('cat'), '==', a.literal('hi')),[
+			a.ifElse(a.binaryOp(a.reference('cat'), '==', a.literal('hi')),[
 				a.mutation(a.reference('cat'), 'set', [a.literal('bye')])
 			], [
 				a.mutation(a.reference('cat'), 'set', [a.reference('foo')])
@@ -169,7 +169,7 @@ test('function arguments')
 	.expect(
 		a.declaration('fun', a.function([a.argument('arg1'), a.argument('arg2')], [
 			a.return(
-				a.composite(a.reference('arg1'), '+', a.reference('arg2'))
+				a.binaryOp(a.reference('arg1'), '+', a.reference('arg2'))
 			)
 		])),
 		a.invocation(a.reference('fun'), a.literal(1), a.literal(2))
@@ -181,7 +181,7 @@ test('if/else in a div')
 		'else { "mouse.x is < 100" }</div>')
 	.expect(
 		a.xml('div', null, [
-			a.ifElse(a.composite(a.dereference(a.reference('Mouse'), 'x'), '>=', a.literal(100)), [
+			a.ifElse(a.binaryOp(a.dereference(a.reference('Mouse'), 'x'), '>=', a.literal(100)), [
 				a.literal('mouse.x is >= 100')
 			], [
 				a.literal('mouse.x is < 100')

@@ -37,7 +37,7 @@ var constantAtomicBase = create(base, {
 	getType:function() { return this._type },
 	evaluate:function() { return this },
 	toString:function() { return this._content.toString() },
-	equals:function(that) { return (this.getType() == that.getType() && this.getContent() == that.getContent()) ? Yes : No },
+	equals:function(that) { return (this._type == that.getType() && this._content == that.getContent()) ? Yes : No },
 	getContent:function() { return this._content },
 	mutate:function() { throw new Error("Called mutate on non-mutable value "+this.asLiteral() )},
 	dismiss:function(id) {},
@@ -162,8 +162,8 @@ module.exports.Template = proto(constantAtomicBase,
 	}
 )
 
-// Variables and dereference
-////////////////////////////
+// Variable expressions
+///////////////////////
 var variableValueBase = create(base, {
 	isAtomic:function() { return this.evaluate().isAtomic() },
 	getType:function() { return this.evaluate().getType() },
@@ -180,32 +180,116 @@ var variableValueBase = create(base, {
 	}
 })
 
+var variableCompositeBase = create(variableValueBase, {
+	_initComposite:function(components) {
+		this.ids = {}
+		this.components = components
+	},
+	_onChange:function(callback) {
+		var id = unique(),
+			ids = this.ids[id] = {}
+		for (var key in this.components) {
+			ids[key] = this.components[key]._onChange(callback)
+		}
+		return id
+	},
+	dismiss:function(id) {
+		var ids = this.ids[id]
+		delete this.ids[id]
+		for (var key in ids) {
+			this.components[key].dismiss(ids[key])
+		}
+	}
+})
+
+module.exports.unaryOp = proto(variableCompositeBase,
+	function unaryOp(operator, value) {
+		this.operator = operator
+		this._initComposite({ value:value })
+	}, {
+		_type:'unaryOp',
+		evaluate:function() {
+			return unaryOperators[this.operator](this.components.value.evaluate())
+		}
+	}
+)
+
+module.exports.binaryOp = proto(variableCompositeBase,
+	function binaryOp(left, operator, right) {
+		this.operator = operator
+		this._initComposite({ left:left, right:right })
+	}, {
+		_type:'binaryOp',
+		evaluate:function() { return operators[this.operator](this.components.left, this.components.right) }
+	}
+)
+
+module.exports.ternaryOp = proto(variableCompositeBase,
+	function ternaryOp(condition, ifValue, elseValue) {
+		this._initComposite.call(this, { condition:condition, ifValue:ifValue, elseValue:elseValue })
+	}, {
+		_type:'ternaryOp',
+		evaluate:function() {
+			return this.components.condition.isTruthy()
+				? this.components.ifValue.evaluate()
+				: this.components.elseValue.evaluate()
+		}
+	}
+)
+
+var dereference = module.exports.dereference = proto(variableCompositeBase,
+	function dereference(value, key) {
+		this._initComposite({ value:value, key:key })
+	}, {
+		_type:'dereference',
+		inspect:function() { return '<dereference '+this.components.value.inspect()+'['+this.components.key.inspect()+']>' },
+		equals:function(that) { return this.evaluate().equals(that) },
+		lookup:function(key) { return this._getCurrentValue().lookup(key) },
+		evaluate:function() { return this._getCurrentValue().evaluate() },
+		mutate:function(operator, args) { this._getCurrentValue().mutate(operator, args) },
+		_getCurrentValue:function() {
+			var key = this.components.key.evaluate(),
+				value = this.components.value,
+				getterValue = value.evaluate(),
+				getter = (key.getType() == 'Text' && getterValue.getters[key.toString()])
+			
+			if (getter) {
+				return getter.call(getterValue)
+			} else if (value.isAtomic()) {
+				return Null
+			} else {
+				return value.lookup(key) || Null
+			}
+		}
+	}
+)
+
+// Mutable values - variables and collections
+/////////////////////////////////////////////
 var mutableBase = create(variableValueBase, {
-	notifyObservers:function() {
-		for (var key in this.observers) {
-			this.observers[key]()
+	_initMutable:function() {
+		this.observers = {}
+		this.notify = bind(this, this._notifyObservers)
+	},
+	dismiss:function(id) {
+		if (!this.observers[id]) { throw new Error("Tried to dismiss an observer by incorrect ID") }
+		delete this.observers[id]
+	},
+	_notifyObservers:function() {
+		for (var id in this.observers) {
+			this.observers[id]()
 		}
 	},
 	_onChange:function(callback) {
-		var uniqueID = 'u'+_unique++
-		this.observers[uniqueID] = callback
-		return uniqueID
-	},
-	dismiss:function(uniqueID) {
-		if (!this.observers[uniqueID]) {
-			throw new Error("Tried to dismiss an observer by incorrect ID")
-		}
-		delete this.observers[uniqueID]
-	},
-	onNewValue:function(oldValue, observationId, newValue) {
-		if (oldValue) { oldValue.dismiss(observationId) }
-		return newValue.observe(bind(this, this.notifyObservers))
+		var id = unique()
+		this.observers[id] = callback
+		return id
 	}
 })
 
 var variable = module.exports.variable = proto(mutableBase,
 	function variable(content) {
-		this.observers = {}
+		this._initMutable()
 		this.mutate('set', [content])
 	}, {
 		_type:'variable',
@@ -216,71 +300,70 @@ var variable = module.exports.variable = proto(mutableBase,
 		equals:function(that) { return this._content.equals(that) },
 		lookup:function(key) { return this._content.lookup(key) },
 		mutate: function(operator, args) {
-			if (operator != 'set' || args.length == 2) {
+			if (operator != 'set' || args.length == 2) { // Hmm, hacky, should methods with multiple arguments have different method names like in ObjC?
 				return this._content.mutate(operator, args)
 			}
 			_checkArgs(args, 1)
-			var value = args[0],
-				oldValue = this._content
-			this._content = value
-			this._observationID = this.onNewValue(oldValue, this._observationID, value)
+			var newContent = args[0]
+			
+			if (this._observationID) {
+				this._content.dismiss(this._observationID)
+			}
+			this._content = newContent
+			this._observationID = newContent.observe(this.notify)
 		}
 	}
 )
 
-var dereference = module.exports.dereference = proto(variableValueBase,
-	function dereference(value, key) {
-		if (!value || !key) { typeMismatch() }
-		this._value = value
-		this._key = key
-	}, {
-		_type:'dereference',
-		getType:function() { return this.evaluate().getType() },
-		inspect:function() { return '<dereference '+this._value.inspect()+'['+this._key.inspect()+']>' },
-		_onChange:function(callback) {
-			this._keyId = this._key._onChange(callback)
-			this._valueId = this._value._onChange(callback)
-		},
-		equals:function(that) { return this.evaluate().equals(that) },
-		dismiss:function(observationId) {
-			// TODO Lookup the keyId/valueId for this observationId
-			this._key.dismiss(this._keyId)
-			this._value.dismiss(this._valueId)
-		},
-		lookup:function(key) { return this._getCurrentValue().lookup(key) },
-		evaluate:function() { return this._getCurrentValue().evaluate() },
-		mutate:function(operator, args) { this._getCurrentValue().mutate(operator, args) },
-		_getCurrentValue:function() {
-			var key = this._key.evaluate(),
-				value = this._value
-			
-			var getterValue = value.evaluate(),
-				getter = key.getType() == 'Text' && getterValue.getters[key.toString()]
-			
-			if (getter) { return getter.call(getterValue) }
-			
-			if (value.isAtomic()) { return Null }
-			
-			return value.lookup(key) || Null
-		}
-	}
-)
-
-// Collection values
-////////////////////
 var collectionBase = create(mutableBase, {
+	_initCollection: function() {
+		this._initMutable()
+		this.propObservers = {}
+		this.propObservations = {}
+	},
 	isAtomic:function() { return false },
 	getType:function() { return this._type },
 	evaluate:function() { return this },
 	getContent:function() { return this._content },
-	isTruthy:function() { return true }
+	isTruthy:function() { return true },
+	
+	_onPropertyChange: function(propertyKey, callback) {
+		if (!this.propObservers[propertyKey]) {
+			this.propObservers[propertyKey] = {}
+		}
+		var id = unique()
+		this.propObservers[propertyKey][id] = callback
+		return id
+	},
+	_setProperty: function(propertyKey, newProperty) {
+		var oldId = this.propObservations[propertyKey],
+			oldProperty = this._content[propertyKey]
+		if (oldId) { oldProperty.dismiss(oldId) }
+		
+		this._content[propertyKey] = newProperty
+		this.propObservations[propertyKey] = newProperty._onChange(this.notify)
+		this._notifyPropertyObservers(propertyKey)
+	},
+	_notifyPropertyObservers: function(propertyKey) {
+		var observers = this.propObservers[propertyKey]
+		if (observers) {
+			for (var i=0; i<observers.length; i++) {
+				observers[i]()
+			}
+		}
+		this._notifyObservers()
+	},
+	_dismissProperty: function(propertyKey, id) {
+		var observers = this.propObservers[propertyKey]
+		if (!observers || !observers[id]) { throw new Error('Tried to dismiss a property observation by bad id') }
+		delete observers[id]
+	}
 })
 
 var Dictionary = module.exports.Dictionary = proto(collectionBase,
 	function Dictionary(content) {
 		if (typeof content != 'object' || isArray(content) || content == null) { typeMismatch() }
-		this.observers = {}
-		this._observationIDs = {}
+		this._initCollection()
 		this._content = {}
 		for (var key in content) {
 			this.mutate('set', [Text(key), content[key]])
@@ -316,20 +399,12 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 			return Yes
 		},
 		mutate:function(operator, args) {
-			switch(operator) {
-				case 'set':
-					_checkArgs(args, 2)
-					var key = args[0],
-						value = args[1]
-					if (!key || key.isNull() || !value) { BAD_ARGS }
-					var prop = key.asLiteral(),
-						oldValue = this._content[prop]
-					this._content[prop] = value
-					this._observationIDs[prop] = this.onNewValue(oldValue, this._observationIDs[prop], value)
-					break
-				default:
-					throw new Error('Bad Dictionary operator "'+operator+'"')
-			}
+			if (operator != 'set') { throw new Error('Bad Dictionary operator "'+operator+'"') }
+			_checkArgs(args, 2)
+			var key = args[0],
+				value = args[1]
+			if (!key || key.isNull() || !value) { BAD_ARGS }
+			this._setProperty(key.asLiteral(), value)
 		}
 	}
 )
@@ -337,10 +412,8 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 var List = module.exports.List = proto(collectionBase,
 	function List(content) {
 		if (!isArray(content)) { typeMismatch() }
-		this.observers = {}
-		this._observationIDs = {}
+		this._initCollection()
 		this._content = []
-		if (!content) { return }
 		for (var i=0; i<content.length; i++) {
 			this.mutate('push', [content[i]])
 		}
@@ -411,68 +484,13 @@ var List = module.exports.List = proto(collectionBase,
 		},
 		_set: function(index, value) {
 			if (index.getType() != 'Number') { typeMismatch() }
-			index = index.getContent()
-			var oldValue = this._content[index]
-			this._content[index] = value
-			this._observationIDs[index] = this.onNewValue(oldValue, this._observationIDs[index], value)
+			this._setProperty(index.getContent(), value)
 		}
 	}
 )
 
-// Operator expressions
-///////////////////////
-var composite = module.exports.composite = proto(variableValueBase,
-	function composite(left, operator, right) {
-		if (typeof operator != 'string') { typeMismatch() }
-		// TODO typecheck left and right
-		this.left = left
-		this.right = right
-		this.operator = operator
-	}, {
-		_type:'composite',
-		evaluate:function() { return operators[this.operator](this.left, this.right) },
-		_onChange:function(callback) {
-			this._leftId = this.left._onChange(callback)
-			this._rightId = this.right._onChange(callback)
-		},
-		dismiss:function() {
-			this.left.dismiss(this._leftId)
-			this.right.dismiss(this._rightId)
-		}
-	}
-)
-
-module.exports.ternary = proto(variableValueBase,
-	function ternary(condition, ifValue, elseValue) {
-		this.condition = condition
-		this.ifValue = ifValue
-		this.elseValue = elseValue
-	}, {
-		_type:'ternary',
-		evaluate:function() { return this.condition.getContent() ? this.ifValue.evaluate() : this.elseValue.evaluate() },
-		_onChange:function(callback) {
-			this._conditionId = this.condition._onChange(callback)
-			this._ifValueId = this.ifValue._onChange(callback)
-			this._elseValueId = this.elseValue._onChange(callback)
-		},
-		dismiss:function() {
-			this.condition.dismiss(this._conditionID)
-			this.ifValue.dismiss(this._ifValueId)
-			this.elseValue.dismiss(this._elseValueId)
-		}
-	})
-
-module.exports.unary = proto(variableValueBase,
-	function unary(operator, value) {
-		this.operator = operator
-		this.value = value
-	}, {
-		_type:'unary',
-		evaluate:function() { return unaryOperators[this.operator](this.value.evaluate()) },
-		_onChange:function(callback) { this._valueId = this.value._onChange(callback) },
-		dismiss:function() { this.value.dismiss(this._valueId) }
-	})
-
+// Operators
+////////////
 var unaryOperators = {
 	'!': not,
 	'-': negative
@@ -565,6 +583,7 @@ function greaterThan(left, right) {
 // Util
 ///////
 var _unique = 1
+function unique() { return 'u'+_unique++ }
 
 var fromJsValue = module.exports.fromJsValue = module.exports.value = function(val) {
 	switch (typeof val) {

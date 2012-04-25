@@ -75,9 +75,9 @@ var resolve = function(context, ast) {
 		case 'INVOCATION':           return resolveInvocation(context, ast)
 		case 'REFERENCE':            return lookup(context, ast)
 		case 'DEREFERENCE':          return resolveDereference(context, ast)
-		case 'COMPOSITE':            return resolveCompositeExpression(context, ast)
-		case 'UNARY':                return resolveUnaryExpression(context, ast)
-		case 'TERNARY':              return resolveTernaryExpression(context, ast)
+		case 'BINARY_OP':            return resolveCompositeExpression(context, ast)
+		case 'UNARY_OP':                return resolveUnaryExpression(context, ast)
+		case 'TERNARY_OP':              return resolveTernaryExpression(context, ast)
 		
 		case 'MUTATION':             return resolveMutation(context, ast)
 		case 'RETURN':               return resolveReturn(context, ast)

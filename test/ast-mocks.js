@@ -8,7 +8,7 @@ module.exports = {
 	declaration: declaration,
 	reference: reference,
 	dereference: dereference,
-	composite: composite,
+	binaryOp: binaryOp,
 	xml: xml,
 	ifElse: ifElse,
 	forLoop: forLoop,
@@ -71,8 +71,8 @@ function declaration(name, initialValue) {
 	return { type:'DECLARATION', name:name, initialValue:initialValue }
 }
 
-function composite(left, operator, right) {
-	return { type:'COMPOSITE', left:left, operator:operator, right:right }
+function binaryOp(left, operator, right) {
+	return { type:'BINARY_OP', left:left, operator:operator, right:right }
 }
 
 function xml(tag, attrs, block) {

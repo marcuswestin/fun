@@ -35,11 +35,15 @@ var expressions = require('./expressions'),
 	}
 	
 	fun.set = function(value, chainStr, setValue) {
-		var chain = chainStr.split('.')
+		if (arguments.length == 2) {
+			setValue = chainStr
+			chainStr = null
+		}
+		var chain = chainStr ? chainStr.split('.') : []
 		while (chain.length) {
 			value = expressions.dereference(value, expressions.Text(chain.shift()))
 		}
-		value.mutate('set', [setValue])
+		value.mutate('set', [expressions.fromJsValue(setValue)])
 	}
 	
 	fun.dictSet = function(dict, prop, setValue) {

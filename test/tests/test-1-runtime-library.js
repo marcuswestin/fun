@@ -6,11 +6,18 @@ var fun = require('../../src/runtime/library'),
 	map = require('std/map'),
 	deepEqual = require('std/assert/deepEqual')
 
+test('set and get simple', function(assert) {
+	var bar = a.variable({ cat:{ asd:2 } })
+	a.reference(bar, 'cat').mutate('set', [a.value('asd'), a.value(3)])
+	bar.mutate('set', [a.value('hi')])
+})
+
 test('sets and gets', function(assert) {
 	var foo = a.variable(1),
 		bar = a.variable({ cat:{ asd:2 } }),
 		error
 	assert.equals(a.value(1), foo)
+	assert.equals(foo, a.value(1))
 	assert.equals(a.value(null), a.reference(foo, 'cat'))
 	
 	assert.equals(a.value(2), a.reference(bar, 'cat.asd'))
@@ -62,17 +69,17 @@ test('observe subvalue', function(assert) {
 	a.reference(v, 'b').mutate('set', [a.value('c'), a.value(3)])
 })
 
-test('evaluate composite expressions', function(assert) {
+test('evaluate binary operator expressions', function(assert) {
 	var v1 = a.variable(1),
 		v2 = a.variable(2),
 		v3 = a.variable(3),
 		v4 = a.variable('4')
-	assert.equals(a.composite(v1, '+', v2), a.value(3))
-	assert.equals(a.composite(v1, '+', v2), v3)
-	assert.equals(a.composite(v4, '+', v1), a.value('41'))
-	assert.equals(v3, a.composite(v1, '+', v2))
-	assert.equals(a.value(true), a.composite(a.value(4), '==', a.composite(v1, '+', v3)))
-	assert.equals(a.value(false), v3.equals(a.composite(v1, '+', v1)))
+	assert.equals(a.binaryOp(v1, '+', v2), a.value(3))
+	assert.equals(a.binaryOp(v1, '+', v2), v3)
+	assert.equals(a.binaryOp(v4, '+', v1), a.value('41'))
+	assert.equals(v3, a.binaryOp(v1, '+', v2))
+	assert.equals(a.value(true), a.binaryOp(a.value(4), '==', a.binaryOp(v1, '+', v3)))
+	assert.equals(a.value(false), v3.equals(a.binaryOp(v1, '+', v1)))
 })
 
 test('observing and dismissing', function(assert) {

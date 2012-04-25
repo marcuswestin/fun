@@ -489,22 +489,22 @@ var compileExpression = function(context, ast) {
 			return _inlineCode('fun.expressions.List([ {{ content }} ])', {
 				content:map(ast.content, curry(compileExpression, context)).join(', ')
 			})
-		case 'COMPOSITE':
-			return _inlineCode('fun.expressions.composite({{ left }}, "{{ operator }}", {{ right }})', {
+		case 'UNARY_OP':
+			return _inlineCode('fun.expressions.unaryOp({{ operator }}, {{ value }})', {
+				operator:q(ast.operator),
+				value:compileExpression(context, ast.value)
+			})
+		case 'BINARY_OP':
+			return _inlineCode('fun.expressions.binaryOp({{ left }}, "{{ operator }}", {{ right }})', {
 				left:compileExpression(context, ast.left),
 				operator:ast.operator,
 				right:compileExpression(context, ast.right)
 			})
-		case 'TERNARY':
-			return _inlineCode('fun.expressions.ternary({{ condition }}, {{ ifValue }}, {{ elseValue }})', {
+		case 'TERNARY_OP':
+			return _inlineCode('fun.expressions.ternaryOp({{ condition }}, {{ ifValue }}, {{ elseValue }})', {
 				condition:compileExpression(context, ast.condition),
 				ifValue:compileExpression(context, ast.ifValue),
 				elseValue:compileExpression(context, ast.elseValue)
-			})
-		case 'UNARY':
-			return _inlineCode('fun.expressions.unary({{ operator }}, {{ value }})', {
-				operator:q(ast.operator),
-				value:compileExpression(context, ast.value)
 			})
 		case 'INVOCATION':
 			return compileInvocation('invoke', context, ast)
