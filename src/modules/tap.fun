@@ -33,7 +33,7 @@ tap = {
 	window.__fun_tap = {
 		supportClick: !client.isMobile && !client.isTablet,
 		registerTapHandler: function(hashAttributes, type, name, selectHandler, opts) {
-			fun.set(hashAttributes, name, fun.expressions.Handler(function(funEvent) {
+			fun.dictSet(hashAttributes, name, fun.expressions.Handler(function(funEvent) {
 				var event = funEvent.jsEvent,
 					element = event.hook,
 					handler = function(e) { selectHandler.evaluate().invoke([fun.expressions.Event(e)]) }
