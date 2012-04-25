@@ -1,6 +1,9 @@
 .PHONY: test
 test:
-	./node_modules/.bin/nodeunit test/tests
+	node scripts/run-tests.js
+
+test-debug:
+	node --debug-brk scripts/run-tests.js
 
 .PHONY: setup
 setup:
