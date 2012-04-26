@@ -20,7 +20,6 @@ lists = {
 		} }
 		scroller = {
 			
-			view: null
 			stack: [null]
 			
 			renderHead: template(renderHeadContent) {
@@ -53,12 +52,10 @@ lists = {
 			
 			push: handler(view) {
 				scroller.stack push: view
-				scroller.view set: scroller.stack.last
 			}
 			
 			pop: handler() {
 				scroller.stack pop: null
-				scroller.view set: scroller.stack.last
 			}
 		}
 		
