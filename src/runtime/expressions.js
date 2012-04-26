@@ -14,7 +14,7 @@ var base = module.exports.base = {
 		return id
 	},
 	_onMutate:function(callback) {},
-	toJSON:function() { return this.asLiteral() },
+	toJSON:function() { return JSON.parse(this.asLiteral()) },
 	isTruthy:function() { return true },
 	isNull:function() { return false },
 	iterate:function() {},
