@@ -241,6 +241,15 @@ var dereference = module.exports.dereference = proto(variableCompositeBase,
 	function dereference(value, key) {
 		this._initComposite({ value:value, key:key })
 	}, {
+		_onChange:function(callback) {
+			return variableCompositeBase._onChange.call(this, bind(this, function(mutation) {
+				var affectedProperty = mutation.affectedProperty
+				var propertyKey = this.components.key.asLiteral()
+				if (affectedProperty && (affectedProperty[0] != propertyKey)) { return }
+				mutation = { affectedProperty:null }
+				callback(mutation)
+			}))
+		},
 		_type:'dereference',
 		inspect:function() { return '<dereference '+this.components.value.inspect()+'['+this.components.key.inspect()+']>' },
 		equals:function(that) { return this.evaluate().equals(that) },
@@ -275,9 +284,9 @@ var mutableBase = create(variableValueBase, {
 		if (!this.observers[id]) { throw new Error("Tried to dismiss an observer by incorrect ID") }
 		delete this.observers[id]
 	},
-	_notifyObservers:function() {
+	_notifyObservers:function(mutation) {
 		for (var id in this.observers) {
-			this.observers[id]()
+			this.observers[id](mutation)
 		}
 	},
 	_onChange:function(callback) {
@@ -310,7 +319,10 @@ var variable = module.exports.variable = proto(mutableBase,
 				this._content.dismiss(this._observationID)
 			}
 			this._content = newContent
-			this._observationID = newContent.observe(this.notify)
+			this._observationID = newContent._onChange(this.notify)
+			
+			var mutation = { affectedProperty:null }
+			this.notify(mutation)
 		}
 	}
 )
@@ -318,7 +330,6 @@ var variable = module.exports.variable = proto(mutableBase,
 var collectionBase = create(mutableBase, {
 	_initCollection: function() {
 		this._initMutable()
-		this.propObservers = {}
 		this.propObservations = {}
 	},
 	isAtomic:function() { return false },
@@ -327,36 +338,20 @@ var collectionBase = create(mutableBase, {
 	getContent:function() { return this._content },
 	isTruthy:function() { return true },
 	
-	_onPropertyChange: function(propertyKey, callback) {
-		if (!this.propObservers[propertyKey]) {
-			this.propObservers[propertyKey] = {}
-		}
-		var id = unique()
-		this.propObservers[propertyKey][id] = callback
-		return id
-	},
 	_setProperty: function(propertyKey, newProperty) {
 		var oldId = this.propObservations[propertyKey],
 			oldProperty = this._content[propertyKey]
 		if (oldId) { oldProperty.dismiss(oldId) }
 		
 		this._content[propertyKey] = newProperty
-		this.propObservations[propertyKey] = newProperty._onChange(this.notify)
-		this._notifyPropertyObservers(propertyKey)
-	},
-	_notifyPropertyObservers: function(propertyKey) {
-		var observers = this.propObservers[propertyKey]
-		if (observers) {
-			for (var i=0; i<observers.length; i++) {
-				observers[i]()
-			}
-		}
-		this._notifyObservers()
-	},
-	_dismissProperty: function(propertyKey, id) {
-		var observers = this.propObservers[propertyKey]
-		if (!observers || !observers[id]) { throw new Error('Tried to dismiss a property observation by bad id') }
-		delete observers[id]
+		
+		this.propObservations[propertyKey] = newProperty._onChange(bind(this, function(mutation) {
+			var mutation = { affectedProperty:[propertyKey].concat(mutation.affectedProperty) }
+			this.notify(mutation)
+		}))
+		
+		var mutation = { affectedProperty:[propertyKey] }
+		this.notify(mutation)
 	}
 })
 
@@ -474,17 +469,14 @@ var List = module.exports.List = proto(collectionBase,
 			switch(operator) {
 				case 'push':
 					_checkArgs(args, 1)
-					return this._set(Number(this._content.length), args[0])
+					return this._setProperty(this._content.length, args[0])
 				case 'set':
 					_checkArgs(args, 2)
-					return this._set(args[0], args[1])
+					if (args[0].getType() != 'Number') { typeMismatch() }
+					return this._setProperty(args[0].getContent(), args[1])
 				default:
 					throw new Error('Bad Dictionary operator "'+operator+'"')
 			}
-		},
-		_set: function(index, value) {
-			if (index.getType() != 'Number') { typeMismatch() }
-			this._setProperty(index.getContent(), value)
 		}
 	}
 )

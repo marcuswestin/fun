@@ -239,9 +239,9 @@ test('dereference on inline function invocation #2').code(
 	'<div id="output">function() { return { foo:function(arg) { return arg } } }().foo("bar")</div>')
 	.textIs('#output', 'bar')
 
-test('list.first/last properties').code(
+test('FAILING list.first/last properties').code(
 	'foo = ["a","b","c"]',
-	'<div id="output">foo.first foo.last</div onclick=handler() { foo push: "d" }>')
+	'<div id="output">foo.first foo.last</div onclick=handler() { debugger foo push: "d" }>')
 	.textIs('#output', 'ac')
 	.click('#output')
 	.textIs('#output', 'ad')
@@ -252,6 +252,13 @@ test("a variable's type changes as the underlying value mutates").code(
 	.textIs('#output', 'Text')
 	.click('#output')
 	.textIs('#output', 'Number')
+
+test("FAILING List length as items get added").code(
+	'foo = ["a"]',
+	'<div id="output">foo.length</div onclick=handler() { foo push: "b" }>')
+	.textIs("#output", '1')
+	.click('#output')
+	.textIs('#output', '2')
 
 /* Util
  ******/

@@ -102,7 +102,7 @@ test('observing and dismissing', function(assert) {
 	v2.mutate('set', [a.value('c')]) // Should not result in call 4
 })
 
-test('FAILING observing a sub-property', function(assert) {
+test('observing a sub-property', function(assert) {
 	var v1 = a.variable({ foo:'bar', cat:'tag' })
 	var d1_1 = a.reference(v1, 'foo')
 	var d1_2 = a.reference(v1, 'cat')
