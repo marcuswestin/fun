@@ -8,11 +8,11 @@ var proto = require('std/proto'),
 ///////////////////////////////
 var base = module.exports.base = {
 	observe:function(callback) {
-		var id = this._onChange(callback)
+		var id = this._onMutate(callback)
 		callback()
 		return id
 	},
-	_onChange:function(callback) {},
+	_onMutate:function(callback) {},
 	toJSON:function() { return this.asLiteral() },
 	isTruthy:function() { return true },
 	isNull:function() { return false },
@@ -127,7 +127,7 @@ module.exports.Function = proto(constantAtomicBase,
 			})
 			
 			for (var i=0; i<args.length; i++) {
-				if (args[i]) { args[i]._onChange(executeBlock) }
+				if (args[i]) { args[i]._onMutate(executeBlock) }
 			}
 			
 			var isFirstExecution = true
@@ -185,11 +185,11 @@ var variableCompositeBase = create(variableValueBase, {
 		this.ids = {}
 		this.components = components
 	},
-	_onChange:function(callback) {
+	_onMutate:function(callback) {
 		var id = unique(),
 			ids = this.ids[id] = {}
 		for (var key in this.components) {
-			ids[key] = this.components[key]._onChange(callback)
+			ids[key] = this.components[key]._onMutate(callback)
 		}
 		return id
 	},
@@ -241,8 +241,8 @@ var dereference = module.exports.dereference = proto(variableCompositeBase,
 	function dereference(value, key) {
 		this._initComposite({ value:value, key:key })
 	}, {
-		_onChange:function(callback) {
-			return variableCompositeBase._onChange.call(this, bind(this, function(mutation) {
+		_onMutate:function(callback) {
+			return variableCompositeBase._onMutate.call(this, bind(this, function(mutation) {
 				var affectedProperty = mutation.affectedProperty
 				var propertyKey = this.components.key.asLiteral()
 				if (affectedProperty && (affectedProperty[0] != propertyKey)) { return }
@@ -289,7 +289,7 @@ var mutableBase = create(variableValueBase, {
 			this.observers[id](mutation)
 		}
 	},
-	_onChange:function(callback) {
+	_onMutate:function(callback) {
 		var id = unique()
 		this.observers[id] = callback
 		return id
@@ -319,7 +319,7 @@ var variable = module.exports.variable = proto(mutableBase,
 				this._content.dismiss(this._observationID)
 			}
 			this._content = newContent
-			this._observationID = newContent._onChange(this.notify)
+			this._observationID = newContent._onMutate(this.notify)
 			
 			var mutation = { affectedProperty:null }
 			this.notify(mutation)
@@ -345,7 +345,7 @@ var collectionBase = create(mutableBase, {
 		
 		this._content[propertyKey] = newProperty
 		
-		this.propObservations[propertyKey] = newProperty._onChange(bind(this, function(mutation) {
+		this.propObservations[propertyKey] = newProperty._onMutate(bind(this, function(mutation) {
 			var mutation = { affectedProperty:[propertyKey].concat(mutation.affectedProperty) }
 			this.notify(mutation)
 		}))
