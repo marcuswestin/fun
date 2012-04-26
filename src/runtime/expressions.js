@@ -2,7 +2,8 @@ var proto = require('std/proto'),
 	create = require('std/create'),
 	map = require('std/map'),
 	isArray = require('std/isArray'),
-	bind = require('std/bind')
+	bind = require('std/bind'),
+	arrayToObject = require('std/arrayToObject')
 
 // All values inherit from base
 ///////////////////////////////
@@ -243,10 +244,10 @@ var dereference = module.exports.dereference = proto(variableCompositeBase,
 	}, {
 		_onMutate:function(callback) {
 			return variableCompositeBase._onMutate.call(this, bind(this, function(mutation) {
-				var affectedProperty = mutation.affectedProperty
+				var affectedProperties = mutation.affectedProperties
 				var propertyKey = this.components.key.asLiteral()
-				if (affectedProperty && (affectedProperty[0] != propertyKey)) { return }
-				mutation = { affectedProperty:null }
+				if (affectedProperties && !affectedProperties[propertyKey]) { return }
+				mutation = { affectedProperties:null }
 				callback(mutation)
 			}))
 		},
@@ -321,7 +322,7 @@ var variable = module.exports.variable = proto(mutableBase,
 			this._content = newContent
 			this._observationID = newContent._onMutate(this.notify)
 			
-			var mutation = { affectedProperty:null }
+			var mutation = { affectedProperties:null }
 			this.notify(mutation)
 		}
 	}
@@ -338,7 +339,7 @@ var collectionBase = create(mutableBase, {
 	getContent:function() { return this._content },
 	isTruthy:function() { return true },
 	
-	_setProperty: function(propertyKey, newProperty) {
+	_setProperty: function(propertyKey, newProperty, additionalAffectedProperties) {
 		var oldId = this.propObservations[propertyKey],
 			oldProperty = this._content[propertyKey]
 		if (oldId) { oldProperty.dismiss(oldId) }
@@ -346,12 +347,10 @@ var collectionBase = create(mutableBase, {
 		this._content[propertyKey] = newProperty
 		
 		this.propObservations[propertyKey] = newProperty._onMutate(bind(this, function(mutation) {
-			var mutation = { affectedProperty:[propertyKey].concat(mutation.affectedProperty) }
-			this.notify(mutation)
+			this.notify(this._createMutation(propertyKey, null))
 		}))
 		
-		var mutation = { affectedProperty:[propertyKey] }
-		this.notify(mutation)
+		this.notify(this._createMutation(propertyKey, additionalAffectedProperties))
 	}
 })
 
@@ -400,6 +399,10 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 				value = args[1]
 			if (!key || key.isNull() || !value) { BAD_ARGS }
 			this._setProperty(key.asLiteral(), value)
+		},
+		_createMutation: function(propertyKey, additionalAffectedProperties) {
+			if (additionalAffectedProperties) { throw new Error("I think Dictionary should never be getting additionalAffectedProperties") }
+			return { affectedProperties:arrayToObject([propertyKey]) }
 		}
 	}
 )
@@ -469,14 +472,28 @@ var List = module.exports.List = proto(collectionBase,
 			switch(operator) {
 				case 'push':
 					_checkArgs(args, 1)
-					return this._setProperty(this._content.length, args[0])
+					return this._setProperty(this._content.length, args[0], '"length"')
 				case 'set':
 					_checkArgs(args, 2)
 					if (args[0].getType() != 'Number') { typeMismatch() }
-					return this._setProperty(args[0].getContent(), args[1])
+					var index = args[0].getContent(),
+						length = this._content.length
+					if (index >= length) { throw new Error("List set: index larger than current length") }
+					
+					var affected = [index]
+					if (index == 0) { affected.push('"first"') }
+					if (index == length - 1) { affected.push('"last"') }
+					return this._setProperty(index, args[1], affected)
 				default:
 					throw new Error('Bad Dictionary operator "'+operator+'"')
 			}
+		},
+		_createMutation: function(propertyKey, additionalAffectedProperties) {
+			var affectedProperties = [propertyKey]
+			if (propertyKey == 0) { affectedProperties.push('"first"') }
+			if (propertyKey == this._content.length - 1) { affectedProperties.push('"last"') }
+			if (additionalAffectedProperties) { affectedProperties = affectedProperties.concat(additionalAffectedProperties) }
+			return { affectedProperties:arrayToObject(affectedProperties) }
 		}
 	}
 )
