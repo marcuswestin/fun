@@ -340,9 +340,7 @@ var collectionBase = create(mutableBase, {
 	isTruthy:function() { return true },
 	
 	_setProperty: function(propertyKey, newProperty, additionalAffectedProperties) {
-		var oldId = this.propObservations[propertyKey],
-			oldProperty = this._content[propertyKey]
-		if (oldId) { oldProperty.dismiss(oldId) }
+		this._forgetProperty(propertyKey)
 		
 		this._content[propertyKey] = newProperty
 		
@@ -351,6 +349,13 @@ var collectionBase = create(mutableBase, {
 		}))
 		
 		this.notify(this._createMutation(propertyKey, additionalAffectedProperties))
+	},
+	_forgetProperty: function(propertyKey) {
+		var oldId = this.propObservations[propertyKey]
+		if (oldId) {
+			this._content[propertyKey].dismiss(oldId)
+			delete this.propObservations[propertyKey]
+		}
 	}
 })
 
@@ -472,7 +477,8 @@ var List = module.exports.List = proto(collectionBase,
 			switch(operator) {
 				case 'push':
 					_checkArgs(args, 1)
-					return this._setProperty(this._content.length, args[0], '"length"')
+					this._setProperty(this._content.length, args[0], '"length"')
+					break
 				case 'set':
 					_checkArgs(args, 2)
 					if (args[0].getType() != 'Number') { typeMismatch() }
@@ -483,7 +489,16 @@ var List = module.exports.List = proto(collectionBase,
 					var affected = [index]
 					if (index == 0) { affected.push('"first"') }
 					if (index == length - 1) { affected.push('"last"') }
-					return this._setProperty(index, args[1], affected)
+					this._setProperty(index, args[1], affected)
+					break
+				case 'pop':
+					_checkArgs(args, 1)
+					var index = this._content.length - 1
+					this._forgetProperty(index)
+					this._content.pop()
+					
+					this.notify(this._createMutation(index, ['"length"', '"last"']))
+					break
 				default:
 					throw new Error('Bad Dictionary operator "'+operator+'"')
 			}
