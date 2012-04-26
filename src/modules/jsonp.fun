@@ -10,8 +10,8 @@ jsonp = {
 			win[id] = function(response) {
 				var err = null
 				if (responseHandler && !responseHandler.isNull()) {
-					var event = fun.expressions.fromJsValue({ type:'xhr-response', error:err, response:response })
-					handler.invoke([event])
+					var event = fun.expressions.fromJsValue({ type:'jsonp-response', error:err, response:response })
+					responseHandler.invoke([event])
 				}
 				if (err) {
 					fun.dictSet(result, 'error', err)
