@@ -1,27 +1,73 @@
 import jsonp
+import ui/lists
+import viewport
+import tap
+import time
 
-popularRequest = null
-instagramApiKey = 'YOUR KEY'
+<head>
+	<link rel="stylesheet/stylus" type="text/css" href="instagram.styl" />
+	viewport.fitToDevice()
+</head>
 
-<button>"fetch"</button onclick=handler() {
-	popularRequest set: jsonp.get("https://api.instagram.com/v1/media/popular?access_token="+instagramApiKey)
-}>
+instagramClientId = '8d4c20c24e124ebfbf1f99d6c2e5946c'
+popularImages = null
+scroller = lists.makeScroller(viewport.size)
 
-if popularRequest.loading {
-	"Loading..."
+makePopularRequest = function() {
+	return jsonp.get("https://api.instagram.com/v1/media/popular?client_id="+instagramClientId, null, handler(event) {
+		if (event.response) {
+			popularImages set: event.response.data
+		}
+	})
 }
-if popularRequest.error {
-	"Error: " popularRequest.error
-}
-if popularRequest.response {
-	for item in popularRequest.response {
+
+popularRequest = makePopularRequest()
+
+renderPopular = template() {
+	if popularRequest.loading { "Loading..." }
+	
+	if popularRequest.error { "Error: " popularRequest.error }
+	
+	for item in popularImages {
 		if item.type is 'image' {
-			<div class="image">
+			<div class="image" #tap.listItem(handler() { scroller.push({ item:item }) })>
 				<img src=item.images.low_resolution.url />
-				for comment in item.comments.data {
-					<div class="comment">comment.from.full_name " said: " comment.text</div>
-				}
 			</div>
 		}
 	}
 }
+
+renderItem = template(item) {
+	<div class="itemView">
+		<img src=item.images.standard_resolution.url />
+		for comment in item.comments.data {
+			<div class="comment">
+				<img src=comment.from.profile_picture style={ float:'left' }/>
+				// comment.from.full_name ": " comment.text
+			</div>
+		}
+	</div>	
+}
+
+scroller.renderHead(template() {
+	<div class="head">
+		view = scroller.stack.last
+		if (view.item) {
+			<div class="title">view.item.caption.text</div>
+			<div class="accessory left">'Back'</div #tap.button(handler() {
+				scroller.stack pop:null
+				time.after(500, makePopularRequest)
+			})>
+		} else {
+			<div class="title">"Popular"</div>
+		}
+	</div>
+})
+
+scroller.renderBody(template(view) {
+	if (view.item) {
+		renderItem(view.item)
+	} else {
+		renderPopular()
+	}
+})
