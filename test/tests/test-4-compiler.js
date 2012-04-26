@@ -248,7 +248,7 @@ test('list.first/last properties').code(
 
 test("a variable's type changes as the underlying value mutates").code(
 	'foo = "qwe"',
-	'<div id="output">foo.type</div onclick=handler() { foo set:1 }>')
+	'<div id="output">foo.Type</div onclick=handler() { foo set:1 }>')
 	.textIs('#output', 'Text')
 	.click('#output')
 	.textIs('#output', 'Number')
