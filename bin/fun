@@ -88,19 +88,20 @@ function develop(res) {
 }
 
 function compile(req, res, opts) {
-	var code = ''
-	req.on('data', function(data) { code += data })
+	var input = ''
+	req.on('data', function(data) { input += data })
 	req.on('end', function() {
-		try {
-			// code == "code=<URI+encoded+code>"
-			var result = loadCompiler().compileCode(decodeURIComponent(code.substr(5).replace(/\+/g, ' ')), opts)
-		} catch(e) {
-			res.writeHead(500)
-			res.end(errorHtmlResponse(e))
-			return
-		}
-		res.writeHead(200)
-		res.end(result)
+		// loadCompiler().compileCode()
+		var code = decodeURIComponent(input.substr(5).replace(/\+/g, ' '))
+		loadCompiler().compileCode(decodeURIComponent(code), opts, function(err, html) {
+			if (err) {
+				res.writeHead(500)
+				res.end(errorHtmlResponse(err))
+				return
+			}
+			res.writeHead(200)
+			res.end(html)
+		})
 	})
 }
 
