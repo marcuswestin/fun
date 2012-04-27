@@ -3,11 +3,10 @@ import ui/lists
 import viewport
 import tap
 import time
+import localstorage
+import style
 
-<head>
-	<link rel="stylesheet/stylus" type="text/css" href="instagram.styl" />
-	viewport.fitToDevice()
-</head>
+viewport.fitToDevice()
 
 instagramClientId = '8d4c20c24e124ebfbf1f99d6c2e5946c'
 popularImages = null
@@ -24,14 +23,14 @@ makePopularRequest = function() {
 popularRequest = makePopularRequest()
 
 renderPopular = template() {
-	if popularRequest.loading { "Loading..." }
+	if popularRequest.loading { <div>"Loading..."</div style={ textAlign:'center', margin:'50px 0' }> }
 	
 	if popularRequest.error { "Error: " popularRequest.error }
 	
 	for item in popularImages {
 		if item.type is 'image' {
 			<div class="image" #tap.listItem(handler() { scroller.push({ item:item }) })>
-				<img src=item.images.low_resolution.url />
+				<img src=item.images.low_resolution.url style={ float:'left' } />
 			</div>
 		}
 	}
@@ -50,16 +49,19 @@ renderItem = template(item) {
 }
 
 scroller.renderHead(template() {
-	<div class="head">
+	headStyle = { height:'100%', color:'#160F08', textShadow:'0 1px 0 #aaa', fontSize:18 }
+	titleStyle = { textAlign:'center', padding:'10px 0 0 0' }
+	accessoryStyle = { position:'absolute', top:10, left:4, cursor:'pointer' }
+	<div class="head" style=headStyle #style.gradient('#675C52', '#3F3831')>
 		view = scroller.stack.last
 		if (view.item) {
-			<div class="title">view.item.caption.text</div>
-			<div class="accessory left">'Back'</div #tap.button(handler() {
+			<div class="title" style=titleStyle>view.item.caption.text</div>
+			<div class="accessory left" style=accessoryStyle>'Back'</div #tap.button(handler() {
 				scroller.stack pop:null
 				time.after(500, makePopularRequest)
 			})>
 		} else {
-			<div class="title">"Popular"</div>
+			<div class="title" style=titleStyle>"Popular"</div>
 		}
 	</div>
 })
