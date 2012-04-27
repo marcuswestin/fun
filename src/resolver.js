@@ -212,7 +212,7 @@ var addStylesheet = function(context, attrs) {
 		
 		cssPreprocessors[rel](linkHref, comment + content, function(err, css) {
 			if (err) {
-				reportError(context, err, 'preprocess')
+				reportError(context, err, 'preprocess', linkHref)
 			} else {
 				context.headers.push('<style type="text/css">\n'+css+'\n</style>')
 				context.completion.removeBlock()
@@ -237,9 +237,9 @@ function _getContent(context, url, callback) {
 		console.error("Fetching", url)
 		request.get(url, function(err, resp, content) {
 			if (err) {
-				reportError(context, err, 'fetch')
+				reportError(context, err, 'fetch', url)
 			} else if (resp.statusCode != 200) {
-				reportError(context, new Error('Server returned non-200 status code: '+resp.statusCode), 'fetch')
+				reportError(context, new Error('Server returned non-200 status code: '+resp.statusCode), 'fetch', url)
 			} else {
 				console.error("Done fetching", linkHref)
 				callback(content)
@@ -250,15 +250,15 @@ function _getContent(context, url, callback) {
 			url = path.join(context.opts.dirname, url)
 		}
 		fs.readFile(url, function(err, content) {
-			if (err) { reportError(context, err, 'read') }
+			if (err) { reportError(context, err, 'read', url) }
 			else { callback(content.toString()) }
 		})
 	}
 }
 
-function reportError(context, err, verb) {
-	console.log("Error", verb+'ing', linkHref)
-	context.completion.fail(new Error('Could not '+verb+' '+linkHref+'\n'+err.message))
+function reportError(context, err, verb, resource) {
+	console.log("Error", verb+'ing', resource)
+	context.completion.fail(new Error('Could not '+verb+' '+resource+'\n'+err.message))
 }
 
 var cssPreprocessors = {
