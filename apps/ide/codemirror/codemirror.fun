@@ -2,26 +2,26 @@
 <script src="./codemirror.js"></script>
 
 codemirror = {
-	render:template(size) {
+	render:template(size, changeHandler) {
 		sizeStyle = { style:size }
-		<script sizeStyle=sizeStyle>
+		<script sizeStyle=sizeStyle changeHandler=changeHandler>
+			var xhr = require('fun/node_modules/std/xhr')
+			
 			fun.hooks[hookName].style.display = 'block'
 			fun.attrExpand(hookName, sizeStyle)
-			CodeMirror(fun.hooks[hookName], { value:'foo bar cat', onChange:onChange })
 			
-			var form = fun.hooks[hookName].appendChild(document.createElement('form'))
-			form.style.display = 'none'
-			form.action = '/compile'
-			form.method = 'post'
-			form.target = 'output'
+			var code = [
+				'world = \'world\'',
+				'<div>\'Hello \'world</div onclick=handler() {',
+				'	world set: \'fun world!\'',
+				'}>']
 			
-			var codeInput = form.appendChild(document.createElement('input'))
-			codeInput.name = 'code'
-			
-			function onChange(editor, change) {
-				codeInput.value = encodeURIComponent(editor.getValue())
-				form.submit()
-			}
+			CodeMirror(fun.hooks[hookName], { value:code.join('\\n'), onChange:function(editor, change) {
+				xhr.post('/compile', { code:encodeURIComponent(editor.getValue()) }, function(err, html) {
+					var event = fun.expressions.fromJsValue({ error:err, html:html })
+					changeHandler.invoke([event])
+				})
+			} })
 		</script>
 	}
 }
