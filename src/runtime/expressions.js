@@ -196,6 +196,7 @@ var variableCompositeBase = create(variableValueBase, {
 	},
 	dismiss:function(id) {
 		var ids = this.ids[id]
+		if (!ids) { throw new Error("Tried to dismiss a collection observer by incorrect ID") }
 		delete this.ids[id]
 		for (var key in ids) {
 			this.components[key].dismiss(ids[key])
@@ -281,10 +282,6 @@ var mutableBase = create(variableValueBase, {
 		this.observers = {}
 		this.notify = bind(this, this._notifyObservers)
 	},
-	dismiss:function(id) {
-		if (!this.observers[id]) { throw new Error("Tried to dismiss an observer by incorrect ID") }
-		delete this.observers[id]
-	},
 	_notifyObservers:function(mutation) {
 		for (var id in this.observers) {
 			this.observers[id](mutation)
@@ -294,6 +291,10 @@ var mutableBase = create(variableValueBase, {
 		var id = unique()
 		this.observers[id] = callback
 		return id
+	},
+	dismiss:function(id) {
+		if (!this.observers[id]) { throw new Error("Tried to dismiss an observer by incorrect ID") }
+		delete this.observers[id]
 	}
 })
 
