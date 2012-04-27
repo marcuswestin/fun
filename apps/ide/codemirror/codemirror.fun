@@ -10,22 +10,22 @@ codemirror = {
 			fun.hooks[hookName].style.display = 'block'
 			fun.attrExpand(hookName, sizeStyle)
 			
-			var code = [
-				'world = \'world\'',
-				'<div>\'Hello \'world</div onclick=handler() {',
-				'	world set: \'fun world!\'',
-				'}>']
-			
-			var editor = CodeMirror(fun.hooks[hookName], { value:code.join('\\n'), onChange:onChange })
+			xhr.get('/ide/load', null, function(err, res) {
+				if (err) {
+					console.warn(err)
+					return
+				}
+				
+				var editor = CodeMirror(fun.hooks[hookName], { value:res, onChange:onChange })
+				onChange(editor)
+			})
 			
 			function onChange(editor, change) {
-				xhr.post('/compile', { code:encodeURIComponent(editor.getValue()) }, function(err, html) {
+				xhr.post('/ide/compile', { code:encodeURIComponent(editor.getValue()) }, function(err, html) {
 					var event = fun.expressions.fromJsValue({ error:err, html:html })
 					changeHandler.invoke([event])
 				})
 			}
-			
-			onChange(editor)
 		</script>
 	}
 }

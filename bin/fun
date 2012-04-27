@@ -7,7 +7,8 @@ var fs = require('fs'),
 	optimist = require('optimist'),
 	map = require('std/map'),
 	package = require('../package'),
-	exec = require('child_process').exec
+	exec = require('child_process').exec,
+	curry = require('std/curry')
 
 /* Commandline options
  *********************/
@@ -54,11 +55,14 @@ if (argv.compile) {
 	}
 
 	http.createServer(function(req, res) {
+		var compileFile = filename
+		
 		if (req.url == '/favicon.ico') { return send404(res) }
-		if (req.url == '/develop') { return develop(res) }
-		if (req.url == '/compile') { return compile(req, res, opts) }
-
-		loadCompiler().compileFile(filename, opts, function(e, appHtml) {
+		if (req.url == '/ide') { compileFile = path.join(__dirname, '../apps/ide/ide.fun') }
+		if (req.url == '/ide/load') { return fs.readFile(compileFile, curry(respond, res)) }
+		if (req.url == '/ide/compile') { return compile(req, res, opts) }
+		
+		loadCompiler().compileFile(compileFile, opts, function(e, appHtml) {
 			if (e) {
 				res.writeHead(500)
 				res.end(errorHtmlResponse(e))
@@ -76,32 +80,12 @@ function send404(res) {
 	res.end()
 }
 
-function develop(res) {
-	res.writeHead(200, { 'Content-Type':'text/html' })
-	res.end([
-		'<form target="output" action="/compile" method="post" style="position:relative;">',
-		'	<textarea name="code" style="width:600px;height:100%; float:left;">"Hello world"</textarea>',
-		'	<input type="submit" style="position:absolute; top:5px; left:537px;">',
-		'</form>',
-		'<iframe style="margin:0 0 0 10px; width:600px; height:100%;" name="output" />'
-	].join('\n'))
-}
-
 function compile(req, res, opts) {
 	var input = ''
 	req.on('data', function(data) { input += data })
 	req.on('end', function() {
-		// loadCompiler().compileCode()
 		var code = decodeURIComponent(input.substr(5).replace(/\+/g, ' '))
-		loadCompiler().compileCode(decodeURIComponent(code), opts, function(err, html) {
-			if (err) {
-				res.writeHead(500)
-				res.end(errorHtmlResponse(err))
-				return
-			}
-			res.writeHead(200)
-			res.end(html)
-		})
+		loadCompiler().compileCode(decodeURIComponent(code), opts, curry(respond, res))
 	})
 }
 
@@ -119,4 +103,14 @@ function loadCompiler() {
 		delete require.cache[key]
 	}
 	return require('../src/compiler')
+}
+
+function respond(res, e, content) {
+	if (e) {
+		res.writeHead(500)
+		res.end(errorHtmlResponse(e))
+	} else {
+		res.writeHead(200)
+		res.end(content.toString())
+	}
 }
