@@ -1,5 +1,5 @@
 app = {
-	whenAppLoaded:function(appLoadedHandler) {
+	whenLoaded:function(appLoadedHandler) {
 		<script appLoadedHandler=appLoadedHandler>
 			setTimeout(function() {
 				appLoadedHandler.invoke()

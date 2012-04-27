@@ -260,6 +260,27 @@ test("list length as items get added").code(
 	.click('#output')
 	.textIs('#output', '2')
 
+test("copy of grouped expression (foo + 1).copy()").code(
+	'foo = 1',
+	'<div id="output">foo</div onclick=handler() { foo set: (foo + 2).copy() }>')
+	.click('#output')
+	.textIs('#output', '3')
+
+test("app.whenLoaded fires").code(
+	'import app',
+	'foo = 1',
+	'<div id="output">foo</div>',
+	'app.whenLoaded(handler() { foo set:2 })')
+	.textIs('#output', '2')
+
+test("time.after fires").code(
+	'import time',
+	'foo = 1',
+	'<div id="output">foo</div>',
+	'time.after(10, handler() { foo set:2 })')
+	.wait(20)
+	.textIs('#output', '2')
+
 /* Util
  ******/
 var isFirstTest = true
@@ -347,6 +368,9 @@ function createActionHandlers() {
 		textIs: function(assert, browser, next, selector, expectedHTML) {
 			assert.deepEqual(expectedHTML, browser.text(selector))
 			next()
+		},
+		wait: function(assert, browser, next, amount) {
+			setTimeout(next, amount || 0)
 		},
 		hasClass: function(assert, browser, next, selector/*, class1, class2, ... */) {
 			var classNames = slice(arguments, 4)
