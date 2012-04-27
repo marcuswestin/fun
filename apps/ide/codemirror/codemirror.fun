@@ -16,12 +16,16 @@ codemirror = {
 				'	world set: \'fun world!\'',
 				'}>']
 			
-			CodeMirror(fun.hooks[hookName], { value:code.join('\\n'), onChange:function(editor, change) {
+			var editor = CodeMirror(fun.hooks[hookName], { value:code.join('\\n'), onChange:onChange })
+			
+			function onChange(editor, change) {
 				xhr.post('/compile', { code:encodeURIComponent(editor.getValue()) }, function(err, html) {
 					var event = fun.expressions.fromJsValue({ error:err, html:html })
 					changeHandler.invoke([event])
 				})
-			} })
+			}
+			
+			onChange(editor)
 		</script>
 	}
 }
