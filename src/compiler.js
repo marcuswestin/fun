@@ -161,7 +161,7 @@ var _emitXML = function(context, ast) {
  *****************************/
 var tryCompileTemplateControlStatement = function(context, ast) {
 	switch(ast.type) {
-		case 'SCRIPT_TAG':           return compileScript(context, ast)
+		case 'SCRIPT_TAG':           return compileScript(context, ast, true)
 		case 'DEBUGGER':             return compileDebugger(context, ast)
 		case 'DECLARATION':          return compileDeclaration(context, ast)
 		case 'IF_STATEMENT':         return _compileTemplateIfStatement(context, ast)
@@ -528,14 +528,21 @@ var compileInvocation = function(method, context, ast) {
 	})
 }
 
-var compileScript = function(context, ast) {
-	var variables = (ast.attributes.length == 0) ? '' : 'var '+map(ast.attributes, function(attr) {
+var compileScript = function(context, ast, includeHookName) {
+	var attrs = map(ast.attributes, function(attr) {
 		return attr.name+'='+compileExpression(context, attr.value)
-	}).join(', ')+';'
+	})
+	
+	if (includeHookName) {
+		attrs = ['hookName= typeof '+context.hookName+'!="undefined" && '+context.hookName].concat(attrs) //ugh, hack...
+	}
+	
+	var variables = attrs.length ? 'var '+attrs.join(', ')+';' : ''
+	
 	return code(';(function(){',
-	'	{{ variables }}',
 	'/* START INLINE JAVASCRIPT */',
-	'{{ javascript }}',
+	'	{{ variables }}',
+	'	{{ javascript }}',
 	'/* END INLINE JAVASCRIPT */',
 	'})()', {
 		variables:variables,
