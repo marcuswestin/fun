@@ -109,7 +109,7 @@ function inlineScript(attributes, js) {
 		val = typeof val == 'string' ? reference(val) : val
 		return { name:key, value:val }
 	})
-	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js || '' }
+	return { type:'SCRIPT_TAG', tagName:'script', attributes:attributes, inlineJavascript:js || '' }
 }
 
 function handler(signature, block) {

@@ -282,7 +282,7 @@ var _parseInlineScript = astGenerator(function() {
 	advance('symbol', '</')
 	advance('name', 'script')
 	advance('symbol', '>')
-	return { type:'SCRIPT_TAG', attributes:attributes, inlineJavascript:js.join('') }
+	return { type:'SCRIPT_TAG', tagName:'script', attributes:attributes, inlineJavascript:js.join('') }
 })	
 
 /******************************************************************

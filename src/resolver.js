@@ -172,17 +172,25 @@ var resolveXML = function(context, ast) {
 	})
 	ast.block = ast.block && filter(resolve(context, ast.block))
 	
-	var staticLinkAttrs = getStaticLinkAttrs(ast)
-	if (staticLinkAttrs && !ast.block.length) {
-		addStylesheet(context, staticLinkAttrs)
+	var staticAttrs
+	if ((staticAttrs=getStylesheetAttrs(ast)) && !ast.block.length) {
+		addStylesheet(context, staticAttrs)
+		return null
+	} else if ((staticAttrs=getStaticAttrs(ast, 'script')) && staticAttrs.src && !ast.inlineJavascript.length) {
+		addScriptInclude(context, staticAttrs)
 		return null
 	} else {
 		return ast
 	}
 }
 
-function getStaticLinkAttrs(ast) {
-	if (ast.tagName != 'link') { return }
+function getStylesheetAttrs(ast) {
+	var staticAttrs = getStaticAttrs(ast, 'link')
+	return staticAttrs && staticAttrs.rel && staticAttrs.rel.match(/^stylesheet/) && staticAttrs
+}
+
+function getStaticAttrs(ast, tagName) {
+	if (ast.tagName != tagName) { return }
 	var attributes = ast.attributes,
 		staticAttrs = {}
 	each(attributes, function(attr) {
@@ -190,7 +198,7 @@ function getStaticLinkAttrs(ast) {
 		if (valueAST.type != 'TEXT_LITERAL') { return }
 		staticAttrs[attr.name] = valueAST.value
 	})
-	return staticAttrs.rel && staticAttrs.rel.match(/^stylesheet/) && staticAttrs
+	return staticAttrs
 }
 
 var addStylesheet = function(context, attrs) {
@@ -198,45 +206,59 @@ var addStylesheet = function(context, attrs) {
 		rel = attrs.rel || 'stylesheet/css'
 	
 	context.completion.addBlock()
-	if (linkHref.match(/^http/)) {
-		console.error("Fetching", linkHref)
-		request.get(linkHref, function(err, resp, content) {
-			if (err) {
-				doReportError(err, 'fetch')
-			} else if (resp.statusCode != 200) {
-				doReportError(new Error('Server returned non-200 status code: '+resp.statusCode), 'fetch')
-			} else {
-				console.error("Done fetching", linkHref)
-				doAddStyle(content)
-			}
-		})
-	} else {
-		if (linkHref[0] != '/') {
-			linkHref = path.join(context.opts.dirname, linkHref)
-		}
-		var content = fs.readFile(linkHref, function(err, content) {
-			if (err) { doReportError(err, 'read') }
-			else { doAddStyle(content.toString()) }
-		})
-	}
-	function doAddStyle(content) {
-		// TODO Support e.g. stylus
+	_getContent(context, linkHref, function doAddStyle(content) {
 		var comment = '/* inlined stylesheet: ' + linkHref + ' */\n'
 		if (context.opts.minify) { comment = '' }
 		
 		cssPreprocessors[rel](linkHref, comment + content, function(err, css) {
 			if (err) {
-				doReportError(err, 'preprocess')
+				reportError(context, err, 'preprocess')
 			} else {
 				context.headers.push('<style type="text/css">\n'+css+'\n</style>')
 				context.completion.removeBlock()
 			}
 		})
+	})
+}
+
+var addScriptInclude = function(context, attrs) {
+	var scriptSrc = attrs.src
+	
+	context.completion.addBlock()
+	_getContent(context, scriptSrc, function doAddScript(js) {
+		var comment = context.opts.minify ? '' : ('/* inlined script tag: ' + scriptSrc + ' */\n')
+		context.headers.push('<script>\n'+js+'\n</script>')
+		context.completion.removeBlock()
+	})
+}
+
+function _getContent(context, url, callback) {
+	if (url.match(/^http/)) {
+		console.error("Fetching", url)
+		request.get(url, function(err, resp, content) {
+			if (err) {
+				reportError(context, err, 'fetch')
+			} else if (resp.statusCode != 200) {
+				reportError(context, new Error('Server returned non-200 status code: '+resp.statusCode), 'fetch')
+			} else {
+				console.error("Done fetching", linkHref)
+				callback(content)
+			}
+		})
+	} else {
+		if (url[0] != '/') {
+			url = path.join(context.opts.dirname, url)
+		}
+		fs.readFile(url, function(err, content) {
+			if (err) { reportError(context, err, 'read') }
+			else { callback(content.toString()) }
+		})
 	}
-	function doReportError(err, verb) {
-		console.log("Error", verb+'ing', linkHref)
-		context.completion.fail(new Error('Could not '+verb+' '+linkHref+'\n'+err.message))
-	}
+}
+
+function reportError(context, err, verb) {
+	console.log("Error", verb+'ing', linkHref)
+	context.completion.fail(new Error('Could not '+verb+' '+linkHref+'\n'+err.message))
 }
 
 var cssPreprocessors = {
@@ -283,7 +305,7 @@ var installNodeModule = function(name, callback) {
  * Imports (imports and files) *
  *******************************/
 var handleImport = function(context, ast) {
-	var importPath = ast.path + '.fun'
+	var importPath = ast.path
 	if (importPath[0] == '/') {
 		importPath = path.normalize(importPath)
 	} else if (importPath[0] == '.') {
@@ -291,13 +313,24 @@ var handleImport = function(context, ast) {
 	} else {
 		importPath = path.join(__dirname, 'modules', importPath)
 	}
-	_importFile(context, ast, importPath)
+	
+	try {
+		if (fs.statSync(importPath).isDirectory()) {
+			importPath = importPath+'/'+path.basename(importPath)
+		}
+	} catch(e) {}
+	
+	_importFile(context, ast, importPath+'.fun')
 }
 
 var _importFile = function(context, ast, filePath) {
 	if (context.imports[filePath]) { return }
 	try { assert(ast, fs.statSync(filePath).isFile(), 'Could not find module '+filePath) }
 	catch(e) { halt(ast, e) }
+	
+	context = util.create(context)
+	context.opts = util.create(context.opts, { dirname:path.dirname(filePath) })
+	
 	var tokens = tokenizer.tokenizeFile(filePath),
 		newAST = parser.parse(tokens),
 		resolvedAST = util.cleanup(resolve(context, newAST))
