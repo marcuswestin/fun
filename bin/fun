@@ -6,15 +6,19 @@ var fs = require('fs'),
 	path = require('path'),
 	optimist = require('optimist'),
 	map = require('std/map'),
-	package = require('../package'),
+	pckg = require('../package'),
 	exec = require('child_process').exec,
-	curry = require('std/curry')
+	curry = require('std/curry'),
+	socketIo = require('socket.io'),
+	colors = require('colors')
 
 /* Commandline options
  *********************/
-var commandline = optimist.usage('Usage: fun path/to/app.fun [--compile --host=127.0.0.1 --port=8080 --normalize.css=false --minify=true]'),
+var commandline = optimist.usage('Usage: fun [compile] path/to/app.fun [--port=8080 --normalize.css=false --minify=true]'),
 	argv = commandline.argv,
-	filenameRaw = argv.compile || (argv._ && argv._[0]),
+	line = argv._,
+	compile = line[0] == 'compile',
+	filenameRaw = (compile ? line[1] : line[0]),
 	filename = filenameRaw && filenameRaw[0] == '/' ? filenameRaw : path.join(process.cwd(), filenameRaw)
 
 var opts = {
@@ -22,7 +26,7 @@ var opts = {
 	'normalize.css': argv['normalize.css'] != 'false'
 }
 
-if (argv.compile) {
+if (compile) {
 	loadCompiler().compileFile(filename, opts, function(err, htmlFile) {
 		if (err) {
 			console.log(err)
@@ -32,15 +36,14 @@ if (argv.compile) {
 		return process.exit(0)
 	})
 } else if (argv.v || argv.version) {
-	console.log("fun", package.version)
+	console.log("fun", pckg.version)
 	return process.exit(0)
-} else if (!argv._[0]) {
+} else if (!filename) {
 	console.error(commandline.help())
 	return process.exit(-1)
 } else {
-	// dev variables
-	var port = argv.port || 8080,
-		host = argv.host
+	// dev environment
+	var port = argv.port || 8080
 
 	try {
 		var stat = fs.statSync(filename)
@@ -54,48 +57,40 @@ if (argv.compile) {
 		return process.exit(-1)
 	}
 
-	http.createServer(function(req, res) {
-		var compileFile = filename
-		
-		if (req.url == '/favicon.ico') { return send404(res) }
-		if (req.url == '/ide') { compileFile = path.join(__dirname, '../apps/ide/ide.fun') }
-		if (req.url == '/ide/load') { return fs.readFile(compileFile, curry(respond, res)) }
-		if (req.url == '/ide/compile') { return compile(req, res, opts) }
-		
-		loadCompiler().compileFile(compileFile, opts, function(e, appHtml) {
-			if (e) {
-				res.writeHead(500)
-				res.end(errorHtmlResponse(e))
-			} else {
-				res.writeHead(200)
-				res.end(appHtml)
-			}
+	var ideServer = http.createServer(function(req, res) {
+		if (req.url == '/favicon.ico') {
+			return send404(res)
+		} else {
+			fs.readFile(path.join(__dirname, '../src/dev-client.html'), curry(respond, res))
+		}
+	})
+	
+	var ideServerIo = socketIo.listen(ideServer)
+	ideServerIo.set('log level', 0)
+	ideServer.listen(port)
+	
+	var sockets = []
+	
+	ideServerIo.sockets.on('connection', function(socket) {
+		console.log("Dev client connected")
+		sockets.push(socket)
+		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
+			socket.emit('change', { error:err, html:appHtml })
 		})
-	}).listen(port, host)
-	console.log('Serving', argv._[0], 'on', (host||'localhost')+':'+port, 'with options:\n', opts)
+	})
+	
+	fs.watch(filename, { persisten:true }, function(event, changedFilename) {
+		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
+			ideServerIo.sockets.emit('change', { error:err, html:appHtml })
+		})
+	})
+	
+	console.log('Fun!'.magenta, 'Serving', filenameRaw.green, 'on', ('localhost:'+port).cyan, 'with these options:\n', opts)
 }
 
 function send404(res) {
 	res.writeHead(404)
 	res.end()
-}
-
-function compile(req, res, opts) {
-	var input = ''
-	req.on('data', function(data) { input += data })
-	req.on('end', function() {
-		var code = decodeURIComponent(input.substr(5).replace(/\+/g, ' '))
-		loadCompiler().compileCode(decodeURIComponent(code), opts, curry(respond, res))
-	})
-}
-
-function errorHtmlResponse(e) {
-	return ['<!doctype html>','<body>',
-		'<button ontouchstart="location.reload();" onclick="location.reload()">Reload</button>',
-		'<pre>',
-		e.stack ? e.stack : e.message ? e.message : e.toString(),
-		'</pre>'
-	].join('\n')
 }
 
 function loadCompiler() {
@@ -113,4 +108,13 @@ function respond(res, e, content) {
 		res.writeHead(200)
 		res.end(content.toString())
 	}
+}
+
+function errorHtmlResponse(e) {
+	return ['<!doctype html>','<body>',
+		'<button ontouchstart="location.reload();" onclick="location.reload()">Reload</button>',
+		'<pre>',
+		e.stack ? e.stack : e.message ? e.message : e.toString(),
+		'</pre>'
+	].join('\n')
 }

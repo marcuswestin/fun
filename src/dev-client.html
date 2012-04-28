@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head>
+	<title>Fun!</title>
+	<style type="text/css">
+		html, body, iframe { margin:0; width:100%; height:100%; }
+	</style>
+</head><body>
+	<script src="/socket.io/socket.io.js"></script>
+	<script>
+		var socket = io.connect('http://localhost');
+		socket.on('change', function (data) {
+			var iframe = document.getElementById('output')
+			var doc = iframe.contentWindow.document
+			doc.open()
+			doc.write(data.html)
+			doc.close()
+		});
+	</script>
+	
+	<iframe id="output" frameborder='0' style="height:100%; width:100%;"></iframe>
+</body></html>
