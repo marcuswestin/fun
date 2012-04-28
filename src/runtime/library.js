@@ -156,7 +156,7 @@ var expressions = require('./expressions'),
 			})
 			on(input, 'change', function() {
 				setTimeout(function() {
-					property.set(null, input.checked ? fun.expressions.Yes : fun.expressions.No)
+					fun.set(property, null, input.checked ? fun.expressions.Yes : fun.expressions.No)
 				})
 			})
 		} else {
@@ -168,7 +168,7 @@ var expressions = require('./expressions'),
 				setTimeout(function() {
 					var value = input.value
 					if (property.getContent() === value) { return }
-					property.set(null, fun.expressions.Text(input.value))
+					fun.set(property, null, fun.expressions.Text(input.value))
 					input.value = value
 				}, 0)
 			}
