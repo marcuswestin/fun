@@ -27,8 +27,8 @@ tap = {
 }
 
 <script module=tap>
-	var tap = require('fun/node_modules/dom/tap'),
-		client = require('fun/node_modules/std/client')
+	var tap = require('dom/tap'),
+		client = require('std/client')
 	
 	window.__fun_tap = {
 		supportClick: !client.isMobile && !client.isTablet,

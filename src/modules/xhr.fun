@@ -20,7 +20,7 @@ xhr = {
 			if (module._loadingCount) { module._loadingCount += 1 }
 			else { module._loadingCount = 1 }
 			
-			var xhr = require('fun/node_modules/std/xhr')
+			var xhr = require('std/xhr')
 			xhr[method.toString().toLowerCase()](path.toString(), args && args.toJSON(), function(err, response) {
 				if (err) {
 					err = { text:err.message }

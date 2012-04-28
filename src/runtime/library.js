@@ -1,12 +1,12 @@
 var expressions = require('./expressions'),
-	each = require('fun/node_modules/std/each'),
-	curry = require('fun/node_modules/std/curry'),
-	throttle = require('fun/node_modules/std/throttle'),
-	addClass = require('fun/node_modules/dom/addClass'),
-	removeClass = require('fun/node_modules/dom/removeClass'),
-	on = require('fun/node_modules/dom/on'),
-	off = require('fun/node_modules/dom/off'),
-	arrayToObject = require('fun/node_modules/std/arrayToObject')
+	each = require('std/each'),
+	curry = require('std/curry'),
+	throttle = require('std/throttle'),
+	addClass = require('dom/addClass'),
+	removeClass = require('dom/removeClass'),
+	on = require('dom/on'),
+	off = require('dom/off'),
+	arrayToObject = require('std/arrayToObject')
 
 ;(function() {
 	if (typeof fun == 'undefined') { fun = {} }

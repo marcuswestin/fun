@@ -21,6 +21,8 @@ var util = require('./util'),
 	fs = require('fs')
 
 requireCompiler.addFile('fun-runtime-library', __dirname + '/runtime/library.js')
+requireCompiler.addPath('std', __dirname + '/../node_modules/std')
+requireCompiler.addPath('dom', __dirname + '/../node_modules/dom')
 
 exports.compileFile = function(sourceFilePath, opts, callback) {
 	try { _doCompile(tokenizer.tokenizeFile(sourceFilePath), extend(opts, { dirname:path.dirname(sourceFilePath) }), callback) }
