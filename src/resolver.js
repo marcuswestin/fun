@@ -206,6 +206,8 @@ var addStylesheet = function(context, attrs) {
 		rel = attrs.rel || 'stylesheet/css'
 	
 	context.completion.addBlock()
+	if (linkHref[0] != '/') { linkHref = path.join(context.opts.dirname, linkHref) }
+	
 	_getContent(context, linkHref, function doAddStyle(content) {
 		var comment = '/* inlined stylesheet: ' + linkHref + ' */\n'
 		if (context.opts.minify) { comment = '' }
@@ -225,6 +227,7 @@ var addScriptInclude = function(context, attrs) {
 	var scriptSrc = attrs.src
 	
 	context.completion.addBlock()
+	if (scriptSrc[0] != '/') { scriptSrc = path.join(context.opts.dirname, scriptSrc) }
 	_getContent(context, scriptSrc, function doAddScript(js) {
 		var comment = context.opts.minify ? '' : ('/* inlined script tag: ' + scriptSrc + ' */\n')
 		context.headers.push('<script>\n'+js+'\n</script>')
@@ -246,9 +249,6 @@ function _getContent(context, url, callback) {
 			}
 		})
 	} else {
-		if (url[0] != '/') {
-			url = path.join(context.opts.dirname, url)
-		}
 		fs.readFile(url, function(err, content) {
 			if (err) { reportError(context, err, 'read', url) }
 			else { callback(content.toString()) }
