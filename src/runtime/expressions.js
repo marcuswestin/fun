@@ -112,25 +112,25 @@ module.exports.Function = proto(constantAtomicBase,
 		_type:'Function',
 		invoke:function(args) {
 			var result = variable(Null)
-			var yieldValue = function(value) { result.mutate('set', [fromJsValue(value)]) }
-			var isFirstExecution = true
-
-			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
-			
-			this._content.apply(this, args)
+			this._withArgs(args, this._content, function(value) {
+				result.mutate('set', [fromJsValue(value)])
+			})
 			return result
 		},
 		render:function(hookName, args) {
-			var yieldValue = function(value) { fromJsValue(value).render(hookName) }
-			
+			this._withArgs(args, this._content, function(value) {
+				fromJsValue(value).render(hookName)
+			})
+		},
+		_withArgs:function(args, content, yieldValue) {
 			var executeBlock = bind(this, function() {
 				if (args[1]) {
 					 // hack: isFirstExecution
 					var useArgs = copy(args)
 					args[1] = false
-					this._content.apply(this, useArgs)
+					content.apply(this, useArgs)
 				} else {
-					this._content.apply(this, args)
+					content.apply(this, args)
 				}
 			})
 			
