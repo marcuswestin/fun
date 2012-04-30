@@ -282,6 +282,10 @@ test('dynamic dereference')
 	.code('foo[bar] cat[qwe.tag()]')
 	.expect(a.dereference(a.reference('foo'), a.reference('bar')), a.dereference(a.reference('cat'), a.invocation(a.dereference(a.reference('qwe'), 'tag'))))
 
+test('foo = (1) + (1)')
+	.code('foo = (1) + (1)')
+	.expect(a.declaration('foo', a.binaryOp(a.literal(1), '+', a.literal(1))))
+
 /* Util
  ******/
 function test(name) {
