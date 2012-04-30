@@ -4,7 +4,8 @@ var socketIo = require('socket.io'),
 	curry = require('std/curry'),
 	fs = require('fs'),
 	path = require('path'),
-	time = require('std/time')
+	time = require('std/time'),
+	http = require('http')
 
 module.exports = {
 	compileFile: compileFile,
@@ -15,11 +16,13 @@ module.exports = {
 }
 
 function compileFile(filename, opts, callback) {
-	loadCompiler().compileFile(filename, opts, callback)
+	loadCompiler().compileFile(_resolveFilename(filename), opts, callback)
 }
 
-function listen(port, filename, opts) {
+function listen(port, filenameRaw, opts) {
 	if (!port) { port = 8080 }
+
+	var filename = _resolveFilename(filenameRaw)
 
 	try {
 		var stat = fs.statSync(filename)
@@ -49,6 +52,10 @@ function listen(port, filename, opts) {
 	mountAndWatchFile(server, filename, opts)
 	server.listen(port)
 	console.log('Fun!'.magenta, 'Serving', filenameRaw.green, 'on', ('localhost:'+port).cyan, 'with these options:\n', opts)
+}
+
+function _resolveFilename(filename) {
+	return filename[0] == '/' ? filename : path.join(process.cwd(), filename)
 }
 
 function serveDevClient(req, res) {

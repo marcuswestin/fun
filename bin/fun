@@ -12,8 +12,7 @@ var commandline = optimist.usage('Usage: fun [compile] path/to/app.fun [--port=8
 	argv = commandline.argv,
 	line = argv._,
 	compile = line[0] == 'compile',
-	filenameRaw = (compile ? line[1] : line[0]),
-	filename = filenameRaw && filenameRaw[0] == '/' ? filenameRaw : path.join(process.cwd(), filenameRaw)
+	filename = (compile ? line[1] : line[0])
 
 var opts = {
 	'minify': argv['minify'] == 'true',
