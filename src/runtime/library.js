@@ -156,7 +156,7 @@ var expressions = require('./expressions'),
 			})
 			on(input, 'change', function() {
 				setTimeout(function() {
-					fun.set(property, null, input.checked ? fun.expressions.Yes : fun.expressions.No)
+					_doSet(property, input.checked ? fun.expressions.Yes : fun.expressions.No)
 				})
 			})
 		} else {
@@ -168,7 +168,7 @@ var expressions = require('./expressions'),
 				setTimeout(function() {
 					var value = input.value
 					if (property.getContent() === value) { return }
-					fun.set(property, null, fun.expressions.Text(input.value))
+					_doSet(property, fun.expressions.Text(input.value))
 					input.value = value
 				}, 0)
 			}
@@ -178,6 +178,14 @@ var expressions = require('./expressions'),
 			on(input, 'keydown', function(e) {
 				if (e.keyCode == 86) { update(e) } // catch paste events
 			})
+		}
+		function _doSet(property, value) {
+			if (property._type == 'dereference') {
+				var components = property.components
+				fun.dictSet(components.value, components.key, value)
+			} else {
+				fun.set(property, value)
+			}
 		}
 	}
 
