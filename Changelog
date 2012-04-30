@@ -1,3 +1,7 @@
+v0.3
++ Alias of v0.2.23
++ v0.2.23 had enough changes to warrant a big version number bump
+
 v0.2.23
 + Wooe, so many improvements I can't even list them all.
 + Awesome dev environment! Automatically sync UI with file on every save.
