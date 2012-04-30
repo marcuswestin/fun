@@ -103,7 +103,11 @@ var Null = (proto(constantAtomicBase,
 
 // Invocable values
 ///////////////////
-module.exports.Function = proto(constantAtomicBase,
+var invocableBase = create(constantAtomicBase, {
+	asLiteral:function() { return null }
+})
+
+module.exports.Function = proto(invocableBase,
 	function Function(block) {
 		if (typeof block != 'function') { typeMismatch() }
 		this._content = block
@@ -138,7 +142,7 @@ module.exports.Function = proto(constantAtomicBase,
 	}
 )
 
-module.exports.Handler = proto(constantAtomicBase,
+module.exports.Handler = proto(invocableBase,
 	function Handler(block) {
 		if (typeof block != 'function') { typeMismatch() }
 		this._content = block
@@ -150,7 +154,7 @@ module.exports.Handler = proto(constantAtomicBase,
 	}
 )
 
-module.exports.Template = proto(constantAtomicBase,
+module.exports.Template = proto(invocableBase,
 	function Template(block) {
 		if (typeof block != 'function') { typeMismatch() }
 		this._content = block
