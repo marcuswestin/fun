@@ -1,7 +1,7 @@
 {
   "name": "fun",
   "description": "A programming language for realtime web applications",
-  "version": "0.3",
+  "version": "0.3.0",
   "homepage": "https://github.com/marcuswestin/fun",
   "repository": {
     "type": "git",
