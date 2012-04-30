@@ -1,16 +1,10 @@
 #!/usr/bin/env node
 
-var fs = require('fs'),
-	util = require('util'),
-	http = require('http'),
-	path = require('path'),
+var path = require('path'),
 	optimist = require('optimist'),
-	map = require('std/map'),
 	pckg = require('../package'),
 	exec = require('child_process').exec,
-	curry = require('std/curry'),
-	socketIo = require('socket.io'),
-	colors = require('colors')
+	devServer = require('../src/dev-server')
 
 /* Commandline options
  *********************/
@@ -27,94 +21,21 @@ var opts = {
 }
 
 if (compile) {
-	loadCompiler().compileFile(filename, opts, function(err, htmlFile) {
+	devServer.compileFile(filename, opts, function(err, htmlFile) {
 		if (err) {
-			console.log(err)
+			console.error(err)
 			return process.exit(-1)
+		} else {
+			console.log(htmlFile)
+			return process.exit(0)
 		}
-		util.puts(htmlFile)
-		return process.exit(0)
 	})
 } else if (argv.v || argv.version) {
-	console.log("fun", pckg.version)
+	console.log("Fun!".magenta, pckg.version)
 	return process.exit(0)
 } else if (!filename) {
 	console.error(commandline.help())
 	return process.exit(-1)
 } else {
-	// dev environment
-	var port = argv.port || 8080
-
-	try {
-		var stat = fs.statSync(filename)
-	} catch(e) {
-		console.error('Error:', e.message ? e.message : e.toString())
-		return process.exit(-1)
-	}
-
-	if (!stat.isFile()) {
-		console.error('Error:', filename, 'is not a file.')
-		return process.exit(-1)
-	}
-
-	var ideServer = http.createServer(function(req, res) {
-		if (req.url == '/favicon.ico') {
-			return send404(res)
-		} else {
-			fs.readFile(path.join(__dirname, '../src/dev-client.html'), curry(respond, res))
-		}
-	})
-	
-	var ideServerIo = socketIo.listen(ideServer)
-	ideServerIo.set('log level', 0)
-	ideServer.listen(port)
-	
-	var sockets = []
-	
-	ideServerIo.sockets.on('connection', function(socket) {
-		console.log("Dev client connected")
-		sockets.push(socket)
-		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
-			socket.emit('change', { error:err, html:appHtml })
-		})
-	})
-	
-	fs.watch(filename, { persisten:true }, function(event, changedFilename) {
-		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
-			ideServerIo.sockets.emit('change', { error:err, html:appHtml })
-		})
-	})
-	
-	console.log('Fun!'.magenta, 'Serving', filenameRaw.green, 'on', ('localhost:'+port).cyan, 'with these options:\n', opts)
-}
-
-function send404(res) {
-	res.writeHead(404)
-	res.end()
-}
-
-function loadCompiler() {
-	for (var key in require.cache) {
-		delete require.cache[key]
-	}
-	return require('../src/compiler')
-}
-
-function respond(res, e, content) {
-	if (e) {
-		res.writeHead(500)
-		res.end(errorHtmlResponse(e))
-	} else {
-		res.writeHead(200)
-		res.end(content.toString())
-	}
-}
-
-function errorHtmlResponse(e) {
-	return ['<!doctype html>','<body>',
-		'<button ontouchstart="location.reload();" onclick="location.reload()">Reload</button>',
-		'<pre>',
-		e.stack ? e.stack : e.message ? e.message : e.toString(),
-		'</pre>'
-	].join('\n')
+	devServer.listen(argv.port, filename, opts)
 }
