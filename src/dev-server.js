@@ -69,7 +69,7 @@ function mountAndWatchFile(server, filename, opts) {
 	serverIo.sockets.on('connection', function(socket) {
 		console.log("Dev client connected")
 		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
-			socket.emit('change', { error:err, html:appHtml })
+			socket.emit('change', { error:errorHtml(err), html:appHtml })
 		})
 	})
 
@@ -79,7 +79,7 @@ function mountAndWatchFile(server, filename, opts) {
 		lastChange = time.now()
 		console.log(filename, "changed.", "Compiling and sending.")
 		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
-			serverIo.sockets.emit('change', { error:err, html:appHtml })
+			serverIo.sockets.emit('change', { error:errorHtml(err), html:appHtml })
 		})
 	})
 }
@@ -104,8 +104,16 @@ function respond(res, e, content) {
 function errorHtmlResponse(e) {
 	return ['<!doctype html>','<body>',
 		'<button ontouchstart="location.reload();" onclick="location.reload()">Reload</button>',
+		errorHtml(e),
+		'</body>'
+	].join('\n')
+}
+
+function errorHtml(e) {
+	if (!e) { return null }
+	return [
 		'<pre>',
-		e.stack ? e.stack : e.message ? e.message : e.toString ? e.toString() : e || 'Error',
+			e.stack ? e.stack : e.message ? e.message : e.toString ? e.toString() : e || 'Error',
 		'</pre>'
 	].join('\n')
 }
