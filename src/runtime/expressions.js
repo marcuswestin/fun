@@ -3,7 +3,8 @@ var proto = require('std/proto'),
 	map = require('std/map'),
 	isArray = require('std/isArray'),
 	bind = require('std/bind'),
-	arrayToObject = require('std/arrayToObject')
+	arrayToObject = require('std/arrayToObject'),
+	copy = require('std/copy')
 
 // All values inherit from base
 ///////////////////////////////
@@ -123,8 +124,14 @@ module.exports.Function = proto(constantAtomicBase,
 			var yieldValue = function(value) { fromJsValue(value).render(hookName) }
 			
 			var executeBlock = bind(this, function() {
-				this._content.apply(this, args)
-				args[1] = false // hack: isFirstExecution
+				if (args[1]) {
+					 // hack: isFirstExecution
+					var useArgs = copy(args)
+					args[1] = false
+					this._content.apply(this, useArgs)
+				} else {
+					this._content.apply(this, args)
+				}
 			})
 			
 			for (var i=0; i<args.length; i++) {
