@@ -4,10 +4,10 @@ localstorage = {
 		<script variable=variable name=name>
 			if (!__hackFirstExecution) { return }
 			var key = name.getContent(),
-				persistedJSON = localStorage.getItem(key)
+				persistedLiteral = localStorage.getItem(key)
 			
-			if (persistedJSON && persistedJSON != 'null') {
-				variable.mutate('set', [fun.expressions.fromJSON(persistedJSON)])
+			if (persistedLiteral && persistedLiteral != 'null') {
+				variable.mutate('set', [fun.expressions.fromLiteral(persistedLiteral)])
 			}
 			
 			variable.observe(function() {
