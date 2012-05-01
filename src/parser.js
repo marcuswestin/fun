@@ -317,16 +317,17 @@ var _parseMore = astGenerator(function(leftOperatorBinding) {
 		return { type:'UNARY_OP', operator:prefixOperator, value:_parseMore(leftOperatorBinding) }
 	}
 	
+	var expression
 	if (peek('symbol', L_PAREN)) {
 		// There are no value literals with parentheseseses.
 		// If wee see a paren, group the inside expression.
 		advance('symbol', L_PAREN)
-		var expression = _parseMore(0)
+		expression = _parseMore(0)
 		advance('symbol', R_PAREN)
-		return _addTightOperators(expression)
+		expression = _addTightOperators(expression)
+	} else {
+		expression = _addTightOperators(_parseAtomicExpressions())
 	}
-	
-	var expression = _addTightOperators(_parseAtomicExpressions())
 	
 	var rightOperatorToken, impliedEqualityOp
 	while (true) {

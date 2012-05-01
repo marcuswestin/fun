@@ -1,7 +1,7 @@
 {
   "name": "fun",
   "description": "A programming language for realtime web applications",
-  "version": "0.2.22",
+  "version": "0.3.0",
   "homepage": "https://github.com/marcuswestin/fun",
   "repository": {
     "type": "git",
@@ -18,8 +18,8 @@
     "clean-css": "0.3.2",
     "require": "0.4.9",
     "socket.io": "0.9.6",
-    "dom": "0.1.3",
-    "std": "0.1.34",
+    "dom": "0.1.4",
+    "std": "0.1.35",
     "stylus": "0.25.0",
     "colors": "0.6.0-1"
   },

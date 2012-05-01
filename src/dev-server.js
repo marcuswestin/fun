@@ -4,7 +4,8 @@ var socketIo = require('socket.io'),
 	curry = require('std/curry'),
 	fs = require('fs'),
 	path = require('path'),
-	time = require('std/time')
+	time = require('std/time'),
+	http = require('http')
 
 module.exports = {
 	compileFile: compileFile,
@@ -15,11 +16,13 @@ module.exports = {
 }
 
 function compileFile(filename, opts, callback) {
-	loadCompiler().compileFile(filename, opts, callback)
+	loadCompiler().compileFile(_resolveFilename(filename), opts, callback)
 }
 
-function listen(port, filename, opts) {
+function listen(port, filenameRaw, opts) {
 	if (!port) { port = 8080 }
+
+	var filename = _resolveFilename(filenameRaw)
 
 	try {
 		var stat = fs.statSync(filename)
@@ -51,6 +54,10 @@ function listen(port, filename, opts) {
 	console.log('Fun!'.magenta, 'Serving', filenameRaw.green, 'on', ('localhost:'+port).cyan, 'with these options:\n', opts)
 }
 
+function _resolveFilename(filename) {
+	return filename[0] == '/' ? filename : path.join(process.cwd(), filename)
+}
+
 function serveDevClient(req, res) {
 	fs.readFile(path.join(__dirname, './dev-client.html'), curry(respond, res))
 }
@@ -62,7 +69,7 @@ function mountAndWatchFile(server, filename, opts) {
 	serverIo.sockets.on('connection', function(socket) {
 		console.log("Dev client connected")
 		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
-			socket.emit('change', { error:err, html:appHtml })
+			socket.emit('change', { error:errorHtml(err), html:appHtml })
 		})
 	})
 
@@ -72,7 +79,7 @@ function mountAndWatchFile(server, filename, opts) {
 		lastChange = time.now()
 		console.log(filename, "changed.", "Compiling and sending.")
 		loadCompiler().compileFile(filename, opts, function broadcast(err, appHtml) {
-			serverIo.sockets.emit('change', { error:err, html:appHtml })
+			serverIo.sockets.emit('change', { error:errorHtml(err), html:appHtml })
 		})
 	})
 }
@@ -97,8 +104,16 @@ function respond(res, e, content) {
 function errorHtmlResponse(e) {
 	return ['<!doctype html>','<body>',
 		'<button ontouchstart="location.reload();" onclick="location.reload()">Reload</button>',
+		errorHtml(e),
+		'</body>'
+	].join('\n')
+}
+
+function errorHtml(e) {
+	if (!e) { return null }
+	return [
 		'<pre>',
-		e.stack ? e.stack : e.message ? e.message : e.toString ? e.toString() : e || 'Error',
+			e.stack ? e.stack : e.message ? e.message : e.toString ? e.toString() : e || 'Error',
 		'</pre>'
 	].join('\n')
 }

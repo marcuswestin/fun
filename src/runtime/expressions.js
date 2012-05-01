@@ -3,7 +3,8 @@ var proto = require('std/proto'),
 	map = require('std/map'),
 	isArray = require('std/isArray'),
 	bind = require('std/bind'),
-	arrayToObject = require('std/arrayToObject')
+	arrayToObject = require('std/arrayToObject'),
+	copy = require('std/copy')
 
 // All values inherit from base
 ///////////////////////////////
@@ -111,20 +112,26 @@ module.exports.Function = proto(constantAtomicBase,
 		_type:'Function',
 		invoke:function(args) {
 			var result = variable(Null)
-			var yieldValue = function(value) { result.mutate('set', [fromJsValue(value)]) }
-			var isFirstExecution = true
-
-			args = _cleanArgs([yieldValue, isFirstExecution].concat(args), this._content)
-			
-			this._content.apply(this, args)
+			this._withArgs(args, this._content, function(value) {
+				result.mutate('set', [fromJsValue(value)])
+			})
 			return result
 		},
 		render:function(hookName, args) {
-			var yieldValue = function(value) { fromJsValue(value).render(hookName) }
-			
+			this._withArgs(args, this._content, function(value) {
+				fromJsValue(value).render(hookName)
+			})
+		},
+		_withArgs:function(args, content, yieldValue) {
 			var executeBlock = bind(this, function() {
-				this._content.apply(this, args)
-				args[1] = false // hack: isFirstExecution
+				if (args[1]) {
+					 // hack: isFirstExecution
+					var useArgs = copy(args)
+					args[1] = false
+					content.apply(this, useArgs)
+				} else {
+					content.apply(this, args)
+				}
 			})
 			
 			for (var i=0; i<args.length; i++) {
