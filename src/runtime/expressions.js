@@ -255,7 +255,7 @@ var dereference = module.exports.dereference = proto(variableCompositeBase,
 				var affectedProperties = mutation.affectedProperties
 				var propertyKey = this.components.key.asLiteral()
 				if (affectedProperties && !affectedProperties[propertyKey]) { return }
-				mutation = { affectedProperties:null }
+				var mutation = { operator:mutation.operator, affectedProperties:null }
 				callback(mutation)
 			}))
 		},
@@ -330,7 +330,7 @@ var variable = module.exports.variable = proto(mutableBase,
 			this._content = newContent
 			this._observationID = newContent._onMutate(this.notify)
 			
-			var mutation = { affectedProperties:null }
+			var mutation = { operator:'set', affectedProperties:null }
 			this.notify(mutation)
 		}
 	}
@@ -347,16 +347,17 @@ var collectionBase = create(mutableBase, {
 	getContent:function() { return this._content },
 	isTruthy:function() { return true },
 	
-	_setProperty: function(propertyKey, newProperty, additionalAffectedProperties) {
+	_setProperty: function(propertyKey, newProperty, mutation) {
 		this._forgetProperty(propertyKey)
 		
 		this._content[propertyKey] = newProperty
 		
 		this.propObservations[propertyKey] = newProperty._onMutate(bind(this, function(mutation) {
-			this.notify(this._createMutation(propertyKey, null))
+			mutation.affectedProperties = this._getAffectedProperties(propertyKey)
+			this.notify(mutation)
 		}))
 		
-		this.notify(this._createMutation(propertyKey, additionalAffectedProperties))
+		this.notify(mutation)
 	},
 	_forgetProperty: function(propertyKey) {
 		var oldId = this.propObservations[propertyKey]
@@ -411,11 +412,11 @@ var Dictionary = module.exports.Dictionary = proto(collectionBase,
 			var key = args[0],
 				value = args[1]
 			if (!key || key.isNull() || !value) { BAD_ARGS }
-			this._setProperty(key.asLiteral(), value)
+			var mutation = { operator:'set', affectedProperties:arrayToObject([key.asLiteral()]) }
+			this._setProperty(key.asLiteral(), value, mutation)
 		},
-		_createMutation: function(propertyKey, additionalAffectedProperties) {
-			if (additionalAffectedProperties) { throw new Error("I think Dictionary should never be getting additionalAffectedProperties") }
-			return { affectedProperties:arrayToObject([propertyKey]) }
+		_getAffectedProperties: function(propertyKey) {
+			return arrayToObject([propertyKey])
 		}
 	}
 )
@@ -485,38 +486,35 @@ var List = module.exports.List = proto(collectionBase,
 			switch(operator) {
 				case 'push':
 					_checkArgs(args, 1)
-					this._setProperty(this._content.length, args[0], '"length"')
-					break
-				case 'set':
-					_checkArgs(args, 2)
-					if (args[0].getType() != 'Number') { typeMismatch() }
-					var index = args[0].getContent(),
-						length = this._content.length
-					if (index >= length) { throw new Error("List set: index larger than current length") }
 					
-					var affected = [index]
-					if (index == 0) { affected.push('"first"') }
-					if (index == length - 1) { affected.push('"last"') }
-					this._setProperty(index, args[1], affected)
+					var affectedProperties = [this._content.length, '"length"', '"last"']
+					if (this._content.length == 0) {
+						affectedProperties.push('"first"')
+					}
+					
+					var mutation = { operator:'push', affectedProperties:arrayToObject(affectedProperties) }
+					this._setProperty(this._content.length, args[0], mutation)
 					break
+				
 				case 'pop':
 					_checkArgs(args, 1)
 					var index = this._content.length - 1
 					this._forgetProperty(index)
 					this._content.pop()
 					
-					this.notify(this._createMutation(index, ['"length"', '"last"']))
+					var affectedProperties = ['"length"', '"last"']
+					var mutation = { operator:'pop', affectedProperties:arrayToObject(affectedProperties) }
+					this.notify(mutation)
 					break
 				default:
 					throw new Error('Bad Dictionary operator "'+operator+'"')
 			}
 		},
-		_createMutation: function(propertyKey, additionalAffectedProperties) {
+		_getAffectedProperties: function(propertyKey) {
 			var affectedProperties = [propertyKey]
 			if (propertyKey == 0) { affectedProperties.push('"first"') }
 			if (propertyKey == this._content.length - 1) { affectedProperties.push('"last"') }
-			if (additionalAffectedProperties) { affectedProperties = affectedProperties.concat(additionalAffectedProperties) }
-			return { affectedProperties:arrayToObject(affectedProperties) }
+			return arrayToObject(affectedProperties)
 		}
 	}
 )
