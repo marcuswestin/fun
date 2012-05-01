@@ -14,4 +14,3 @@ setup:
 	cd node_modules/dom; npm install .
 	cd node_modules/require; npm install .
 	npm install .
-	make test
