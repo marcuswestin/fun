@@ -260,6 +260,25 @@ test("list length as items get added").code(
 	.click('#output')
 	.textIs('#output', '2')
 
+test("list iteration emission").code(
+	'foo = [1,2]',
+	'<div id="output">for i in foo { i }</div onclick=handler() { foo push: 3 }>')
+	.textIs("#output", '12')
+	.click('#output')
+	.textIs('#output', '123')
+
+test("For loop only executes once for a push").code(
+	'foo = [1,2,3]',
+	'<div id="output">0</div onclick=handler() { foo push:4 }>',
+	'for i in foo { <script>',
+	'	var outp = document.getElementById("output")',
+	'	outp.innerHTML = parseInt(outp.innerHTML.match(/\\d/)[0]) + 1',
+	'</script> }')
+	.click('#output')
+	.textIs('#output', '4')
+	.click('#output')
+	.textIs('#output', '5')
+
 test("copy of grouped expression (foo + 1).copy()").code(
 	'foo = 1',
 	'<div id="output">foo</div onclick=handler() { foo set: (foo + 2).copy() }>')

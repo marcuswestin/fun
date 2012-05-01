@@ -242,11 +242,8 @@ var _compileTemplateForLoop = function(context, ast) {
 	return code(
 		'var {{ loopHookName }} = fun.name()',
 		'fun.hook({{ loopHookName }}, {{ parentHook }})',
-		'{{ iterableValue }}.observe(function() {',
-		'	fun.destroyHook({{ loopHookName }})',
-		'	{{ iterableValue }}.evaluate().iterate(function({{ iteratorName }}) {',
-		'		var {{ emitHookName }} = fun.name()',
-		'		fun.hook({{ emitHookName }}, {{ loopHookName }})',
+		'{{ iterableValue }}.observe(function(mutation) {',
+		'	fun.handleTemplateForLoopMutation(mutation, {{ loopHookName }}, {{ iterableValue }}, function({{ emitHookName}}, {{ iteratorName }}) {',
 		'		{{ loopBlock }}',
 		'	})',
 		'})',

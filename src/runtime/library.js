@@ -50,6 +50,29 @@ var expressions = require('./expressions'),
 		dict.mutate('set', [expressions.fromJsValue(prop), expressions.fromJsValue(setValue)])
 	}
 	
+	fun.handleTemplateForLoopMutation = function(mutation, loopHookName, iterableValue, yieldFn) {
+		var op = mutation && mutation.operator
+		if (op == 'push') {
+			var emitHookName = fun.name()
+			fun.hook(emitHookName, loopHookName)
+			var content = iterableValue.getContent(),
+				item = content[content.length - 1]
+			yieldFn(emitHookName, item)
+		// TODO
+		// } else if (op == 'pop') {
+		// 	var parent = fun.hooks[loopHookName],
+		// 		children = parent.childNodes
+		// 	parent.removeChild(children[children.length - 1])
+		} else {
+			fun.destroyHook(loopHookName)
+			var emitHookName = fun.name()
+			fun.hook(emitHookName, loopHookName)
+			iterableValue.evaluate().iterate(function(item) {
+				yieldFn(emitHookName, item)
+			})
+		}
+	}
+	
 /* Hooks
  *******/
 	fun.setHook = function(name, dom) { _hooks[name] = dom }
