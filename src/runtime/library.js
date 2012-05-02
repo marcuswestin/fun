@@ -25,6 +25,8 @@ var expressions = require('./expressions'),
 	
 /* Values
  ********/
+	fun.value = function(val) { return expressions.fromJsValue(val) }
+	
 	fun.emit = function(parentHookName, value) {
 		if (!value) { return }
 		var hookName = fun.hook(fun.name(), parentHookName)
