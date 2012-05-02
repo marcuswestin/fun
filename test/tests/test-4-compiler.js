@@ -279,6 +279,27 @@ test("For loop only executes once for a push").code(
 	.click('#output')
 	.textIs('#output', '5')
 
+test('switch').code(
+	'foo = "foo"',
+	'<div id="output">switch foo {',
+	'	case "foo": "foo"',
+	'	case "cat": "cat"',
+	'	default: foo',
+	'}</div onclick=handler() {',
+	'	switch foo {',
+	'	case "foo": foo set:"cat"',
+	'	case "cat": foo set:"tag"',
+	'	default: foo set:"wee"',
+	'}}>')
+	.textIs('#output', "foo")
+	.click('#output')
+	.textIs('#output', "cat")
+	.click('#output')
+	.textIs('#output', "tag")
+	.click('#output')
+	.textIs('#output', "wee")
+	
+
 test("copy of grouped expression (foo + 1).copy()").code(
 	'foo = 1',
 	'<div id="output">foo</div onclick=handler() { foo set: (foo + 2).copy() }>')

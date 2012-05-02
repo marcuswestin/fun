@@ -400,12 +400,12 @@ var _compileIfStatement = function(blockCompileFn, context, ast) {
 var _compileSwitchStatement = function(blockCompileFn, context, ast) {
 	return code(
 		';(function(branches) {',
-		'	switch ({{ expression }}) {',
+		'	switch ({{ expression }}.getContent()) {',
 				map(ast.cases, function(switchCase, i) {
 					var labels = switchCase.isDefault
 							? 'default:\n'
 							: map(switchCase.values, function(value) {
-								return 'case ' + compileExpression(context, value) + ':\n'
+								return 'case ' + compileExpression(context, value) + '.getContent():\n'
 							}).join('')
 					return labels
 						+ 'branches['+i+'](); break'
@@ -413,7 +413,7 @@ var _compileSwitchStatement = function(blockCompileFn, context, ast) {
 		'	}',
 		'})([',
 			map(ast.cases, function(switchCase, i) {
-				return 'function branches'+i+'(){ ' + indent(blockCompileFn, switchContext, switchCase.statements) + '}'
+				return 'function branches'+i+'(){ ' + indent(blockCompileFn, context, switchCase.statements) + '}'
 			}).join(',\n'),
 		'])',
 		{
