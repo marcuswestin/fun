@@ -3,7 +3,7 @@ var util = module.exports
 var fs = require('fs'),
 	repeat = require('std/repeat'),
 	map = require('std/map'),
-	pick = require('std/pick'),
+	filter = require('std/filter'),
 	isArray = require('std/isArray')
 
 util.q = function(val) { return JSON.stringify(val) }
@@ -19,7 +19,7 @@ util.cleanup = function(ast) {
 	function clean(ast) {
 		if (ast instanceof Array) {
 			if (ast.length == 1) { return clean(ast[0]) }
-			return map(pick(ast), clean)
+			return map(filter(ast), clean)
 		}
 		return ast || []
 	}
