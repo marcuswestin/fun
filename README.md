@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/marcuswestin/fun.png)](http://travis-ci.org/marcuswestin/fun)
 fun
 ===
 A declarative programming language for realtime web applications
