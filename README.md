@@ -2,6 +2,8 @@ fun
 ===
 A declarative programming language for realtime web applications
 
+[![Build Status](https://secure.travis-ci.org/marcuswestin/fun.png?branch=master)](http://travis-ci.org/marcuswestin/fun)
+
 Getting started
 ----------------------
 Try this:
