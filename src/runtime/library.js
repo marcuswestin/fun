@@ -2,10 +2,10 @@ var expressions = require('./expressions'),
 	each = require('std/each'),
 	curry = require('std/curry'),
 	throttle = require('std/throttle'),
-	addClass = require('dom/addClass'),
-	removeClass = require('dom/removeClass'),
-	on = require('dom/on'),
-	off = require('dom/off'),
+	addClass = require('fun-dom/addClass'),
+	removeClass = require('fun-dom/removeClass'),
+	on = require('fun-dom/on'),
+	off = require('fun-dom/off'),
 	arrayToObject = require('std/arrayToObject')
 
 ;(function() {

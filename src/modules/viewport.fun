@@ -11,8 +11,8 @@ viewport = {
 
 <script module=viewport>
 	
-	var on = require('dom/on'),
-		getWindowSize = require('dom/getWindowSize'),
+	var on = require('fun-dom/on'),
+		getWindowSize = require('fun-dom/getWindowSize'),
 		client = require('std/client')
 	
 	viewportSize = fun.expressions.dereference(module, fun.expressions.Text('size')).evaluate()

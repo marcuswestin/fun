@@ -27,7 +27,7 @@ tap = {
 }
 
 <script module=tap>
-	var tap = require('dom/tap'),
+	var tap = require('fun-dom/tap'),
 		client = require('std/client')
 	
 	window.__fun_tap = {

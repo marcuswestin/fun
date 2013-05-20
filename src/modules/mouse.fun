@@ -5,7 +5,7 @@ mouse = {
 }
 
 <script mouse=mouse>
-var on = require('dom/on')
+var on = require('fun-dom/on')
 
 mouse = mouse.evaluate()
 

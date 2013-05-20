@@ -4,7 +4,7 @@ var compiler = require('../../src/compiler'),
 	compilerServerPort = 9797,
 	slice = require('std/slice'),
 	each = require('std/each'),
-	hasClass = require('dom/hasClass')
+	hasClass = require('fun-dom/hasClass')
 
 var currentTestCode, compilerServer
 	
