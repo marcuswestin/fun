@@ -20,11 +20,12 @@
     "socket.io": "0.9.6",
     "std": "0.1.35",
     "stylus": "0.25.0",
-    "colors": "0.6.0-1"
+    "colors": "0.6.0-1",
+	"fun-dom": "0.1.5"
   },
   "devDependencies": {
     "nodeunit": "0.6.4",
-    "zombie": "0.12.15"
+    "zombie": "2.0.0-alpha18"
   },
   "engines": {
     "node": ">= 0.4.0"
