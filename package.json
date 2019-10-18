@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "optimist": "0.2.8",
-    "request": "2.9.153",
+    "request": "2.88.0",
     "clean-css": "0.3.2",
     "require": "0.4.9",
     "socket.io": "0.9.6",
